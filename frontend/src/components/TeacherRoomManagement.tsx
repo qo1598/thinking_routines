@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -29,13 +29,7 @@ const TeacherRoomManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (roomId) {
-      fetchRoomData();
-    }
-  }, [roomId]);
-
-  const fetchRoomData = async () => {
+  const fetchRoomData = useCallback(async () => {
     if (!isSupabaseConfigured() || !supabase || !roomId) {
       setError('시스템 설정이 완료되지 않았습니다.');
       setLoading(false);
@@ -87,7 +81,13 @@ const TeacherRoomManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [roomId, navigate]);
+
+  useEffect(() => {
+    if (roomId) {
+      fetchRoomData();
+    }
+  }, [roomId, fetchRoomData]);
 
   const handleBackToDashboard = () => {
     navigate('/teacher/dashboard');
