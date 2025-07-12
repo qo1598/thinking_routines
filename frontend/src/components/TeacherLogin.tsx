@@ -64,7 +64,7 @@ const TeacherLogin: React.FC = () => {
     }
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, {
+      await axios.post(`${API_BASE_URL}/api/auth/signup`, {
         email: signupForm.email,
         password: signupForm.password,
         name: signupForm.name
