@@ -45,7 +45,7 @@ const TeacherDashboard: React.FC = () => {
 
   useEffect(() => {
     checkAuth();
-  }, [navigate]);
+  }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAuth = async () => {
     try {
