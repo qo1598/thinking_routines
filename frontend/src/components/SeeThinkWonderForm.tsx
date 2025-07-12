@@ -284,45 +284,6 @@ const SeeThinkWonderForm: React.FC = () => {
       {/* 메인 컨텐츠 */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          {/* 자료 표시 영역 */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="space-y-4">
-              {template.content.image_url && (
-                <div className="flex justify-center">
-                  <img 
-                    src={template.content.image_url} 
-                    alt="활동 자료" 
-                    className="max-w-full max-h-96 rounded-lg shadow-sm"
-                  />
-                </div>
-              )}
-              
-              {template.content.text_content && (
-                <div className="prose max-w-none">
-                  <div className="text-gray-900 whitespace-pre-wrap text-center">
-                    {template.content.text_content}
-                  </div>
-                </div>
-              )}
-              
-              {template.content.youtube_url && (
-                <div className="flex justify-center">
-                  <div className="w-full max-w-2xl">
-                    <div className="relative pb-9/16">
-                      <iframe
-                        src={getYouTubeEmbedUrl(template.content.youtube_url) || ''}
-                        title="YouTube video"
-                        className="absolute inset-0 w-full h-full rounded-lg"
-                        style={{ aspectRatio: '16/9' }}
-                        allowFullScreen
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* 활동 영역 */}
           <div className="p-6">
             <div className="mb-6">
@@ -334,6 +295,42 @@ const SeeThinkWonderForm: React.FC = () => {
                   <h2 className="text-2xl font-bold text-gray-900">{stepInfo.title}</h2>
                   <p className="text-gray-600">{stepInfo.subtitle}</p>
                 </div>
+              </div>
+              
+              {/* 자료 표시 영역 - 각 단계마다 표시 */}
+              <div className="mb-6 space-y-4">
+                {template.content.image_url && (
+                  <div className="flex justify-center">
+                    <img 
+                      src={template.content.image_url} 
+                      alt="활동 자료" 
+                      className="max-w-full max-h-96 rounded-lg shadow-sm"
+                    />
+                  </div>
+                )}
+                
+                {template.content.text_content && (
+                  <div className="prose max-w-none">
+                    <div className="text-gray-900 whitespace-pre-wrap text-center bg-gray-50 p-4 rounded-lg">
+                      {template.content.text_content}
+                    </div>
+                  </div>
+                )}
+                
+                {template.content.youtube_url && (
+                  <div className="flex justify-center">
+                    <div className="w-full max-w-2xl">
+                      <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                        <iframe
+                          src={getYouTubeEmbedUrl(template.content.youtube_url) || ''}
+                          title="YouTube video"
+                          className="absolute inset-0 w-full h-full rounded-lg"
+                          allowFullScreen
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="bg-gray-50 p-4 rounded-lg">
