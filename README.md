@@ -138,6 +138,41 @@ npm start
 
 버그 리포트, 기능 제안, 풀 리퀘스트를 환영합니다!
 
+## 🚀 Vercel 배포
+
+### 1. Vercel 계정 연결
+1. [Vercel](https://vercel.com)에 가입하고 GitHub 계정을 연결합니다.
+2. "New Project"를 클릭하고 이 저장소를 선택합니다.
+
+### 2. 환경 변수 설정
+Vercel 대시보드에서 다음 환경 변수들을 설정해야 합니다:
+
+```
+# Supabase 설정
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+# Google Gemini API 설정
+GEMINI_API_KEY=your_gemini_api_key
+
+# JWT 설정
+JWT_SECRET=your_jwt_secret_key
+
+# 프론트엔드 환경 변수
+REACT_APP_API_URL=https://your-vercel-domain.vercel.app
+```
+
+### 3. 빌드 설정
+- **Framework Preset**: Other
+- **Root Directory**: `.` (루트 디렉토리)
+- **Build Command**: `npm run build --prefix frontend`
+- **Output Directory**: `frontend/build`
+- **Install Command**: `npm run install-deps`
+
+### 4. 배포
+설정이 완료되면 자동으로 배포가 시작됩니다. 이후 main 브랜치에 푸시할 때마다 자동으로 재배포됩니다.
+
 ## 📞 문의
 
 프로젝트에 대한 문의사항이 있으시면 이슈를 생성해주세요. 
