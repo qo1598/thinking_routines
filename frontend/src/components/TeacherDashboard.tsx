@@ -122,12 +122,10 @@ const TeacherDashboard: React.FC = () => {
     if (!supabase) return;
 
     try {
+      // 먼저 활동방 목록을 가져옵니다
       const { data: roomsData, error } = await supabase
         .from('activity_rooms')
-        .select(`
-          *,
-          student_responses(count)
-        `)
+        .select('*')
         .eq('teacher_id', userId)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
@@ -135,14 +133,30 @@ const TeacherDashboard: React.FC = () => {
       if (error) {
         console.error('Fetch rooms error:', error);
         setError('활동방 목록을 불러오는데 실패했습니다.');
-      } else {
-        // 응답 수 계산
-        const roomsWithCount = roomsData.map(room => ({
-          ...room,
-          response_count: room.student_responses?.length || 0
-        }));
-        setRooms(roomsWithCount);
+        setLoading(false);
+        return;
       }
+
+      // 각 활동방의 응답 개수를 별도로 조회
+      const roomsWithCount = await Promise.all(
+        roomsData.map(async (room) => {
+          if (!supabase) return { ...room, response_count: 0 };
+          
+          const { count, error: countError } = await supabase
+            .from('student_responses')
+            .select('*', { count: 'exact', head: true })
+            .eq('room_id', room.id);
+
+          if (countError) {
+            console.error('Count error for room', room.id, ':', countError);
+            return { ...room, response_count: 0 };
+          }
+
+          return { ...room, response_count: count || 0 };
+        })
+      );
+
+      setRooms(roomsWithCount);
     } catch (err) {
       console.error('Fetch rooms error:', err);
       setError('활동방 목록을 불러오는데 실패했습니다.');
@@ -524,6 +538,18 @@ const TeacherDashboard: React.FC = () => {
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                       placeholder="https://example.com/image.jpg"
                     />
+                    {newRoom.template_content.image_url && (
+                      <div className="mt-2 flex justify-center">
+                        <img 
+                          src={newRoom.template_content.image_url} 
+                          alt="이미지 미리보기" 
+                          className="max-w-full max-h-64 rounded-lg shadow-sm"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                   
                   <div>
@@ -717,15 +743,6 @@ const TeacherDashboard: React.FC = () => {
                         }`}
                       >
                         {room.status === 'active' ? '비활성화' : '활성화'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(room.room_code);
-                          alert('코드가 복사되었습니다!');
-                        }}
-                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm"
-                      >
-                        코드 복사
                       </button>
                       <button
                         onClick={() => navigate(`/teacher/room/${room.id}`)}

@@ -188,6 +188,12 @@ const TeacherRoomManagement: React.FC = () => {
     }
   };
 
+  const getYouTubeEmbedUrl = (url: string) => {
+    if (!url) return null;
+    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+    return videoId ? `https://www.youtube.com/embed/${videoId[1]}` : null;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -272,12 +278,14 @@ const TeacherRoomManagement: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-medium text-gray-900">활동 내용 설정</h2>
-            <button
-              onClick={() => setShowTemplateForm(!showTemplateForm)}
-              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-            >
-              {template ? '내용 수정' : '내용 설정'}
-            </button>
+            {!showTemplateForm && (
+              <button
+                onClick={() => setShowTemplateForm(!showTemplateForm)}
+                className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                {template ? '내용 수정' : '내용 설정'}
+              </button>
+            )}
           </div>
 
           {template && !showTemplateForm && (
@@ -285,35 +293,73 @@ const TeacherRoomManagement: React.FC = () => {
               {template.content.image_url && (
                 <div>
                   <p className="text-sm text-gray-600 mb-2">이미지</p>
-                  <img src={template.content.image_url} alt="활동 이미지" className="max-w-md rounded-lg" />
+                  <div className="flex justify-center">
+                    <img src={template.content.image_url} alt="활동 이미지" className="max-w-md max-h-64 rounded-lg shadow-sm" />
+                  </div>
                 </div>
               )}
               {template.content.text_content && (
                 <div>
                   <p className="text-sm text-gray-600 mb-2">텍스트 내용</p>
-                  <p className="text-gray-900 whitespace-pre-wrap">{template.content.text_content}</p>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-gray-900 whitespace-pre-wrap">{template.content.text_content}</p>
+                  </div>
                 </div>
               )}
               {template.content.youtube_url && (
                 <div>
                   <p className="text-sm text-gray-600 mb-2">유튜브 영상</p>
-                  <a href={template.content.youtube_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
-                    {template.content.youtube_url}
-                  </a>
+                  <div className="flex justify-center">
+                    <div className="w-full max-w-2xl">
+                      <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                        {(() => {
+                          const embedUrl = getYouTubeEmbedUrl(template.content.youtube_url);
+                          return embedUrl ? (
+                            <iframe
+                              src={embedUrl}
+                              title="YouTube video"
+                              className="absolute inset-0 w-full h-full rounded-lg"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                              <div className="text-center">
+                                <p className="text-gray-600 mb-2">유튜브 영상을 불러올 수 없습니다.</p>
+                                <a 
+                                  href={template.content.youtube_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 underline text-sm"
+                                >
+                                  새 탭에서 보기
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-600 mb-2">See 질문</p>
-                  <p className="text-gray-900">{template.content.see_question}</p>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-gray-900">{template.content.see_question}</p>
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-2">Think 질문</p>
-                  <p className="text-gray-900">{template.content.think_question}</p>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-gray-900">{template.content.think_question}</p>
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-2">Wonder 질문</p>
-                  <p className="text-gray-900">{template.content.wonder_question}</p>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-gray-900">{template.content.wonder_question}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -332,6 +378,18 @@ const TeacherRoomManagement: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   placeholder="https://example.com/image.jpg"
                 />
+                {templateForm.image_url && (
+                  <div className="mt-2 flex justify-center">
+                    <img 
+                      src={templateForm.image_url} 
+                      alt="이미지 미리보기" 
+                      className="max-w-full max-h-64 rounded-lg shadow-sm"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -345,6 +403,12 @@ const TeacherRoomManagement: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   placeholder="학생들에게 보여줄 텍스트를 입력하세요..."
                 />
+                {templateForm.text_content && (
+                  <div className="mt-2 bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-2">미리보기:</p>
+                    <p className="text-gray-900 whitespace-pre-wrap">{templateForm.text_content}</p>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -358,6 +422,40 @@ const TeacherRoomManagement: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   placeholder="https://www.youtube.com/watch?v=..."
                 />
+                {templateForm.youtube_url && (
+                  <div className="mt-2 flex justify-center">
+                    <div className="w-full max-w-2xl">
+                      <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                        {(() => {
+                          const embedUrl = getYouTubeEmbedUrl(templateForm.youtube_url);
+                          return embedUrl ? (
+                            <iframe
+                              src={embedUrl}
+                              title="YouTube preview"
+                              className="absolute inset-0 w-full h-full rounded-lg"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                              <div className="text-center">
+                                <p className="text-gray-600 mb-2">유튜브 영상을 불러올 수 없습니다.</p>
+                                <p className="text-sm text-gray-500">원본 링크: {templateForm.youtube_url}</p>
+                                <a 
+                                  href={templateForm.youtube_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 underline text-sm"
+                                >
+                                  새 탭에서 보기
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
