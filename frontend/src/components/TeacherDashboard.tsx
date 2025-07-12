@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { supabase } from '../lib/supabase';
 
 interface Teacher {
   id: string;
@@ -15,19 +13,21 @@ interface ActivityRoom {
   title: string;
   description: string;
   room_code: string;
-  thinking_routine_type: string;
-  status: string;
+  routine_type: string;
+  is_active: boolean;
   created_at: string;
-  stats: {
-    total_responses: number;
-    template_count: number;
-  };
+  response_count?: number;
 }
 
 interface NewRoomForm {
   title: string;
   description: string;
 }
+
+// 6자리 숫자 코드 생성 함수
+const generateRoomCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
 
 const TeacherDashboard: React.FC = () => {
   const [user, setUser] = useState<Teacher | null>(null);
@@ -44,30 +44,65 @@ const TeacherDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-
-    if (!token || !userData) {
-      navigate('/teacher');
-      return;
-    }
-
-    setUser(JSON.parse(userData));
-    fetchRooms();
+    checkAuth();
   }, [navigate]);
 
-  const fetchRooms = async () => {
+  const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/api/rooms`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      setRooms(response.data.rooms);
-    } catch (err: any) {
-      setError('활동방 목록을 불러오는데 실패했습니다.');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/teacher');
+        return;
+      }
+
+      // 사용자 정보 조회
+      const { data: teacherData, error: teacherError } = await supabase
+        .from('teachers')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (teacherError) {
+        console.error('Teacher fetch error:', teacherError);
+        navigate('/teacher');
+        return;
+      }
+
+      setUser(teacherData);
+      await fetchRooms(session.user.id);
+    } catch (error) {
+      console.error('Auth check error:', error);
+      navigate('/teacher');
+    }
+  };
+
+  const fetchRooms = async (userId: string) => {
+    try {
+      const { data: roomsData, error } = await supabase
+        .from('activity_rooms')
+        .select(`
+          *,
+          student_responses(count)
+        `)
+        .eq('teacher_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Fetch rooms error:', error);
+        setError('활동방 목록을 불러오는데 실패했습니다.');
+      } else {
+        // 응답 수 계산
+        const roomsWithCount = roomsData.map(room => ({
+          ...room,
+          response_count: room.student_responses?.length || 0
+        }));
+        setRooms(roomsWithCount);
+      }
+    } catch (err) {
       console.error('Fetch rooms error:', err);
+      setError('활동방 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -79,43 +114,95 @@ const TeacherDashboard: React.FC = () => {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_BASE_URL}/api/rooms`, newRoom, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/teacher');
+        return;
+      }
 
-      setRooms([response.data.room, ...rooms]);
+      // 고유한 6자리 방 코드 생성
+      let roomCode = generateRoomCode();
+      let isUnique = false;
+      let attempts = 0;
+
+      while (!isUnique && attempts < 10) {
+        const { data: existingRoom } = await supabase
+          .from('activity_rooms')
+          .select('id')
+          .eq('room_code', roomCode)
+          .eq('is_active', true)
+          .single();
+
+        if (!existingRoom) {
+          isUnique = true;
+        } else {
+          roomCode = generateRoomCode();
+          attempts++;
+        }
+      }
+
+      if (!isUnique) {
+        setError('고유한 방 코드 생성에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+
+      const { data: roomData, error } = await supabase
+        .from('activity_rooms')
+        .insert([
+          {
+            teacher_id: session.user.id,
+            title: newRoom.title,
+            description: newRoom.description || '',
+            room_code: roomCode,
+            routine_type: 'see-think-wonder',
+            is_active: true,
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Room creation error:', error);
+        setError('활동방 생성에 실패했습니다.');
+        return;
+      }
+
+      const newRoomWithCount = {
+        ...roomData,
+        response_count: 0
+      };
+
+      setRooms([newRoomWithCount, ...rooms]);
       setNewRoom({ title: '', description: '' });
       setShowCreateForm(false);
-      alert('활동방이 생성되었습니다!');
-    } catch (err: any) {
-      setError(err.response?.data?.error || '활동방 생성에 실패했습니다.');
+      alert(`활동방이 생성되었습니다! 방 코드: ${roomCode}`);
+    } catch (err) {
+      console.error('Create room error:', err);
+      setError('활동방 생성 중 오류가 발생했습니다.');
     } finally {
       setCreateLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate('/teacher');
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusMap = {
-      draft: { label: '준비중', color: 'bg-gray-100 text-gray-800' },
-      active: { label: '활성', color: 'bg-green-100 text-green-800' },
-      completed: { label: '완료', color: 'bg-blue-100 text-blue-800' },
-      archived: { label: '보관', color: 'bg-yellow-100 text-yellow-800' }
-    };
-    
-    const statusInfo = statusMap[status as keyof typeof statusMap] || statusMap.draft;
-    
+  const getStatusBadge = (room: ActivityRoom) => {
+    if (!room.is_active) {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+          비활성
+        </span>
+      );
+    }
+
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusInfo.color}`}>
-        {statusInfo.label}
+      <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+        활성
       </span>
     );
   };
@@ -198,20 +285,20 @@ const TeacherDashboard: React.FC = () => {
                   placeholder="활동방에 대한 간단한 설명을 입력하세요"
                 />
               </div>
-              <div className="flex space-x-3">
-                <button
-                  type="submit"
-                  disabled={createLoading}
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
-                >
-                  {createLoading ? '생성 중...' : '생성하기'}
-                </button>
+              <div className="flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setShowCreateForm(false)}
                   className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
                 >
                   취소
+                </button>
+                <button
+                  type="submit"
+                  disabled={createLoading}
+                  className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+                >
+                  {createLoading ? '생성 중...' : '활동방 생성'}
                 </button>
               </div>
             </form>
@@ -237,24 +324,19 @@ const TeacherDashboard: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
                         <h3 className="text-lg font-medium text-gray-900">{room.title}</h3>
-                        {getStatusBadge(room.status)}
+                        {getStatusBadge(room)}
                       </div>
                       {room.description && (
                         <p className="text-sm text-gray-600 mt-1">{room.description}</p>
                       )}
                       <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
                         <span>코드: <span className="font-mono font-bold text-primary-600">{room.room_code}</span></span>
-                        <span>응답: {room.stats.total_responses}개</span>
+                        <span>응답: {room.response_count || 0}개</span>
                         <span>생성일: {new Date(room.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
+                    
                     <div className="flex space-x-2">
-                      <button
-                        onClick={() => navigate(`/teacher/room/${room.id}`)}
-                        className="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded text-sm"
-                      >
-                        관리
-                      </button>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(room.room_code);
@@ -263,6 +345,12 @@ const TeacherDashboard: React.FC = () => {
                         className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm"
                       >
                         코드 복사
+                      </button>
+                      <button
+                        onClick={() => navigate(`/teacher/room/${room.id}`)}
+                        className="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded text-sm"
+                      >
+                        관리
                       </button>
                     </div>
                   </div>

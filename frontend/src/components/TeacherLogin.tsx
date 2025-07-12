@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { supabase } from '../lib/supabase';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 interface LoginForm {
   email: string;
@@ -48,8 +45,29 @@ const TeacherLogin: React.FC = () => {
 
     // 인증 상태 변경 감지
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
+          // 사용자 정보를 teachers 테이블에 저장/업데이트
+          const { data: existingTeacher } = await supabase
+            .from('teachers')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (!existingTeacher) {
+            // 새 사용자인 경우 teachers 테이블에 추가
+            await supabase
+              .from('teachers')
+              .insert([
+                {
+                  id: session.user.id,
+                  email: session.user.email,
+                  name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
+                  created_at: new Date().toISOString()
+                }
+              ]);
+          }
+          
           navigate('/teacher/dashboard');
         }
       }
@@ -81,7 +99,7 @@ const TeacherLogin: React.FC = () => {
       
       if (error) {
         console.error('Google OAuth error:', error);
-        setError('Google 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        setError('Google 로그인에 실패했습니다. 관리자에게 문의하세요.');
       }
       // 성공 시 리다이렉트가 자동으로 발생하므로 추가 처리 불필요
     } catch (err) {
@@ -98,16 +116,23 @@ const TeacherLogin: React.FC = () => {
     setError('');
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, loginForm);
-      
-      // 토큰과 사용자 정보 저장
-      localStorage.setItem('token', response.data.session.access_token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      
-      // 대시보드로 이동
-      navigate('/teacher/dashboard');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginForm.email,
+        password: loginForm.password
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        setError(error.message === 'Invalid login credentials' 
+          ? '이메일 또는 비밀번호가 올바르지 않습니다.' 
+          : '로그인에 실패했습니다.');
+        return;
+      }
+
+      // 성공 시 useEffect의 onAuthStateChange에서 처리됨
     } catch (err: any) {
-      setError(err.response?.data?.error || '로그인에 실패했습니다.');
+      console.error('Login error:', err);
+      setError('로그인 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -124,17 +149,45 @@ const TeacherLogin: React.FC = () => {
       return;
     }
 
+    if (signupForm.password.length < 6) {
+      setError('비밀번호는 최소 6자리 이상이어야 합니다.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await axios.post(`${API_BASE_URL}/api/auth/signup`, {
+      const { data, error } = await supabase.auth.signUp({
         email: signupForm.email,
         password: signupForm.password,
-        name: signupForm.name
+        options: {
+          data: {
+            name: signupForm.name
+          }
+        }
       });
-      
-      alert('회원가입이 완료되었습니다. 이메일을 확인해주세요.');
-      setIsLogin(true);
+
+      if (error) {
+        console.error('Signup error:', error);
+        if (error.message.includes('User already registered')) {
+          setError('이미 등록된 이메일입니다.');
+        } else {
+          setError('회원가입에 실패했습니다. 다시 시도해주세요.');
+        }
+        return;
+      }
+
+      // 이메일 확인이 필요한 경우
+      if (data.user && !data.session) {
+        alert('회원가입이 완료되었습니다. 이메일을 확인하여 계정을 활성화해주세요.');
+        setIsLogin(true);
+      } else {
+        // 즉시 로그인된 경우 (이메일 확인 불필요)
+        alert('회원가입이 완료되었습니다!');
+        // onAuthStateChange에서 자동으로 대시보드로 이동
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error || '회원가입에 실패했습니다.');
+      console.error('Signup error:', err);
+      setError('회원가입 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }

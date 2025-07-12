@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { supabase } from '../lib/supabase';
 
 interface ActivityRoom {
   id: string;
   title: string;
   description: string;
-  thinking_routine_type: string;
-  status: string;
-  routine_templates: Array<{
-    id: string;
-    routine_type: string;
-    content: any;
+  room_code: string;
+  routine_type: string;
+  is_active: boolean;
+  teachers?: Array<{
+    name: string;
   }>;
 }
 
@@ -40,14 +37,35 @@ const StudentEntry: React.FC = () => {
     }
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/rooms/join/${roomCode}`);
-      setRoom(response.data.room);
-    } catch (err: any) {
-      if (err.response?.status === 404) {
-        setError('존재하지 않는 방 코드입니다. 코드를 확인해주세요.');
-      } else {
-        setError('활동방 조회에 실패했습니다. 다시 시도해주세요.');
+      const { data: roomData, error } = await supabase
+        .from('activity_rooms')
+        .select(`
+          id,
+          title,
+          description,
+          room_code,
+          routine_type,
+          is_active,
+          teachers(name)
+        `)
+        .eq('room_code', roomCode)
+        .eq('is_active', true)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          setError('존재하지 않는 방 코드입니다. 코드를 확인해주세요.');
+        } else {
+          console.error('Room fetch error:', error);
+          setError('활동방 조회에 실패했습니다. 다시 시도해주세요.');
+        }
+        return;
       }
+
+      setRoom(roomData);
+    } catch (err) {
+      console.error('Room fetch error:', err);
+      setError('활동방 조회에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
