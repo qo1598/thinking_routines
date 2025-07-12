@@ -241,6 +241,33 @@ const TeacherDashboard: React.FC = () => {
     );
   };
 
+  const handleStatusChange = async (roomId: string, newStatus: string) => {
+    if (!supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from('activity_rooms')
+        .update({ status: newStatus })
+        .eq('id', roomId);
+
+      if (error) {
+        console.error('Status update error:', error);
+        setError('상태 변경에 실패했습니다.');
+        return;
+      }
+
+      // 로컬 상태 업데이트
+      setRooms(rooms.map(room => 
+        room.id === roomId ? { ...room, status: newStatus } : room
+      ));
+      
+      alert(`활동방이 ${newStatus === 'active' ? '활성화' : '비활성화'}되었습니다.`);
+    } catch (err) {
+      console.error('Status change error:', err);
+      setError('상태 변경 중 오류가 발생했습니다.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -388,6 +415,16 @@ const TeacherDashboard: React.FC = () => {
                     </div>
                     
                     <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleStatusChange(room.id, room.status === 'active' ? 'draft' : 'active')}
+                        className={`px-3 py-1 rounded text-sm font-medium ${
+                          room.status === 'active' 
+                            ? 'bg-red-100 hover:bg-red-200 text-red-700' 
+                            : 'bg-green-100 hover:bg-green-200 text-green-700'
+                        }`}
+                      >
+                        {room.status === 'active' ? '비활성화' : '활성화'}
+                      </button>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(room.room_code);

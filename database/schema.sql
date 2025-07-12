@@ -95,6 +95,10 @@ CREATE POLICY "Teachers can access and insert their own data" ON teachers
 CREATE POLICY "Teachers can only access their own rooms" ON activity_rooms
     FOR ALL USING (teacher_id = auth.uid());
 
+-- 학생들이 활동방 정보를 조회할 수 있도록 허용 (읽기 전용)
+CREATE POLICY "Students can read active rooms" ON activity_rooms
+    FOR SELECT USING (status = 'active');
+
 CREATE POLICY "Teachers can only access their own templates" ON routine_templates
     FOR ALL USING (
         EXISTS (
@@ -111,6 +115,16 @@ CREATE POLICY "Teachers can access responses in their rooms" ON student_response
             SELECT 1 FROM activity_rooms 
             WHERE activity_rooms.id = student_responses.room_id 
             AND activity_rooms.teacher_id = auth.uid()
+        )
+    );
+
+-- 학생들이 활성 방에 응답을 저장할 수 있도록 허용
+CREATE POLICY "Students can insert responses to active rooms" ON student_responses
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM activity_rooms 
+            WHERE activity_rooms.id = student_responses.room_id 
+            AND activity_rooms.status = 'active'
         )
     );
 

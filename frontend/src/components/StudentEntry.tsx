@@ -51,11 +51,9 @@ const StudentEntry: React.FC = () => {
           description,
           room_code,
           thinking_routine_type,
-          status,
-          teachers(name)
+          status
         `)
         .eq('room_code', roomCode)
-        .eq('status', 'active')
         .single();
 
       if (error) {
@@ -65,6 +63,12 @@ const StudentEntry: React.FC = () => {
           console.error('Room fetch error:', error);
           setError('활동방 조회에 실패했습니다. 다시 시도해주세요.');
         }
+        return;
+      }
+
+      // 활동방 상태 확인
+      if (roomData.status !== 'active') {
+        setError('현재 참여할 수 없는 활동방입니다. 선생님께 문의하세요.');
         return;
       }
 
