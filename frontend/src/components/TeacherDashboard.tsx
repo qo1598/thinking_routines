@@ -23,6 +23,15 @@ interface NewRoomForm {
   title: string;
   description: string;
   thinking_routine_type: string;
+  // 템플릿 내용도 함께 관리
+  template_content: {
+    image_url: string;
+    text_content: string;
+    youtube_url: string;
+    see_question: string;
+    think_question: string;
+    wonder_question: string;
+  };
 }
 
 // 6자리 숫자 코드 생성 함수
@@ -39,7 +48,15 @@ const TeacherDashboard: React.FC = () => {
   const [newRoom, setNewRoom] = useState<NewRoomForm>({
     title: '',
     description: '',
-    thinking_routine_type: 'see-think-wonder'
+    thinking_routine_type: 'see-think-wonder',
+    template_content: {
+      image_url: '',
+      text_content: '',
+      youtube_url: '',
+      see_question: '이 자료에서 무엇을 보았나요?',
+      think_question: '이것에 대해 어떻게 생각하나요?',
+      wonder_question: '이것에 대해 무엇이 궁금한가요?'
+    }
   });
   const [createLoading, setCreateLoading] = useState(false);
 
@@ -201,13 +218,39 @@ const TeacherDashboard: React.FC = () => {
         return;
       }
 
+      // 템플릿 내용이 있으면 함께 저장
+      if (newRoom.template_content.image_url || newRoom.template_content.text_content || newRoom.template_content.youtube_url) {
+        const { error: templateError } = await supabase
+          .from('routine_templates')
+          .insert([
+            {
+              room_id: roomData.id,
+              routine_type: newRoom.thinking_routine_type,
+              content: newRoom.template_content
+            }
+          ]);
+
+        if (templateError) {
+          console.error('Template creation error:', templateError);
+          // 템플릿 생성 실패는 치명적이지 않으므로 경고만 표시
+          alert('활동방은 생성되었지만 템플릿 저장에 실패했습니다. 나중에 활동방 관리에서 설정할 수 있습니다.');
+        }
+      }
+
       const newRoomWithCount = {
         ...roomData,
         response_count: 0
       };
 
       setRooms([newRoomWithCount, ...rooms]);
-      setNewRoom({ title: '', description: '', thinking_routine_type: 'see-think-wonder' });
+      setNewRoom({ title: '', description: '', thinking_routine_type: 'see-think-wonder', template_content: {
+        image_url: '',
+        text_content: '',
+        youtube_url: '',
+        see_question: '이 자료에서 무엇을 보았나요?',
+        think_question: '이것에 대해 어떻게 생각하나요?',
+        wonder_question: '이것에 대해 무엇이 궁금한가요?'
+      } });
       setShowCreateForm(false);
       alert(`활동방이 생성되었습니다! 방 코드: ${roomCode}`);
     } catch (err) {
@@ -216,6 +259,49 @@ const TeacherDashboard: React.FC = () => {
     } finally {
       setCreateLoading(false);
     }
+  };
+
+  const handleThinkingRoutineChange = (routineType: string) => {
+    // 사고루틴 타입에 따라 기본 질문 설정
+    const defaultQuestions = {
+      'see-think-wonder': {
+        see_question: '이 자료에서 무엇을 보았나요?',
+        think_question: '이것에 대해 어떻게 생각하나요?',
+        wonder_question: '이것에 대해 무엇이 궁금한가요?'
+      },
+      'connect-extend-challenge': {
+        see_question: '이 내용이 이미 알고 있는 것과 어떻게 연결되나요?',
+        think_question: '이 내용이 당신의 생각을 어떻게 확장시켰나요?',
+        wonder_question: '이 내용에서 어떤 것이 당신에게 도전이 되나요?'
+      },
+      'what-makes-you-say-that': {
+        see_question: '당신은 무엇을 보거나 알고 있나요?',
+        think_question: '그것이 당신으로 하여금 그렇게 말하게 하는 이유는 무엇인가요?',
+        wonder_question: '다른 관점에서는 어떻게 해석할 수 있을까요?'
+      },
+      'think-pair-share': {
+        see_question: '이 주제에 대해 개인적으로 어떻게 생각하나요?',
+        think_question: '짝과 함께 논의한 후 생각이 어떻게 변했나요?',
+        wonder_question: '전체와 공유하고 싶은 새로운 아이디어는 무엇인가요?'
+      }
+    };
+
+    const questions = defaultQuestions[routineType as keyof typeof defaultQuestions] || defaultQuestions['see-think-wonder'];
+    
+    setNewRoom({
+      ...newRoom,
+      thinking_routine_type: routineType,
+      template_content: {
+        ...newRoom.template_content,
+        ...questions
+      }
+    });
+  };
+
+  const getYouTubeEmbedUrl = (url: string) => {
+    if (!url) return null;
+    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+    return videoId ? `https://www.youtube.com/embed/${videoId[1]}` : null;
   };
 
   const handleLogout = async () => {
@@ -265,6 +351,60 @@ const TeacherDashboard: React.FC = () => {
     } catch (err) {
       console.error('Status change error:', err);
       setError('상태 변경 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string, roomTitle: string) => {
+    if (!supabase) return;
+
+    // 확인 대화상자
+    const confirmed = window.confirm(`'${roomTitle}' 활동방을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없으며, 해당 활동방의 모든 학생 응답도 함께 삭제됩니다.`);
+    
+    if (!confirmed) return;
+
+    try {
+      // 먼저 관련된 학생 응답들 삭제
+      const { error: responsesError } = await supabase
+        .from('student_responses')
+        .delete()
+        .eq('room_id', roomId);
+
+      if (responsesError) {
+        console.error('Delete responses error:', responsesError);
+        setError('학생 응답 삭제에 실패했습니다.');
+        return;
+      }
+
+      // 활동 템플릿 삭제
+      const { error: templateError } = await supabase
+        .from('routine_templates')
+        .delete()
+        .eq('room_id', roomId);
+
+      if (templateError) {
+        console.error('Delete template error:', templateError);
+        // 템플릿 삭제 실패는 치명적이지 않으므로 계속 진행
+      }
+
+      // 활동방 삭제
+      const { error: roomError } = await supabase
+        .from('activity_rooms')
+        .delete()
+        .eq('id', roomId);
+
+      if (roomError) {
+        console.error('Delete room error:', roomError);
+        setError('활동방 삭제에 실패했습니다.');
+        return;
+      }
+
+      // 로컬 상태에서 삭제된 방 제거
+      setRooms(rooms.filter(room => room.id !== roomId));
+      
+      alert('활동방이 삭제되었습니다.');
+    } catch (err) {
+      console.error('Delete room error:', err);
+      setError('활동방 삭제 중 오류가 발생했습니다.');
     }
   };
 
@@ -353,7 +493,7 @@ const TeacherDashboard: React.FC = () => {
                 <select
                   id="thinkingRoutineType"
                   value={newRoom.thinking_routine_type}
-                  onChange={(e) => setNewRoom({...newRoom, thinking_routine_type: e.target.value})}
+                  onChange={(e) => handleThinkingRoutineChange(e.target.value)}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 >
                   {thinkingRoutineOptions.map((option) => (
@@ -363,6 +503,159 @@ const TeacherDashboard: React.FC = () => {
                   ))}
                 </select>
               </div>
+              
+              {/* 활동 자료 설정 */}
+              <div className="border-t pt-4">
+                <h4 className="text-md font-medium text-gray-900 mb-4">활동 자료 설정 (선택사항)</h4>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">
+                      이미지 URL
+                    </label>
+                    <input
+                      id="imageUrl"
+                      type="url"
+                      value={newRoom.template_content.image_url}
+                      onChange={(e) => setNewRoom({
+                        ...newRoom,
+                        template_content: { ...newRoom.template_content, image_url: e.target.value }
+                      })}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="textContent" className="block text-sm font-medium text-gray-700">
+                      텍스트 내용
+                    </label>
+                    <textarea
+                      id="textContent"
+                      rows={3}
+                      value={newRoom.template_content.text_content}
+                      onChange={(e) => setNewRoom({
+                        ...newRoom,
+                        template_content: { ...newRoom.template_content, text_content: e.target.value }
+                      })}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="학생들에게 제시할 텍스트를 입력하세요"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="youtubeUrl" className="block text-sm font-medium text-gray-700">
+                      유튜브 URL
+                    </label>
+                    <input
+                      id="youtubeUrl"
+                      type="url"
+                      value={newRoom.template_content.youtube_url}
+                      onChange={(e) => setNewRoom({
+                        ...newRoom,
+                        template_content: { ...newRoom.template_content, youtube_url: e.target.value }
+                      })}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                    />
+                    {newRoom.template_content.youtube_url && (
+                      <div className="mt-2">
+                        <div className="w-full max-w-md">
+                          <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                            {(() => {
+                              const embedUrl = getYouTubeEmbedUrl(newRoom.template_content.youtube_url);
+                              return embedUrl ? (
+                                <iframe
+                                  src={embedUrl}
+                                  title="YouTube preview"
+                                  className="absolute inset-0 w-full h-full rounded-lg"
+                                  allowFullScreen
+                                />
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                                  <p className="text-gray-600 text-sm">유튜브 URL이 올바르지 않습니다.</p>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* 질문 커스터마이징 */}
+              <div className="border-t pt-4">
+                <h4 className="text-md font-medium text-gray-900 mb-4">질문 커스터마이징</h4>
+                
+                <div className="space-y-4">
+                  {newRoom.thinking_routine_type === 'see-think-wonder' && (
+                    <>
+                      <div>
+                        <label htmlFor="seeQuestion" className="block text-sm font-medium text-gray-700">
+                          See 질문
+                        </label>
+                        <input
+                          id="seeQuestion"
+                          type="text"
+                          value={newRoom.template_content.see_question}
+                          onChange={(e) => setNewRoom({
+                            ...newRoom,
+                            template_content: { ...newRoom.template_content, see_question: e.target.value }
+                          })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="thinkQuestion" className="block text-sm font-medium text-gray-700">
+                          Think 질문
+                        </label>
+                        <input
+                          id="thinkQuestion"
+                          type="text"
+                          value={newRoom.template_content.think_question}
+                          onChange={(e) => setNewRoom({
+                            ...newRoom,
+                            template_content: { ...newRoom.template_content, think_question: e.target.value }
+                          })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="wonderQuestion" className="block text-sm font-medium text-gray-700">
+                          Wonder 질문
+                        </label>
+                        <input
+                          id="wonderQuestion"
+                          type="text"
+                          value={newRoom.template_content.wonder_question}
+                          onChange={(e) => setNewRoom({
+                            ...newRoom,
+                            template_content: { ...newRoom.template_content, wonder_question: e.target.value }
+                          })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        />
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* 다른 사고루틴 타입들도 유사하게 추가 가능 */}
+                  {newRoom.thinking_routine_type !== 'see-think-wonder' && (
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        선택하신 사고루틴 타입: <strong>{thinkingRoutineOptions.find(opt => opt.value === newRoom.thinking_routine_type)?.label}</strong>
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        이 사고루틴의 상세 설정은 활동방 생성 후 관리 페이지에서 가능합니다.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
@@ -386,7 +679,7 @@ const TeacherDashboard: React.FC = () => {
         {/* 활동방 목록 */}
         <div className="bg-white shadow-sm rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">내 활동방</h2>
+            <h2 className="text-lg font-medium text-gray-900">활동방 리스트</h2>
           </div>
           
           {rooms.length === 0 ? (
@@ -439,6 +732,12 @@ const TeacherDashboard: React.FC = () => {
                         className="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded text-sm"
                       >
                         관리
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRoom(room.id, room.title)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                      >
+                        삭제
                       </button>
                     </div>
                   </div>

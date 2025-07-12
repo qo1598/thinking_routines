@@ -299,12 +299,32 @@ const SeeThinkWonderForm: React.FC = () => {
               
               {/* 자료 표시 영역 - 각 단계마다 표시 */}
               <div className="mb-6 space-y-4">
+                {/* 디버깅 정보 (개발 중에만 표시) */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <p className="text-sm text-yellow-800">
+                      <strong>디버깅 정보:</strong><br/>
+                      이미지 URL: {template.content.image_url || '없음'}<br/>
+                      텍스트 내용: {template.content.text_content ? '있음' : '없음'}<br/>
+                      유튜브 URL: {template.content.youtube_url || '없음'}<br/>
+                      유튜브 임베드 URL: {template.content.youtube_url ? getYouTubeEmbedUrl(template.content.youtube_url) || '파싱 실패' : '없음'}
+                    </p>
+                  </div>
+                )}
+                
                 {template.content.image_url && (
                   <div className="flex justify-center">
                     <img 
                       src={template.content.image_url} 
                       alt="활동 자료" 
                       className="max-w-full max-h-96 rounded-lg shadow-sm"
+                      onError={(e) => {
+                        console.error('이미지 로드 실패:', template.content.image_url);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      onLoad={() => {
+                        console.log('이미지 로드 성공:', template.content.image_url);
+                      }}
                     />
                   </div>
                 )}
@@ -321,13 +341,45 @@ const SeeThinkWonderForm: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="w-full max-w-2xl">
                       <div className="relative" style={{ paddingBottom: '56.25%' }}>
-                        <iframe
-                          src={getYouTubeEmbedUrl(template.content.youtube_url) || ''}
-                          title="YouTube video"
-                          className="absolute inset-0 w-full h-full rounded-lg"
-                          allowFullScreen
-                        />
+                        {(() => {
+                          const embedUrl = getYouTubeEmbedUrl(template.content.youtube_url);
+                          console.log('유튜브 원본 URL:', template.content.youtube_url);
+                          console.log('유튜브 임베드 URL:', embedUrl);
+                          return embedUrl ? (
+                            <iframe
+                              src={embedUrl}
+                              title="YouTube video"
+                              className="absolute inset-0 w-full h-full rounded-lg"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                              <div className="text-center">
+                                <p className="text-gray-600 mb-2">유튜브 영상을 불러올 수 없습니다.</p>
+                                <p className="text-sm text-gray-500">원본 링크: {template.content.youtube_url}</p>
+                                <a 
+                                  href={template.content.youtube_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 underline text-sm"
+                                >
+                                  새 탭에서 보기
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 자료가 하나도 없는 경우 안내 메시지 */}
+                {!template.content.image_url && !template.content.text_content && !template.content.youtube_url && (
+                  <div className="text-center py-8">
+                    <div className="bg-gray-100 rounded-lg p-6">
+                      <p className="text-gray-600">선생님이 아직 활동 자료를 설정하지 않았습니다.</p>
+                      <p className="text-sm text-gray-500 mt-2">자료 없이도 활동을 진행할 수 있습니다.</p>
                     </div>
                   </div>
                 )}
