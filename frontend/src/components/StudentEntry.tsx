@@ -202,7 +202,7 @@ const StudentEntry: React.FC = () => {
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary-500 focus:border-secondary-500"
                     >
                       <option value="">선택</option>
-                      {[1, 2, 3, 4, 5, 6].map(num => (
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
                         <option key={num} value={num}>{num}반</option>
                       ))}
                     </select>
