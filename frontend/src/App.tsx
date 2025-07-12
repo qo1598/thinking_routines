@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 
 // 컴포넌트 import (추후 생성)
@@ -32,18 +32,18 @@ function App() {
                   See-Think-Wonder 사고루틴으로 깊이 있는 학습을 시작해보세요
                 </p>
                 <div className="space-x-4">
-                  <a 
-                    href="/teacher" 
+                  <Link 
+                    to="/teacher" 
                     className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
                   >
                     교사용 로그인
-                  </a>
-                  <a 
-                    href="/student" 
+                  </Link>
+                  <Link 
+                    to="/student" 
                     className="bg-secondary-600 hover:bg-secondary-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
                   >
                     학생 참여
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
