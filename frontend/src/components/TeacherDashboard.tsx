@@ -61,15 +61,24 @@ const TeacherDashboard: React.FC = () => {
         return;
       }
 
-      // 사용자 정보 조회
-      const { data: teacherData, error: teacherError } = await supabase
+      // 사용자 정보 upsert (없으면 생성, 있으면 업데이트)
+      const { data: teacherData, error: upsertError } = await supabase
         .from('teachers')
-        .select('*')
-        .eq('id', session.user.id)
+        .upsert([
+          {
+            id: session.user.id,
+            email: session.user.email,
+            name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
+            created_at: new Date().toISOString()
+          }
+        ], { 
+          onConflict: 'id'
+        })
+        .select()
         .single();
 
-      if (teacherError) {
-        console.error('Teacher fetch error:', teacherError);
+      if (upsertError) {
+        console.error('Teacher upsert error:', upsertError);
         navigate('/teacher');
         return;
       }

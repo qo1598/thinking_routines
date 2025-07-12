@@ -40,25 +40,22 @@ const TeacherLogin: React.FC = () => {
         try {
           const { data } = await supabase.auth.getSession();
           if (data.session) {
-            // 사용자 정보를 teachers 테이블에 저장/업데이트
-            const { data: existingTeacher } = await supabase
+            // 먼저 teachers 테이블에 사용자 추가 (upsert 사용)
+            const { error: upsertError } = await supabase
               .from('teachers')
-              .select('*')
-              .eq('id', data.session.user.id)
-              .single();
+              .upsert([
+                {
+                  id: data.session.user.id,
+                  email: data.session.user.email,
+                  name: data.session.user.user_metadata?.name || data.session.user.email?.split('@')[0],
+                  created_at: new Date().toISOString()
+                }
+              ], { 
+                onConflict: 'id'
+              });
 
-            if (!existingTeacher) {
-              // 새 사용자인 경우 teachers 테이블에 추가
-              await supabase
-                .from('teachers')
-                .insert([
-                  {
-                    id: data.session.user.id,
-                    email: data.session.user.email,
-                    name: data.session.user.user_metadata?.name || data.session.user.email?.split('@')[0],
-                    created_at: new Date().toISOString()
-                  }
-                ]);
+            if (upsertError) {
+              console.error('Teacher upsert error:', upsertError);
             }
             
             // URL 해시 제거하고 대시보드로 이동
@@ -85,25 +82,22 @@ const TeacherLogin: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session && supabase) {
-          // 사용자 정보를 teachers 테이블에 저장/업데이트
-          const { data: existingTeacher } = await supabase
+          // 사용자 정보를 teachers 테이블에 저장/업데이트 (upsert 사용)
+          const { error: upsertError } = await supabase
             .from('teachers')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+            .upsert([
+              {
+                id: session.user.id,
+                email: session.user.email,
+                name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
+                created_at: new Date().toISOString()
+              }
+            ], { 
+              onConflict: 'id'
+            });
 
-          if (!existingTeacher) {
-            // 새 사용자인 경우 teachers 테이블에 추가
-            await supabase
-              .from('teachers')
-              .insert([
-                {
-                  id: session.user.id,
-                  email: session.user.email,
-                  name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
-                  created_at: new Date().toISOString()
-                }
-              ]);
+          if (upsertError) {
+            console.error('Teacher upsert error:', upsertError);
           }
           
           navigate('/teacher/dashboard');
