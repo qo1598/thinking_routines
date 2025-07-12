@@ -38,7 +38,7 @@ const TeacherLogin: React.FC = () => {
       const hash = window.location.hash;
       if (hash && hash.includes('access_token=') && supabase) {
         try {
-          const { data, error } = await supabase.auth.getSession();
+          const { data } = await supabase.auth.getSession();
           if (data.session) {
             // 사용자 정보를 teachers 테이블에 저장/업데이트
             const { data: existingTeacher } = await supabase
