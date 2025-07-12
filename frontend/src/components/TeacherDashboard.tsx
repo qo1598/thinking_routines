@@ -13,8 +13,8 @@ interface ActivityRoom {
   title: string;
   description: string;
   room_code: string;
-  routine_type: string;
-  is_active: boolean;
+  thinking_routine_type: string;
+  status: string;
   created_at: string;
   response_count?: number;
 }
@@ -93,7 +93,7 @@ const TeacherDashboard: React.FC = () => {
           student_responses(count)
         `)
         .eq('teacher_id', userId)
-        .eq('is_active', true)
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -144,7 +144,7 @@ const TeacherDashboard: React.FC = () => {
           .from('activity_rooms')
           .select('id')
           .eq('room_code', roomCode)
-          .eq('is_active', true)
+          .eq('status', 'active')
           .single();
 
         if (!existingRoom) {
@@ -168,8 +168,8 @@ const TeacherDashboard: React.FC = () => {
             title: newRoom.title,
             description: newRoom.description || '',
             room_code: roomCode,
-            routine_type: 'see-think-wonder',
-            is_active: true,
+            thinking_routine_type: 'see-think-wonder',
+            status: 'active',
             created_at: new Date().toISOString()
           }
         ])
@@ -207,7 +207,7 @@ const TeacherDashboard: React.FC = () => {
   };
 
   const getStatusBadge = (room: ActivityRoom) => {
-    if (!room.is_active) {
+    if (room.status !== 'active') {
       return (
         <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
           비활성

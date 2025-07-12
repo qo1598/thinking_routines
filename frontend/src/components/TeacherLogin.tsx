@@ -86,7 +86,11 @@ const TeacherLogin: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/teacher/dashboard`
+          redirectTo: `${window.location.origin}/teacher/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
       

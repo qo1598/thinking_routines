@@ -7,8 +7,8 @@ interface ActivityRoom {
   title: string;
   description: string;
   room_code: string;
-  routine_type: string;
-  is_active: boolean;
+  thinking_routine_type: string;
+  status: string;
   teachers?: Array<{
     name: string;
   }>;
@@ -50,12 +50,12 @@ const StudentEntry: React.FC = () => {
           title,
           description,
           room_code,
-          routine_type,
-          is_active,
+          thinking_routine_type,
+          status,
           teachers(name)
         `)
         .eq('room_code', roomCode)
-        .eq('is_active', true)
+        .eq('status', 'active')
         .single();
 
       if (error) {
