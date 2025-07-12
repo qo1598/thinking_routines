@@ -38,14 +38,20 @@ CREATE TABLE routine_templates (
 
 -- 학생 응답 테이블
 CREATE TABLE student_responses (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    room_id UUID NOT NULL REFERENCES activity_rooms(id) ON DELETE CASCADE,
-    student_name VARCHAR(100) NOT NULL,
-    student_id VARCHAR(50), -- 학번 등 (선택사항)
-    response_data JSONB NOT NULL, -- See-Think-Wonder 응답 데이터
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    room_id UUID REFERENCES activity_rooms(id) ON DELETE CASCADE,
+    student_name TEXT NOT NULL,
+    student_id TEXT,
+    response_data JSONB NOT NULL,
+    is_draft BOOLEAN DEFAULT FALSE,
     submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- 학생 응답 테이블 인덱스
+CREATE INDEX idx_student_responses_room_id ON student_responses(room_id);
+CREATE INDEX idx_student_responses_student ON student_responses(student_name, student_id);
+CREATE INDEX idx_student_responses_draft ON student_responses(is_draft);
 
 -- AI 분석 결과 테이블
 CREATE TABLE ai_analysis (
@@ -183,14 +189,19 @@ CREATE TRIGGER trigger_set_room_code
     FOR EACH ROW
     EXECUTE FUNCTION set_room_code();
 
--- 트리거: updated_at 자동 업데이트
+-- updated_at 자동 업데이트 트리거
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_student_responses_updated_at 
+    BEFORE UPDATE ON student_responses 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_teachers_updated_at
     BEFORE UPDATE ON teachers
@@ -204,11 +215,6 @@ CREATE TRIGGER update_activity_rooms_updated_at
 
 CREATE TRIGGER update_routine_templates_updated_at
     BEFORE UPDATE ON routine_templates
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_student_responses_updated_at
-    BEFORE UPDATE ON student_responses
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 

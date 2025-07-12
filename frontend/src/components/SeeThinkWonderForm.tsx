@@ -102,6 +102,88 @@ const SeeThinkWonderForm: React.FC = () => {
     }
   }, [roomId]);
 
+  // 임시저장된 응답 불러오기
+  const loadDraftResponse = useCallback(async (studentInfo: StudentInfo) => {
+    if (!supabase || !roomId) return;
+
+    try {
+      const { data: draftData, error: draftError } = await supabase
+        .from('student_responses')
+        .select('*')
+        .eq('room_id', roomId)
+        .eq('student_name', studentInfo.name)
+        .eq('student_id', studentInfo.class && studentInfo.number ? `${studentInfo.class}반 ${studentInfo.number}번` : '')
+        .eq('is_draft', true)
+        .single();
+
+      if (draftError && draftError.code !== 'PGRST116') {
+        console.error('Draft fetch error:', draftError);
+        return;
+      }
+
+      if (draftData && draftData.response_data) {
+        setResponses(draftData.response_data);
+        // 마지막으로 작성한 단계 확인
+        if (draftData.response_data.wonder && draftData.response_data.wonder.trim()) {
+          setCurrentStep('wonder');
+        } else if (draftData.response_data.think && draftData.response_data.think.trim()) {
+          setCurrentStep('think');
+        } else if (draftData.response_data.see && draftData.response_data.see.trim()) {
+          setCurrentStep('see');
+        }
+        
+        // 임시저장된 데이터가 있다는 알림
+        alert('이전에 작성하던 내용을 불러왔습니다. 이어서 작성하실 수 있습니다.');
+      }
+    } catch (err) {
+      console.error('Load draft error:', err);
+    }
+  }, [roomId]);
+
+  // 임시저장 함수
+  const saveDraft = useCallback(async (currentResponses: SeeThinkWonderResponse) => {
+    if (!supabase || !studentInfo || !roomId) return;
+
+    try {
+      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.class}반 ${studentInfo.number}번` : '';
+      
+      // 기존 임시저장 데이터 확인
+      const { data: existingDraft } = await supabase
+        .from('student_responses')
+        .select('id')
+        .eq('room_id', roomId)
+        .eq('student_name', studentInfo.name)
+        .eq('student_id', studentId)
+        .eq('is_draft', true)
+        .single();
+
+      if (existingDraft) {
+        // 기존 임시저장 데이터 업데이트
+        await supabase
+          .from('student_responses')
+          .update({
+            response_data: currentResponses,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingDraft.id);
+      } else {
+        // 새 임시저장 데이터 생성
+        await supabase
+          .from('student_responses')
+          .insert([{
+            room_id: roomId,
+            student_name: studentInfo.name,
+            student_id: studentId,
+            response_data: currentResponses,
+            is_draft: true,
+            submitted_at: new Date().toISOString()
+          }]);
+      }
+    } catch (err) {
+      console.error('Save draft error:', err);
+    }
+  }, [studentInfo, roomId]);
+
   useEffect(() => {
     const storedStudentInfo = localStorage.getItem('studentInfo');
     if (!storedStudentInfo) {
@@ -117,8 +199,22 @@ const SeeThinkWonderForm: React.FC = () => {
       return;
     }
 
-    fetchData();
-  }, [roomId, navigate, fetchData]);
+    fetchData().then(() => {
+      // 데이터 로드 완료 후 임시저장 데이터 불러오기
+      loadDraftResponse(parsedStudentInfo);
+    });
+  }, [roomId, navigate, fetchData, loadDraftResponse]);
+
+  // 응답 변경 시 자동 임시저장 (debounce 적용)
+  useEffect(() => {
+    if (!studentInfo || (!responses.see && !responses.think && !responses.wonder)) return;
+
+    const timeoutId = setTimeout(() => {
+      saveDraft(responses);
+    }, 2000); // 2초 후 자동 저장
+
+    return () => clearTimeout(timeoutId);
+  }, [responses, saveDraft, studentInfo]);
 
   const handleInputChange = (value: string) => {
     setResponses(prev => ({
@@ -153,13 +249,36 @@ const SeeThinkWonderForm: React.FC = () => {
 
     setSubmitting(true);
     try {
+      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.class}반 ${studentInfo.number}번` : '';
+      
+      // 기존 임시저장 데이터 확인 및 삭제
+      const { data: existingDraft } = await supabase
+        .from('student_responses')
+        .select('id')
+        .eq('room_id', roomId)
+        .eq('student_name', studentInfo.name)
+        .eq('student_id', studentId)
+        .eq('is_draft', true)
+        .single();
+
+      if (existingDraft) {
+        // 임시저장 데이터 삭제
+        await supabase
+          .from('student_responses')
+          .delete()
+          .eq('id', existingDraft.id);
+      }
+
+      // 정식 제출
       const { error } = await supabase
         .from('student_responses')
         .insert([{
           room_id: roomId,
           student_name: studentInfo.name,
-          student_id: studentInfo.class && studentInfo.number ? `${studentInfo.class}반 ${studentInfo.number}번` : '',
-          response_data: responses
+          student_id: studentId,
+          response_data: responses,
+          is_draft: false,
+          submitted_at: new Date().toISOString()
         }]);
 
       if (error) {
@@ -264,7 +383,14 @@ const SeeThinkWonderForm: React.FC = () => {
               <h1 className="text-xl font-bold text-gray-900">{room.title}</h1>
               <p className="text-sm text-gray-600">{studentInfo?.name}님의 활동</p>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/student')}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1"
+              >
+                <span>🏠</span>
+                <span>홈</span>
+              </button>
               <div className="flex space-x-1">
                 {['see', 'think', 'wonder'].map((step, index) => (
                   <div

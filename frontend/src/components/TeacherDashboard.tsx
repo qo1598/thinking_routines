@@ -145,7 +145,8 @@ const TeacherDashboard: React.FC = () => {
           const { count, error: countError } = await supabase
             .from('student_responses')
             .select('*', { count: 'exact', head: true })
-            .eq('room_id', room.id);
+            .eq('room_id', room.id)
+            .eq('is_draft', false); // 임시저장 제외
 
           if (countError) {
             console.error('Count error for room', room.id, ':', countError);

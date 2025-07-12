@@ -92,6 +92,7 @@ const TeacherRoomManagement: React.FC = () => {
         .from('student_responses')
         .select('*')
         .eq('room_id', roomId)
+        .eq('is_draft', false) // 임시저장 제외
         .order('submitted_at', { ascending: false });
 
       if (responsesError) {
