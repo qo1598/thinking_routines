@@ -48,7 +48,7 @@ const TeacherDashboard: React.FC = () => {
   const [newRoom, setNewRoom] = useState<NewRoomForm>({
     title: '',
     description: '',
-    thinking_routine_type: 'see-think-wonder',
+    thinking_routine_type: '',
     template_content: {
       image_url: '',
       text_content: '',
@@ -257,7 +257,7 @@ const TeacherDashboard: React.FC = () => {
       };
 
       setRooms([newRoomWithCount, ...rooms]);
-      setNewRoom({ title: '', description: '', thinking_routine_type: 'see-think-wonder', template_content: {
+      setNewRoom({ title: '', description: '', thinking_routine_type: '', template_content: {
         image_url: '',
         text_content: '',
         youtube_url: '',
@@ -509,7 +509,9 @@ const TeacherDashboard: React.FC = () => {
                   value={newRoom.thinking_routine_type}
                   onChange={(e) => handleThinkingRoutineChange(e.target.value)}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  required
                 >
+                  <option value="">사고루틴 타입을 선택하세요</option>
                   {thinkingRoutineOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -518,169 +520,173 @@ const TeacherDashboard: React.FC = () => {
                 </select>
               </div>
               
-              {/* 활동 자료 설정 */}
-              <div className="border-t pt-4">
-                <h4 className="text-md font-medium text-gray-900 mb-4">활동 자료 설정 (선택사항)</h4>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">
-                      이미지 URL
-                    </label>
-                    <input
-                      id="imageUrl"
-                      type="url"
-                      value={newRoom.template_content.image_url}
-                      onChange={(e) => setNewRoom({
-                        ...newRoom,
-                        template_content: { ...newRoom.template_content, image_url: e.target.value }
-                      })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="https://example.com/image.jpg"
-                    />
-                    {newRoom.template_content.image_url && (
-                      <div className="mt-2 flex justify-center">
-                        <img 
-                          src={newRoom.template_content.image_url} 
-                          alt="이미지 미리보기" 
-                          className="max-w-full max-h-64 rounded-lg shadow-sm"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
+              {/* 활동 자료 설정 - 사고루틴 타입이 선택된 경우에만 표시 */}
+              {newRoom.thinking_routine_type && (
+                <div className="border-t pt-4">
+                  <h4 className="text-md font-medium text-gray-900 mb-4">활동 자료 설정 (선택사항)</h4>
                   
-                  <div>
-                    <label htmlFor="textContent" className="block text-sm font-medium text-gray-700">
-                      텍스트 내용
-                    </label>
-                    <textarea
-                      id="textContent"
-                      rows={3}
-                      value={newRoom.template_content.text_content}
-                      onChange={(e) => setNewRoom({
-                        ...newRoom,
-                        template_content: { ...newRoom.template_content, text_content: e.target.value }
-                      })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="학생들에게 제시할 텍스트를 입력하세요"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="youtubeUrl" className="block text-sm font-medium text-gray-700">
-                      유튜브 URL
-                    </label>
-                    <input
-                      id="youtubeUrl"
-                      type="url"
-                      value={newRoom.template_content.youtube_url}
-                      onChange={(e) => setNewRoom({
-                        ...newRoom,
-                        template_content: { ...newRoom.template_content, youtube_url: e.target.value }
-                      })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="https://www.youtube.com/watch?v=..."
-                    />
-                    {newRoom.template_content.youtube_url && (
-                      <div className="mt-2">
-                        <div className="w-full max-w-md">
-                          <div className="relative" style={{ paddingBottom: '56.25%' }}>
-                            {(() => {
-                              const embedUrl = getYouTubeEmbedUrl(newRoom.template_content.youtube_url);
-                              return embedUrl ? (
-                                <iframe
-                                  src={embedUrl}
-                                  title="YouTube preview"
-                                  className="absolute inset-0 w-full h-full rounded-lg"
-                                  allowFullScreen
-                                />
-                              ) : (
-                                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                                  <p className="text-gray-600 text-sm">유튜브 URL이 올바르지 않습니다.</p>
-                                </div>
-                              );
-                            })()}
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">
+                        이미지 URL
+                      </label>
+                      <input
+                        id="imageUrl"
+                        type="url"
+                        value={newRoom.template_content.image_url}
+                        onChange={(e) => setNewRoom({
+                          ...newRoom,
+                          template_content: { ...newRoom.template_content, image_url: e.target.value }
+                        })}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="https://example.com/image.jpg"
+                      />
+                      {newRoom.template_content.image_url && (
+                        <div className="mt-2 flex justify-center">
+                          <img 
+                            src={newRoom.template_content.image_url} 
+                            alt="이미지 미리보기" 
+                            className="max-w-full max-h-64 rounded-lg shadow-sm"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="textContent" className="block text-sm font-medium text-gray-700">
+                        텍스트 내용
+                      </label>
+                      <textarea
+                        id="textContent"
+                        rows={3}
+                        value={newRoom.template_content.text_content}
+                        onChange={(e) => setNewRoom({
+                          ...newRoom,
+                          template_content: { ...newRoom.template_content, text_content: e.target.value }
+                        })}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="학생들에게 제시할 텍스트를 입력하세요"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="youtubeUrl" className="block text-sm font-medium text-gray-700">
+                        유튜브 URL
+                      </label>
+                      <input
+                        id="youtubeUrl"
+                        type="url"
+                        value={newRoom.template_content.youtube_url}
+                        onChange={(e) => setNewRoom({
+                          ...newRoom,
+                          template_content: { ...newRoom.template_content, youtube_url: e.target.value }
+                        })}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                      />
+                      {newRoom.template_content.youtube_url && (
+                        <div className="mt-2">
+                          <div className="w-full max-w-md">
+                            <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                              {(() => {
+                                const embedUrl = getYouTubeEmbedUrl(newRoom.template_content.youtube_url);
+                                return embedUrl ? (
+                                  <iframe
+                                    src={embedUrl}
+                                    title="YouTube preview"
+                                    className="absolute inset-0 w-full h-full rounded-lg"
+                                    allowFullScreen
+                                  />
+                                ) : (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+                                    <p className="text-gray-600 text-sm">유튜브 URL이 올바르지 않습니다.</p>
+                                  </div>
+                                );
+                              })()}
+                            </div>
                           </div>
                         </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* 질문 커스터마이징 - 사고루틴 타입이 선택된 경우에만 표시 */}
+              {newRoom.thinking_routine_type && (
+                <div className="border-t pt-4">
+                  <h4 className="text-md font-medium text-gray-900 mb-4">질문 커스터마이징</h4>
+                  
+                  <div className="space-y-4">
+                    {newRoom.thinking_routine_type === 'see-think-wonder' && (
+                      <>
+                        <div>
+                          <label htmlFor="seeQuestion" className="block text-sm font-medium text-gray-700">
+                            See 질문
+                          </label>
+                          <input
+                            id="seeQuestion"
+                            type="text"
+                            value={newRoom.template_content.see_question}
+                            onChange={(e) => setNewRoom({
+                              ...newRoom,
+                              template_content: { ...newRoom.template_content, see_question: e.target.value }
+                            })}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="thinkQuestion" className="block text-sm font-medium text-gray-700">
+                            Think 질문
+                          </label>
+                          <input
+                            id="thinkQuestion"
+                            type="text"
+                            value={newRoom.template_content.think_question}
+                            onChange={(e) => setNewRoom({
+                              ...newRoom,
+                              template_content: { ...newRoom.template_content, think_question: e.target.value }
+                            })}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="wonderQuestion" className="block text-sm font-medium text-gray-700">
+                            Wonder 질문
+                          </label>
+                          <input
+                            id="wonderQuestion"
+                            type="text"
+                            value={newRoom.template_content.wonder_question}
+                            onChange={(e) => setNewRoom({
+                              ...newRoom,
+                              template_content: { ...newRoom.template_content, wonder_question: e.target.value }
+                            })}
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                          />
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* 다른 사고루틴 타입들도 유사하게 추가 가능 */}
+                    {newRoom.thinking_routine_type !== 'see-think-wonder' && newRoom.thinking_routine_type !== '' && (
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-600">
+                          선택하신 사고루틴 타입: <strong>{thinkingRoutineOptions.find(opt => opt.value === newRoom.thinking_routine_type)?.label}</strong>
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          이 사고루틴의 상세 설정은 활동방 생성 후 관리 페이지에서 가능합니다.
+                        </p>
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
-              
-              {/* 질문 커스터마이징 */}
-              <div className="border-t pt-4">
-                <h4 className="text-md font-medium text-gray-900 mb-4">질문 커스터마이징</h4>
-                
-                <div className="space-y-4">
-                  {newRoom.thinking_routine_type === 'see-think-wonder' && (
-                    <>
-                      <div>
-                        <label htmlFor="seeQuestion" className="block text-sm font-medium text-gray-700">
-                          See 질문
-                        </label>
-                        <input
-                          id="seeQuestion"
-                          type="text"
-                          value={newRoom.template_content.see_question}
-                          onChange={(e) => setNewRoom({
-                            ...newRoom,
-                            template_content: { ...newRoom.template_content, see_question: e.target.value }
-                          })}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="thinkQuestion" className="block text-sm font-medium text-gray-700">
-                          Think 질문
-                        </label>
-                        <input
-                          id="thinkQuestion"
-                          type="text"
-                          value={newRoom.template_content.think_question}
-                          onChange={(e) => setNewRoom({
-                            ...newRoom,
-                            template_content: { ...newRoom.template_content, think_question: e.target.value }
-                          })}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="wonderQuestion" className="block text-sm font-medium text-gray-700">
-                          Wonder 질문
-                        </label>
-                        <input
-                          id="wonderQuestion"
-                          type="text"
-                          value={newRoom.template_content.wonder_question}
-                          onChange={(e) => setNewRoom({
-                            ...newRoom,
-                            template_content: { ...newRoom.template_content, wonder_question: e.target.value }
-                          })}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                        />
-                      </div>
-                    </>
-                  )}
-                  
-                  {/* 다른 사고루틴 타입들도 유사하게 추가 가능 */}
-                  {newRoom.thinking_routine_type !== 'see-think-wonder' && (
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">
-                        선택하신 사고루틴 타입: <strong>{thinkingRoutineOptions.find(opt => opt.value === newRoom.thinking_routine_type)?.label}</strong>
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        이 사고루틴의 상세 설정은 활동방 생성 후 관리 페이지에서 가능합니다.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
 
               <div className="flex justify-end space-x-3">
                 <button
