@@ -20,7 +20,8 @@ const StudentEntry: React.FC = () => {
   const [error, setError] = useState('');
   const [room, setRoom] = useState<ActivityRoom | null>(null);
   const [studentName, setStudentName] = useState('');
-  const [studentId, setStudentId] = useState('');
+  const [studentClass, setStudentClass] = useState('');
+  const [studentNumber, setStudentNumber] = useState('');
 
   const navigate = useNavigate();
 
@@ -90,7 +91,8 @@ const StudentEntry: React.FC = () => {
     // 학생 정보를 로컬 스토리지에 저장
     const studentInfo = {
       name: studentName,
-      id: studentId,
+      class: studentClass,
+      number: studentNumber,
       roomId: room?.id,
       roomCode: roomCode
     };
@@ -156,19 +158,18 @@ const StudentEntry: React.FC = () => {
             <div className="space-y-6">
               {/* 활동방 정보 */}
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-medium text-gray-900 mb-2 text-center">
                   {room.title}
                 </h3>
                 {room.description && (
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-gray-600 mb-3 text-center">
                     {room.description}
                   </p>
                 )}
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                <div className="flex justify-center">
+                  <span className="bg-blue-100 text-blue-800 px-3 py-2 rounded-full text-sm font-medium">
                     See-Think-Wonder
                   </span>
-                  <span>코드: {roomCode}</span>
                 </div>
               </div>
 
@@ -189,40 +190,49 @@ const StudentEntry: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="studentId" className="block text-sm font-medium text-gray-700">
-                    학번 (선택사항)
-                  </label>
-                  <input
-                    id="studentId"
-                    type="text"
-                    value={studentId}
-                    onChange={(e) => setStudentId(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-secondary-500 focus:border-secondary-500"
-                    placeholder="학번을 입력하세요"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="studentClass" className="block text-sm font-medium text-gray-700">
+                      반
+                    </label>
+                    <select
+                      id="studentClass"
+                      value={studentClass}
+                      onChange={(e) => setStudentClass(e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary-500 focus:border-secondary-500"
+                    >
+                      <option value="">선택</option>
+                      {[1, 2, 3, 4, 5, 6].map(num => (
+                        <option key={num} value={num}>{num}반</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="studentNumber" className="block text-sm font-medium text-gray-700">
+                      번호
+                    </label>
+                    <select
+                      id="studentNumber"
+                      value={studentNumber}
+                      onChange={(e) => setStudentNumber(e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary-500 focus:border-secondary-500"
+                    >
+                      <option value="">선택</option>
+                      {Array.from({length: 30}, (_, i) => i + 1).map(num => (
+                        <option key={num} value={num}>{num}번</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex space-x-3">
+              <div>
                 <button
                   onClick={handleJoinRoom}
                   disabled={!studentName.trim()}
-                  className="flex-1 bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+                  className="w-full bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
                 >
                   활동 시작하기
-                </button>
-                <button
-                  onClick={() => {
-                    setRoom(null);
-                    setRoomCode('');
-                    setStudentName('');
-                    setStudentId('');
-                    setError('');
-                  }}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  다시 입력
                 </button>
               </div>
             </div>
