@@ -33,6 +33,47 @@ const TeacherLogin: React.FC = () => {
   useEffect(() => {
     if (!isSupabaseConfigured() || !supabase) return;
 
+    // URL 해시에서 access_token 확인 (Google OAuth 리다이렉트 처리)
+    const handleAuthCallback = async () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token=') && supabase) {
+        try {
+          const { data, error } = await supabase.auth.getSession();
+          if (data.session) {
+            // 사용자 정보를 teachers 테이블에 저장/업데이트
+            const { data: existingTeacher } = await supabase
+              .from('teachers')
+              .select('*')
+              .eq('id', data.session.user.id)
+              .single();
+
+            if (!existingTeacher) {
+              // 새 사용자인 경우 teachers 테이블에 추가
+              await supabase
+                .from('teachers')
+                .insert([
+                  {
+                    id: data.session.user.id,
+                    email: data.session.user.email,
+                    name: data.session.user.user_metadata?.name || data.session.user.email?.split('@')[0],
+                    created_at: new Date().toISOString()
+                  }
+                ]);
+            }
+            
+            // URL 해시 제거하고 대시보드로 이동
+            window.history.replaceState({}, document.title, window.location.pathname);
+            navigate('/teacher/dashboard');
+            return;
+          }
+        } catch (error) {
+          console.error('Auth callback error:', error);
+        }
+      }
+    };
+
+    handleAuthCallback();
+
     // 현재 세션 확인
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -83,10 +124,15 @@ const TeacherLogin: React.FC = () => {
     setError('');
     
     try {
+      // 프로덕션 URL 강제 사용
+      const redirectUrl = window.location.hostname === 'localhost' 
+        ? 'https://thinking-routines.vercel.app/teacher/dashboard'
+        : `${window.location.origin}/teacher/dashboard`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/teacher/dashboard`,
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
