@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface Teacher {
   id: string;
@@ -48,6 +48,11 @@ const TeacherDashboard: React.FC = () => {
   }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAuth = async () => {
+    if (!isSupabaseConfigured() || !supabase) {
+      navigate('/teacher');
+      return;
+    }
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -78,6 +83,8 @@ const TeacherDashboard: React.FC = () => {
   };
 
   const fetchRooms = async (userId: string) => {
+    if (!supabase) return;
+
     try {
       const { data: roomsData, error } = await supabase
         .from('activity_rooms')
@@ -110,6 +117,12 @@ const TeacherDashboard: React.FC = () => {
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isSupabaseConfigured() || !supabase) {
+      setError('시스템 설정이 완료되지 않았습니다.');
+      return;
+    }
+
     setCreateLoading(true);
     setError('');
 
@@ -187,7 +200,9 @@ const TeacherDashboard: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     navigate('/teacher');
   };
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface ActivityRoom {
   id: string;
@@ -26,6 +26,12 @@ const StudentEntry: React.FC = () => {
 
   const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isSupabaseConfigured() || !supabase) {
+      setError('시스템 설정이 완료되지 않았습니다.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
