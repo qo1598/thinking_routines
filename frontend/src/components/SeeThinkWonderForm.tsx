@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -55,25 +55,7 @@ const SeeThinkWonderForm: React.FC = () => {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    const storedStudentInfo = localStorage.getItem('studentInfo');
-    if (!storedStudentInfo) {
-      navigate('/student');
-      return;
-    }
-
-    const parsedStudentInfo = JSON.parse(storedStudentInfo);
-    setStudentInfo(parsedStudentInfo);
-
-    if (parsedStudentInfo.roomId !== roomId) {
-      navigate('/student');
-      return;
-    }
-
-    fetchData();
-  }, [roomId, navigate]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!isSupabaseConfigured() || !supabase || !roomId) {
       setError('시스템 설정이 완료되지 않았습니다.');
       setLoading(false);
@@ -118,7 +100,25 @@ const SeeThinkWonderForm: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [roomId]);
+
+  useEffect(() => {
+    const storedStudentInfo = localStorage.getItem('studentInfo');
+    if (!storedStudentInfo) {
+      navigate('/student');
+      return;
+    }
+
+    const parsedStudentInfo = JSON.parse(storedStudentInfo);
+    setStudentInfo(parsedStudentInfo);
+
+    if (parsedStudentInfo.roomId !== roomId) {
+      navigate('/student');
+      return;
+    }
+
+    fetchData();
+  }, [roomId, navigate, fetchData]);
 
   const handleInputChange = (value: string) => {
     setResponses(prev => ({
