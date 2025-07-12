@@ -22,6 +22,7 @@ interface ActivityRoom {
 interface NewRoomForm {
   title: string;
   description: string;
+  thinking_routine_type: string;
 }
 
 // 6자리 숫자 코드 생성 함수
@@ -37,11 +38,20 @@ const TeacherDashboard: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newRoom, setNewRoom] = useState<NewRoomForm>({
     title: '',
-    description: ''
+    description: '',
+    thinking_routine_type: 'see-think-wonder'
   });
   const [createLoading, setCreateLoading] = useState(false);
 
   const navigate = useNavigate();
+
+  // 사고루틴 옵션
+  const thinkingRoutineOptions = [
+    { value: 'see-think-wonder', label: 'See-Think-Wonder' },
+    { value: 'connect-extend-challenge', label: 'Connect-Extend-Challenge' },
+    { value: 'what-makes-you-say-that', label: 'What Makes You Say That?' },
+    { value: 'think-pair-share', label: 'Think-Pair-Share' }
+  ];
 
   useEffect(() => {
     checkAuth();
@@ -177,7 +187,7 @@ const TeacherDashboard: React.FC = () => {
             title: newRoom.title,
             description: newRoom.description || '',
             room_code: roomCode,
-            thinking_routine_type: 'see-think-wonder',
+            thinking_routine_type: newRoom.thinking_routine_type,
             status: 'active',
             created_at: new Date().toISOString()
           }
@@ -197,7 +207,7 @@ const TeacherDashboard: React.FC = () => {
       };
 
       setRooms([newRoomWithCount, ...rooms]);
-      setNewRoom({ title: '', description: '' });
+      setNewRoom({ title: '', description: '', thinking_routine_type: 'see-think-wonder' });
       setShowCreateForm(false);
       alert(`활동방이 생성되었습니다! 방 코드: ${roomCode}`);
     } catch (err) {
@@ -308,6 +318,23 @@ const TeacherDashboard: React.FC = () => {
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   placeholder="활동방에 대한 간단한 설명을 입력하세요"
                 />
+              </div>
+              <div>
+                <label htmlFor="thinkingRoutineType" className="block text-sm font-medium text-gray-700">
+                  사고루틴 타입
+                </label>
+                <select
+                  id="thinkingRoutineType"
+                  value={newRoom.thinking_routine_type}
+                  onChange={(e) => setNewRoom({...newRoom, thinking_routine_type: e.target.value})}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                >
+                  {thinkingRoutineOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="flex justify-end space-x-3">
                 <button
