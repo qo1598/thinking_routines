@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface LoginForm {
   email: string;
@@ -29,12 +29,9 @@ const TeacherLogin: React.FC = () => {
 
   const navigate = useNavigate();
 
-  // Supabase 설정 확인
-  const isSupabaseConfigured = process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_ANON_KEY;
-
   // 인증 상태 확인
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured() || !supabase) return;
 
     // 현재 세션 확인
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -46,7 +43,7 @@ const TeacherLogin: React.FC = () => {
     // 인증 상태 변경 감지
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
+        if (event === 'SIGNED_IN' && session && supabase) {
           // 사용자 정보를 teachers 테이블에 저장/업데이트
           const { data: existingTeacher } = await supabase
             .from('teachers')
@@ -74,10 +71,10 @@ const TeacherLogin: React.FC = () => {
     );
 
     return () => subscription.unsubscribe();
-  }, [navigate, isSupabaseConfigured]);
+  }, [navigate]);
 
   const handleGoogleLogin = async () => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured() || !supabase) {
       setError('Google 로그인이 설정되지 않았습니다.');
       return;
     }
@@ -89,11 +86,7 @@ const TeacherLogin: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/teacher/dashboard`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
+          redirectTo: `${window.location.origin}/teacher/dashboard`
         }
       });
       
@@ -112,6 +105,12 @@ const TeacherLogin: React.FC = () => {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isSupabaseConfigured() || !supabase) {
+      setError('시스템 설정이 완료되지 않았습니다.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -140,6 +139,12 @@ const TeacherLogin: React.FC = () => {
 
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isSupabaseConfigured() || !supabase) {
+      setError('시스템 설정이 완료되지 않았습니다.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -221,8 +226,15 @@ const TeacherLogin: React.FC = () => {
             </div>
           )}
 
+          {/* 시스템 설정 상태 표시 */}
+          {!isSupabaseConfigured() && (
+            <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+              시스템 설정이 완료되지 않았습니다. 관리자에게 문의하세요.
+            </div>
+          )}
+
           {/* Google 로그인 버튼 - Supabase 설정이 있을 때만 표시 */}
-          {isSupabaseConfigured && (
+          {isSupabaseConfigured() && (
             <>
               <div className="mb-6">
                 <button
@@ -253,7 +265,7 @@ const TeacherLogin: React.FC = () => {
           )}
 
           {isLogin ? (
-            <form onSubmit={handleLoginSubmit} className={`space-y-6 ${isSupabaseConfigured ? 'mt-6' : ''}`}>
+            <form onSubmit={handleLoginSubmit} className={`space-y-6 ${isSupabaseConfigured() ? 'mt-6' : ''}`}>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   이메일
@@ -288,14 +300,14 @@ const TeacherLogin: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !isSupabaseConfigured()}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
               >
                 {loading ? '로그인 중...' : '로그인'}
               </button>
             </form>
           ) : (
-            <form onSubmit={handleSignupSubmit} className={`space-y-6 ${isSupabaseConfigured ? 'mt-6' : ''}`}>
+            <form onSubmit={handleSignupSubmit} className={`space-y-6 ${isSupabaseConfigured() ? 'mt-6' : ''}`}>
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                   이름
@@ -362,7 +374,7 @@ const TeacherLogin: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !isSupabaseConfigured()}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
               >
                 {loading ? '회원가입 중...' : '회원가입'}
