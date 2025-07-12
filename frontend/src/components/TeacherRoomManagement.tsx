@@ -13,6 +13,20 @@ interface ActivityRoom {
   teacher_id: string;
 }
 
+interface RoutineTemplate {
+  id: string;
+  room_id: string;
+  routine_type: string;
+  content: {
+    image_url?: string;
+    text_content?: string;
+    youtube_url?: string;
+    see_question?: string;
+    think_question?: string;
+    wonder_question?: string;
+  };
+}
+
 interface StudentResponse {
   id: string;
   student_name: string;
@@ -26,8 +40,18 @@ const TeacherRoomManagement: React.FC = () => {
   const navigate = useNavigate();
   const [room, setRoom] = useState<ActivityRoom | null>(null);
   const [responses, setResponses] = useState<StudentResponse[]>([]);
+  const [template, setTemplate] = useState<RoutineTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showTemplateForm, setShowTemplateForm] = useState(false);
+  const [templateForm, setTemplateForm] = useState({
+    image_url: '',
+    text_content: '',
+    youtube_url: '',
+    see_question: '이 자료에서 무엇을 보았나요?',
+    think_question: '이것에 대해 어떻게 생각하나요?',
+    wonder_question: '이것에 대해 무엇이 궁금한가요?'
+  });
 
   const fetchRoomData = useCallback(async () => {
     if (!isSupabaseConfigured() || !supabase || !roomId) {
@@ -75,6 +99,20 @@ const TeacherRoomManagement: React.FC = () => {
         setResponses(responsesData || []);
       }
 
+      // 활동 템플릿 조회
+      const { data: templateData, error: templateError } = await supabase
+        .from('routine_templates')
+        .select('*')
+        .eq('room_id', roomId)
+        .single();
+
+      if (templateError && templateError.code !== 'PGRST116') {
+        console.error('Template fetch error:', templateError);
+      } else if (templateData) {
+        setTemplate(templateData);
+        setTemplateForm(templateData.content);
+      }
+
     } catch (error) {
       console.error('Fetch error:', error);
       setError('데이터를 불러오는 중 오류가 발생했습니다.');
@@ -101,6 +139,53 @@ const TeacherRoomManagement: React.FC = () => {
       'think-pair-share': 'Think-Pair-Share'
     };
     return labels[type] || type;
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!supabase || !room) return;
+
+    try {
+      const templateData = {
+        room_id: room.id,
+        routine_type: room.thinking_routine_type,
+        content: templateForm
+      };
+
+      if (template) {
+        // 업데이트
+        const { error } = await supabase
+          .from('routine_templates')
+          .update(templateData)
+          .eq('id', template.id);
+
+        if (error) {
+          console.error('Template update error:', error);
+          alert('템플릿 저장에 실패했습니다.');
+          return;
+        }
+      } else {
+        // 새로 생성
+        const { data, error } = await supabase
+          .from('routine_templates')
+          .insert([templateData])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Template create error:', error);
+          alert('템플릿 저장에 실패했습니다.');
+          return;
+        }
+
+        setTemplate(data);
+      }
+
+      alert('템플릿이 저장되었습니다!');
+      setShowTemplateForm(false);
+    } catch (error) {
+      console.error('Save template error:', error);
+      alert('템플릿 저장 중 오류가 발생했습니다.');
+    }
   };
 
   if (loading) {
@@ -179,6 +264,159 @@ const TeacherRoomManagement: React.FC = () => {
             <div className="mt-4">
               <p className="text-sm text-gray-600">설명</p>
               <p className="text-gray-900">{room.description}</p>
+            </div>
+          )}
+        </div>
+
+        {/* 활동 내용 설정 */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium text-gray-900">활동 내용 설정</h2>
+            <button
+              onClick={() => setShowTemplateForm(!showTemplateForm)}
+              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+            >
+              {template ? '내용 수정' : '내용 설정'}
+            </button>
+          </div>
+
+          {template && !showTemplateForm && (
+            <div className="space-y-4">
+              {template.content.image_url && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">이미지</p>
+                  <img src={template.content.image_url} alt="활동 이미지" className="max-w-md rounded-lg" />
+                </div>
+              )}
+              {template.content.text_content && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">텍스트 내용</p>
+                  <p className="text-gray-900 whitespace-pre-wrap">{template.content.text_content}</p>
+                </div>
+              )}
+              {template.content.youtube_url && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">유튜브 영상</p>
+                  <a href={template.content.youtube_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                    {template.content.youtube_url}
+                  </a>
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">See 질문</p>
+                  <p className="text-gray-900">{template.content.see_question}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Think 질문</p>
+                  <p className="text-gray-900">{template.content.think_question}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Wonder 질문</p>
+                  <p className="text-gray-900">{template.content.wonder_question}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showTemplateForm && (
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  이미지 URL (선택사항)
+                </label>
+                <input
+                  type="url"
+                  value={templateForm.image_url}
+                  onChange={(e) => setTemplateForm({...templateForm, image_url: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  텍스트 내용 (선택사항)
+                </label>
+                <textarea
+                  rows={4}
+                  value={templateForm.text_content}
+                  onChange={(e) => setTemplateForm({...templateForm, text_content: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="학생들에게 보여줄 텍스트를 입력하세요..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  유튜브 URL (선택사항)
+                </label>
+                <input
+                  type="url"
+                  value={templateForm.youtube_url}
+                  onChange={(e) => setTemplateForm({...templateForm, youtube_url: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    See 질문
+                  </label>
+                  <input
+                    type="text"
+                    value={templateForm.see_question}
+                    onChange={(e) => setTemplateForm({...templateForm, see_question: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Think 질문
+                  </label>
+                  <input
+                    type="text"
+                    value={templateForm.think_question}
+                    onChange={(e) => setTemplateForm({...templateForm, think_question: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Wonder 질문
+                  </label>
+                  <input
+                    type="text"
+                    value={templateForm.wonder_question}
+                    onChange={(e) => setTemplateForm({...templateForm, wonder_question: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowTemplateForm(false)}
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSaveTemplate}
+                  className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  저장
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!template && !showTemplateForm && (
+            <div className="text-center py-8">
+              <p className="text-gray-500">아직 활동 내용이 설정되지 않았습니다.</p>
+              <p className="text-sm text-gray-400 mt-2">위의 버튼을 클릭하여 활동 내용을 설정하세요.</p>
             </div>
           )}
         </div>

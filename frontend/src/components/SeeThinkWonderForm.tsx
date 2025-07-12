@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface StudentInfo {
   name: string;
-  id: string;
+  class: string;
+  number: string;
   roomId: string;
   roomCode: string;
 }
@@ -15,15 +14,22 @@ interface ActivityRoom {
   id: string;
   title: string;
   description: string;
-  routine_templates: Array<{
-    id: string;
-    routine_type: string;
-    content: {
-      image_url?: string;
-      question?: string;
-      instructions?: string;
-    };
-  }>;
+  thinking_routine_type: string;
+  status: string;
+}
+
+interface RoutineTemplate {
+  id: string;
+  room_id: string;
+  routine_type: string;
+  content: {
+    image_url?: string;
+    text_content?: string;
+    youtube_url?: string;
+    see_question?: string;
+    think_question?: string;
+    wonder_question?: string;
+  };
 }
 
 interface SeeThinkWonderResponse {
@@ -38,6 +44,7 @@ const SeeThinkWonderForm: React.FC = () => {
   
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   const [room, setRoom] = useState<ActivityRoom | null>(null);
+  const [template, setTemplate] = useState<RoutineTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentStep, setCurrentStep] = useState<'see' | 'think' | 'wonder'>('see');
@@ -46,11 +53,7 @@ const SeeThinkWonderForm: React.FC = () => {
     think: '',
     wonder: ''
   });
-  const [isRecording, setIsRecording] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     const storedStudentInfo = localStorage.getItem('studentInfo');
@@ -67,85 +70,53 @@ const SeeThinkWonderForm: React.FC = () => {
       return;
     }
 
-    fetchRoom();
+    fetchData();
   }, [roomId, navigate]);
 
-  const fetchRoom = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/rooms/code/${JSON.parse(localStorage.getItem('studentInfo')!).roomCode}`);
-      setRoom(response.data.room);
-    } catch (err) {
-      setError('활동방 정보를 불러오는데 실패했습니다.');
-    } finally {
+  const fetchData = async () => {
+    if (!isSupabaseConfigured() || !supabase || !roomId) {
+      setError('시스템 설정이 완료되지 않았습니다.');
       setLoading(false);
+      return;
     }
-  };
 
-  const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
+      // 활동방 정보 조회
+      const { data: roomData, error: roomError } = await supabase
+        .from('activity_rooms')
+        .select('*')
+        .eq('id', roomId)
+        .eq('status', 'active')
+        .single();
 
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        await convertSpeechToText(audioBlob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (err) {
-      alert('마이크 접근 권한이 필요합니다.');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const convertSpeechToText = async (audioBlob: Blob) => {
-    // 실제 구현에서는 Web Speech API 또는 외부 STT 서비스를 사용
-    // 여기서는 간단한 예시로 대체
-    try {
-      // Web Speech API 사용 예시 (브라우저 지원 필요)
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      
-      if (!SpeechRecognition) {
-        alert('음성 인식을 지원하지 않는 브라우저입니다.');
+      if (roomError) {
+        console.error('Room fetch error:', roomError);
+        setError('활동방을 찾을 수 없습니다.');
+        setLoading(false);
         return;
       }
 
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'ko-KR';
-      recognition.continuous = false;
-      recognition.interimResults = false;
+      setRoom(roomData);
 
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setResponses(prev => ({
-          ...prev,
-          [currentStep]: prev[currentStep] + ' ' + transcript
-        }));
-      };
+      // 템플릿 정보 조회
+      const { data: templateData, error: templateError } = await supabase
+        .from('routine_templates')
+        .select('*')
+        .eq('room_id', roomId)
+        .single();
 
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        alert('음성 인식에 실패했습니다.');
-      };
+      if (templateError && templateError.code !== 'PGRST116') {
+        console.error('Template fetch error:', templateError);
+        setError('활동 내용을 불러오는데 실패했습니다.');
+      } else if (templateData) {
+        setTemplate(templateData);
+      }
 
-      recognition.start();
     } catch (err) {
-      console.error('STT error:', err);
-      alert('음성 변환에 실패했습니다.');
+      console.error('Fetch error:', err);
+      setError('데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -178,18 +149,29 @@ const SeeThinkWonderForm: React.FC = () => {
       return;
     }
 
+    if (!supabase || !studentInfo) return;
+
     setSubmitting(true);
     try {
-      await axios.post(`${API_BASE_URL}/api/responses`, {
-        room_id: roomId,
-        student_name: studentInfo?.name,
-        student_id: studentInfo?.id,
-        response_data: responses
-      });
+      const { error } = await supabase
+        .from('student_responses')
+        .insert([{
+          room_id: roomId,
+          student_name: studentInfo.name,
+          student_id: studentInfo.class && studentInfo.number ? `${studentInfo.class}반 ${studentInfo.number}번` : '',
+          response_data: responses
+        }]);
+
+      if (error) {
+        console.error('Submit error:', error);
+        alert('제출에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
 
       alert('제출이 완료되었습니다!');
       navigate('/student');
     } catch (err) {
+      console.error('Submit error:', err);
       alert('제출에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setSubmitting(false);
@@ -199,43 +181,69 @@ const SeeThinkWonderForm: React.FC = () => {
   const getStepInfo = () => {
     const stepInfo = {
       see: {
-        title: 'SEE (관찰하기)',
-        description: '이미지를 자세히 보고 구체적으로 관찰한 내용을 적어보세요.',
-        placeholder: '예: 왼쪽에 큰 나무가 있고, 하늘이 파란색이며...',
+        title: 'See',
+        subtitle: '보기',
+        question: template?.content.see_question || '이 자료에서 무엇을 보았나요?',
+        placeholder: '보이는 것들을 구체적으로 적어보세요...',
         color: 'bg-blue-500'
       },
       think: {
-        title: 'THINK (생각하기)',
-        description: '관찰한 내용을 바탕으로 무엇을 생각했는지 적어보세요.',
-        placeholder: '예: 이 그림은 평화로운 시골 풍경을 표현한 것 같다...',
+        title: 'Think',
+        subtitle: '생각하기',
+        question: template?.content.think_question || '이것에 대해 어떻게 생각하나요?',
+        placeholder: '생각이나 느낌을 자유롭게 적어보세요...',
         color: 'bg-green-500'
       },
       wonder: {
-        title: 'WONDER (궁금해하기)',
-        description: '이 이미지에 대해 궁금한 점이나 더 알고 싶은 것을 적어보세요.',
-        placeholder: '예: 이 그림은 언제 그려진 것일까? 화가는 누구일까?',
+        title: 'Wonder',
+        subtitle: '궁금하기',
+        question: template?.content.wonder_question || '이것에 대해 무엇이 궁금한가요?',
+        placeholder: '궁금한 점이나 더 알고 싶은 것을 적어보세요...',
         color: 'bg-purple-500'
       }
     };
     return stepInfo[currentStep];
   };
 
+  const getYouTubeEmbedUrl = (url: string) => {
+    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+    return videoId ? `https://www.youtube.com/embed/${videoId[1]}` : null;
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-secondary-600"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !room) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <button 
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">오류가 발생했습니다</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
             onClick={() => navigate('/student')}
-            className="bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-2 rounded-md"
+            className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md"
+          >
+            돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!template) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">활동 준비 중</h2>
+          <p className="text-gray-600 mb-6">선생님이 아직 활동 내용을 설정하지 않았습니다.</p>
+          <button
+            onClick={() => navigate('/student')}
+            className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md"
           >
             돌아가기
           </button>
@@ -245,16 +253,15 @@ const SeeThinkWonderForm: React.FC = () => {
   }
 
   const stepInfo = getStepInfo();
-  const template = room?.routine_templates[0];
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 헤더 */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{room?.title}</h1>
+              <h1 className="text-xl font-bold text-gray-900">{room.title}</h1>
               <p className="text-sm text-gray-600">{studentInfo?.name}님의 활동</p>
             </div>
             <div className="flex items-center space-x-2">
@@ -263,125 +270,114 @@ const SeeThinkWonderForm: React.FC = () => {
                   <div
                     key={step}
                     className={`w-3 h-3 rounded-full ${
-                      step === currentStep ? 'bg-secondary-600' : 
+                      step === currentStep ? 'bg-primary-600' : 
                       ['see', 'think', 'wonder'].indexOf(currentStep) > index ? 'bg-green-500' : 'bg-gray-300'
                     }`}
                   />
                 ))}
               </div>
-              <span className="text-sm text-gray-500">
-                {['see', 'think', 'wonder'].indexOf(currentStep) + 1}/3
-              </span>
             </div>
           </div>
         </div>
       </header>
 
       {/* 메인 컨텐츠 */}
-      <main className="max-w-4xl mx-auto px-4 py-6">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          {/* 단계 헤더 */}
-          <div className={`${stepInfo.color} text-white p-6`}>
-            <h2 className="text-2xl font-bold mb-2">{stepInfo.title}</h2>
-            <p className="text-lg opacity-90">{stepInfo.description}</p>
+          {/* 자료 표시 영역 */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="space-y-4">
+              {template.content.image_url && (
+                <div className="flex justify-center">
+                  <img 
+                    src={template.content.image_url} 
+                    alt="활동 자료" 
+                    className="max-w-full max-h-96 rounded-lg shadow-sm"
+                  />
+                </div>
+              )}
+              
+              {template.content.text_content && (
+                <div className="prose max-w-none">
+                  <div className="text-gray-900 whitespace-pre-wrap text-center">
+                    {template.content.text_content}
+                  </div>
+                </div>
+              )}
+              
+              {template.content.youtube_url && (
+                <div className="flex justify-center">
+                  <div className="w-full max-w-2xl">
+                    <div className="relative pb-9/16">
+                      <iframe
+                        src={getYouTubeEmbedUrl(template.content.youtube_url) || ''}
+                        title="YouTube video"
+                        className="absolute inset-0 w-full h-full rounded-lg"
+                        style={{ aspectRatio: '16/9' }}
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
+          {/* 활동 영역 */}
           <div className="p-6">
-            {/* 이미지 표시 */}
-            {template?.content.image_url && (
-              <div className="mb-6">
-                <img 
-                  src={template.content.image_url} 
-                  alt="활동 이미지"
-                  className="w-full max-w-2xl mx-auto rounded-lg shadow-sm"
-                />
-              </div>
-            )}
-
-            {/* 질문 표시 */}
-            {template?.content.question && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <p className="text-lg font-medium text-gray-900">
-                  {template.content.question}
-                </p>
-              </div>
-            )}
-
-            {/* 입력 영역 */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">
-                  여러분의 답변을 입력하세요
-                </label>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={isRecording ? stopRecording : startRecording}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${
-                      isRecording 
-                        ? 'bg-red-500 hover:bg-red-600 text-white' 
-                        : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                    }`}
-                  >
-                    {isRecording ? '🎤 녹음 중지' : '🎤 음성 입력'}
-                  </button>
+            <div className="mb-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className={`w-12 h-12 rounded-full ${stepInfo.color} flex items-center justify-center`}>
+                  <span className="text-white font-bold text-lg">{stepInfo.title[0]}</span>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{stepInfo.title}</h2>
+                  <p className="text-gray-600">{stepInfo.subtitle}</p>
                 </div>
               </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-lg text-gray-800 font-medium">{stepInfo.question}</p>
+              </div>
+            </div>
 
+            <div className="space-y-4">
               <textarea
                 value={responses[currentStep]}
                 onChange={(e) => handleInputChange(e.target.value)}
                 placeholder={stepInfo.placeholder}
-                className="w-full h-40 px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-secondary-500 text-lg resize-none"
+                rows={6}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
               />
-            </div>
-
-            {/* 네비게이션 버튼 */}
-            <div className="flex justify-between mt-8">
-              <button
-                onClick={handlePrevStep}
-                disabled={currentStep === 'see'}
-                className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                이전 단계
-              </button>
-
-              {currentStep === 'wonder' ? (
+              
+              <div className="flex justify-between">
                 <button
-                  onClick={handleSubmit}
-                  disabled={submitting || !responses.see.trim() || !responses.think.trim() || !responses.wonder.trim()}
-                  className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handlePrevStep}
+                  disabled={currentStep === 'see'}
+                  className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitting ? '제출 중...' : '제출하기'}
+                  이전
                 </button>
-              ) : (
-                <button
-                  onClick={handleNextStep}
-                  disabled={!responses[currentStep].trim()}
-                  className="px-6 py-3 bg-secondary-600 hover:bg-secondary-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  다음 단계
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 진행 상황 표시 */}
-        <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">진행 상황</h3>
-          <div className="space-y-3">
-            {(['see', 'think', 'wonder'] as const).map((step) => (
-              <div key={step} className="flex items-center space-x-3">
-                <div className={`w-4 h-4 rounded-full ${
-                  responses[step].trim() ? 'bg-green-500' : 'bg-gray-300'
-                }`} />
-                <span className={`text-sm ${
-                  responses[step].trim() ? 'text-green-700' : 'text-gray-500'
-                }`}>
-                  {step.toUpperCase()}: {responses[step].trim() ? '완료' : '미완료'}
-                </span>
+                
+                {currentStep === 'wonder' ? (
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting || !responses.see.trim() || !responses.think.trim() || !responses.wonder.trim()}
+                    className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? '제출 중...' : '제출하기'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleNextStep}
+                    disabled={!responses[currentStep].trim()}
+                    className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    다음
+                  </button>
+                )}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </main>
