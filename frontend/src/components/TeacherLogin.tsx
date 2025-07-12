@@ -68,17 +68,24 @@ const TeacherLogin: React.FC = () => {
     setError('');
     
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/teacher/dashboard`
+          redirectTo: `${window.location.origin}/teacher/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
       
       if (error) {
-        setError('Google 로그인에 실패했습니다.');
+        console.error('Google OAuth error:', error);
+        setError('Google 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
       }
+      // 성공 시 리다이렉트가 자동으로 발생하므로 추가 처리 불필요
     } catch (err) {
+      console.error('Google login error:', err);
       setError('Google 로그인 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);

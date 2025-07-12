@@ -32,12 +32,19 @@ const StudentEntry: React.FC = () => {
     setLoading(true);
     setError('');
 
+    // 6자리 숫자 코드 검증
+    if (!/^\d{6}$/.test(roomCode)) {
+      setError('6자리 숫자 코드를 입력해주세요.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/rooms/code/${roomCode.toUpperCase()}`);
+      const response = await axios.get(`${API_BASE_URL}/api/rooms/join/${roomCode}`);
       setRoom(response.data.room);
     } catch (err: any) {
       if (err.response?.status === 404) {
-        setError('활동방을 찾을 수 없습니다. 코드를 확인해주세요.');
+        setError('존재하지 않는 방 코드입니다. 코드를 확인해주세요.');
       } else {
         setError('활동방 조회에 실패했습니다. 다시 시도해주세요.');
       }
@@ -74,7 +81,7 @@ const StudentEntry: React.FC = () => {
             활동방 참여하기
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            선생님께서 제공한 6자리 코드를 입력하세요
+            선생님께서 제공한 6자리 숫자 코드를 입력하세요
           </p>
         </div>
 
@@ -96,13 +103,16 @@ const StudentEntry: React.FC = () => {
                   type="text"
                   required
                   value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, ''); // 숫자만 허용
+                    setRoomCode(value);
+                  }}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-secondary-500 focus:border-secondary-500 text-center text-2xl font-mono tracking-widest"
-                  placeholder="ABC123"
+                  placeholder="123456"
                   maxLength={6}
                 />
                 <p className="mt-2 text-xs text-gray-500 text-center">
-                  6자리 코드를 입력하세요
+                  6자리 숫자 코드를 입력하세요
                 </p>
               </div>
 
