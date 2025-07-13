@@ -66,6 +66,17 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
 
   const navigate = useNavigate();
 
+  // 사고루틴 타입 라벨 반환 함수
+  const getThinkingRoutineLabel = (type: string) => {
+    const labels: { [key: string]: string } = {
+      'see-think-wonder': 'See-Think-Wonder',
+      'connect-extend-challenge': 'Connect-Extend-Challenge',
+      'what-makes-you-say-that': 'What Makes You Say That?',
+      'think-pair-share': 'Think-Pair-Share'
+    };
+    return labels[type] || type;
+  };
+
   // 사고루틴 옵션
   const thinkingRoutineOptions = [
     { value: 'see-think-wonder', label: 'See-Think-Wonder' },
@@ -448,17 +459,19 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
               >
                 ← 대시보드로 돌아가기
               </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">사고루틴 생성 및 적용하기</h1>
-                <p className="text-sm text-gray-600">안녕하세요, {user?.name}님!</p>
-              </div>
+              <h1 className="text-2xl font-bold text-gray-900">사고루틴 생성 및 적용하기</h1>
             </div>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-            >
-              로그아웃
-            </button>
+            <div className="flex flex-col items-end space-y-2">
+              <span className="text-sm text-gray-700">
+                안녕하세요, {user?.name}님!
+              </span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                로그아웃
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -742,11 +755,9 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                         <h3 className="text-lg font-medium text-gray-900">{room.title}</h3>
                         {getStatusBadge(room)}
                       </div>
-                      {room.description && (
-                        <p className="text-sm text-gray-600 mt-1">{room.description}</p>
-                      )}
                       <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
                         <span>코드: <span className="font-mono font-bold text-blue-600">{room.room_code}</span></span>
+                        <span>사고루틴: <span className="font-medium text-gray-700">{getThinkingRoutineLabel(room.thinking_routine_type)}</span></span>
                         <span>응답: {room.response_count || 0}개</span>
                         <span>생성일: {new Date(room.created_at).toLocaleDateString()}</span>
                       </div>

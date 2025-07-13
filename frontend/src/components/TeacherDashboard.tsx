@@ -86,9 +86,9 @@ const TeacherDashboard: React.FC = () => {
                 <h1 className="text-2xl font-bold text-gray-900">사고루틴 학습 플랫폼</h1>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col items-end space-y-2">
               <span className="text-sm text-gray-700">
-                안녕하세요, {user?.name}님
+                안녕하세요, {user?.name}님!
               </span>
               <button
                 onClick={handleLogout}
@@ -120,12 +120,9 @@ const TeacherDashboard: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                사고루틴
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                사고루틴 생성 및 적용하기
               </h3>
-              <h4 className="text-lg font-semibold text-gray-700 mb-4">
-                생성 및 적용하기
-              </h4>
               <p className="text-gray-600 mb-6">
                 다양한 사고루틴을 생성하고 학생들과 함께 활동할 수 있습니다.
               </p>
@@ -146,12 +143,9 @@ const TeacherDashboard: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                사고루틴
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                사고루틴 분석 및 평가하기
               </h3>
-              <h4 className="text-lg font-semibold text-gray-700 mb-4">
-                분석 및 평가하기
-              </h4>
               <p className="text-gray-600 mb-6">
                 학생들의 사고루틴 활동 결과를 분석하고 평가할 수 있습니다.
               </p>
@@ -172,12 +166,9 @@ const TeacherDashboard: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                학생별 사고루틴
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                학생별 사고루틴 포트폴리오
               </h3>
-              <h4 className="text-lg font-semibold text-gray-700 mb-4">
-                포트폴리오
-              </h4>
               <p className="text-gray-600 mb-6">
                 각 학생의 사고루틴 학습 과정과 성장을 추적할 수 있습니다.
               </p>
@@ -208,9 +199,9 @@ const TeacherDashboard: React.FC = () => {
               </button>
               <h1 className="text-2xl font-bold text-gray-900">사고루틴 분석 및 평가하기</h1>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col items-end space-y-2">
               <span className="text-sm text-gray-700">
-                안녕하세요, {user?.name}님
+                안녕하세요, {user?.name}님!
               </span>
               <button
                 onClick={handleLogout}
@@ -257,9 +248,9 @@ const TeacherDashboard: React.FC = () => {
               </button>
               <h1 className="text-2xl font-bold text-gray-900">학생별 사고루틴 포트폴리오</h1>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col items-end space-y-2">
               <span className="text-sm text-gray-700">
-                안녕하세요, {user?.name}님
+                안녕하세요, {user?.name}님!
               </span>
               <button
                 onClick={handleLogout}
