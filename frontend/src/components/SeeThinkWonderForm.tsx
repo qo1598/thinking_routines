@@ -102,24 +102,22 @@ const SeeThinkWonderForm: React.FC = () => {
     }
   }, [roomId]);
 
-  // 임시저장된 응답 불러오기
-  const loadDraftResponse = useCallback(async (studentInfo: StudentInfo) => {
+  // 기존 응답 불러오기 (임시저장 또는 정식 제출)
+  const loadExistingResponse = useCallback(async (studentInfo: StudentInfo) => {
     if (!supabase || !roomId) return;
 
     try {
+      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.class}반 ${studentInfo.number}번` : '';
+      
+      // 먼저 임시저장된 응답 확인
       const { data: draftData, error: draftError } = await supabase
         .from('student_responses')
         .select('*')
         .eq('room_id', roomId)
         .eq('student_name', studentInfo.name)
-        .eq('student_id', studentInfo.class && studentInfo.number ? `${studentInfo.class}반 ${studentInfo.number}번` : '')
+        .eq('student_id', studentId)
         .eq('is_draft', true)
         .single();
-
-      if (draftError && draftError.code !== 'PGRST116') {
-        console.error('Draft fetch error:', draftError);
-        return;
-      }
 
       if (draftData && draftData.response_data) {
         setResponses(draftData.response_data);
@@ -132,11 +130,29 @@ const SeeThinkWonderForm: React.FC = () => {
           setCurrentStep('see');
         }
         
-        // 임시저장된 데이터가 있다는 알림
         alert('이전에 작성하던 내용을 불러왔습니다. 이어서 작성하실 수 있습니다.');
+        return;
+      }
+
+      // 임시저장이 없으면 정식 제출된 응답 확인
+      const { data: submittedData, error: submittedError } = await supabase
+        .from('student_responses')
+        .select('*')
+        .eq('room_id', roomId)
+        .eq('student_name', studentInfo.name)
+        .eq('student_id', studentId)
+        .eq('is_draft', false)
+        .single();
+
+      if (submittedData && submittedData.response_data) {
+        setResponses(submittedData.response_data);
+        // 모든 단계가 완료되어 있으므로 wonder 단계로 설정
+        setCurrentStep('wonder');
+        
+        alert('이전에 제출한 응답을 불러왔습니다. 수정하여 다시 제출할 수 있습니다.');
       }
     } catch (err) {
-      console.error('Load draft error:', err);
+      console.error('Load existing response error:', err);
     }
   }, [roomId]);
 
@@ -200,10 +216,10 @@ const SeeThinkWonderForm: React.FC = () => {
     }
 
     fetchData().then(() => {
-      // 데이터 로드 완료 후 임시저장 데이터 불러오기
-      loadDraftResponse(parsedStudentInfo);
+      // 데이터 로드 완료 후 기존 응답 불러오기
+      loadExistingResponse(parsedStudentInfo);
     });
-  }, [roomId, navigate, fetchData, loadDraftResponse]);
+  }, [roomId, navigate, fetchData, loadExistingResponse]);
 
   // 응답 변경 시 자동 임시저장 (debounce 적용)
   useEffect(() => {
@@ -269,25 +285,56 @@ const SeeThinkWonderForm: React.FC = () => {
           .eq('id', existingDraft.id);
       }
 
-      // 정식 제출
-      const { error } = await supabase
+      // 기존 정식 제출 데이터 확인 (같은 학생의 기존 응답 찾기)
+      const { data: existingResponse } = await supabase
         .from('student_responses')
-        .insert([{
-          room_id: roomId,
-          student_name: studentInfo.name,
-          student_id: studentId,
-          response_data: responses,
-          is_draft: false,
-          submitted_at: new Date().toISOString()
-        }]);
+        .select('id')
+        .eq('room_id', roomId)
+        .eq('student_name', studentInfo.name)
+        .eq('student_id', studentId)
+        .eq('is_draft', false)
+        .single();
 
-      if (error) {
-        console.error('Submit error:', error);
-        alert('제출에 실패했습니다. 다시 시도해주세요.');
-        return;
+      if (existingResponse) {
+        // 기존 응답이 있으면 업데이트
+        const { error } = await supabase
+          .from('student_responses')
+          .update({
+            response_data: responses,
+            submitted_at: new Date().toISOString(),
+            // AI 분석과 교사 피드백은 초기화하지 않음 (교사가 이미 작성했을 수 있음)
+          })
+          .eq('id', existingResponse.id);
+
+        if (error) {
+          console.error('Update error:', error);
+          alert('응답 수정에 실패했습니다. 다시 시도해주세요.');
+          return;
+        }
+
+        alert('응답이 수정되었습니다!');
+      } else {
+        // 기존 응답이 없으면 새로 생성
+        const { error } = await supabase
+          .from('student_responses')
+          .insert([{
+            room_id: roomId,
+            student_name: studentInfo.name,
+            student_id: studentId,
+            response_data: responses,
+            is_draft: false,
+            submitted_at: new Date().toISOString()
+          }]);
+
+        if (error) {
+          console.error('Submit error:', error);
+          alert('제출에 실패했습니다. 다시 시도해주세요.');
+          return;
+        }
+
+        alert('제출이 완료되었습니다!');
       }
 
-      alert('제출이 완료되었습니다!');
       navigate('/student');
     } catch (err) {
       console.error('Submit error:', err);
