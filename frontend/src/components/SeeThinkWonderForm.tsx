@@ -110,7 +110,7 @@ const SeeThinkWonderForm: React.FC = () => {
       const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.class}반 ${studentInfo.number}번` : '';
       
       // 먼저 임시저장된 응답 확인
-      const { data: draftData, error: _draftError } = await supabase
+      const { data: draftData } = await supabase
         .from('student_responses')
         .select('*')
         .eq('room_id', roomId)
@@ -135,7 +135,7 @@ const SeeThinkWonderForm: React.FC = () => {
       }
 
       // 임시저장이 없으면 정식 제출된 응답 확인
-      const { data: submittedData, error: _submittedError } = await supabase
+      const { data: submittedData } = await supabase
         .from('student_responses')
         .select('*')
         .eq('room_id', roomId)
