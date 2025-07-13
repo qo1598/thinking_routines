@@ -50,7 +50,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [createStep, setCreateStep] = useState(1); // 1: 사고루틴 선택, 2: 활동 자료 설정, 3: 질문 입력
+
   const [newRoom, setNewRoom] = useState<NewRoomForm>({
     title: '',
     description: '',
@@ -292,7 +292,6 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
         fourth_question: ''
       } });
       setShowCreateForm(false);
-      setCreateStep(1);
       alert(`활동방이 생성되었습니다! 방 코드: ${roomCode}`);
     } catch (err) {
       console.error('Create room error:', err);
@@ -353,9 +352,6 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
         ...questions
       }
     });
-    
-    // 사고루틴 선택 후 다음 단계로 진행
-    setCreateStep(2);
   };
 
   const getYouTubeEmbedUrl = (url: string) => {
@@ -780,7 +776,6 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                   type="button"
                   onClick={() => {
                     setShowCreateForm(false);
-                    setCreateStep(1);
                   }}
                   className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
                 >
