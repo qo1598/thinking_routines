@@ -154,7 +154,7 @@ const StudentResponseDetail: React.FC = () => {
       Object.values(responses).some(r => /^\d+$/.test(r)) || // 숫자만 입력
       Object.values(responses).some(r => /^[a-zA-Z]{1,2}$/.test(r)) || // 매우 짧은 영문자만
       Object.values(responses).some(r => /^[ㄱ-ㅎㅏ-ㅣ]{1,2}$/.test(r)) || // 자음/모음만
-      Object.values(responses).some(r => /^[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>?]+$/.test(r)); // 특수문자만
+      Object.values(responses).some(r => /^[!@#$%^&*()_+\-=[\]{};':"\\|,.<>?]+$/.test(r)); // 특수문자만
     
     if (isExtremelyLowQuality) {
       alert('학생의 응답이 너무 간단합니다. 더 구체적인 응답을 작성하도록 안내해주세요.\n\nAI 분석은 의미 있는 응답에 대해서만 실행됩니다.');
