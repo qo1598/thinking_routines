@@ -142,19 +142,22 @@ const StudentResponseDetail: React.FC = () => {
     if (!response || !template) return;
 
     // 응답 품질 검사
-    const responses = [
-      response.response_data.see?.trim() || '',
-      response.response_data.think?.trim() || '',
-      response.response_data.wonder?.trim() || ''
-    ];
+    const responses = {
+      see: response.response_data.see?.trim() || '',
+      think: response.response_data.think?.trim() || '',
+      wonder: response.response_data.wonder?.trim() || ''
+    };
     
-    // 모든 응답이 너무 짧거나 성의 없는 경우 체크
-    const isLowQuality = responses.every(r => r.length < 5) || 
-                        responses.some(r => /^\d+$/.test(r)) || // 숫자만 입력
-                        responses.some(r => /^[a-zA-Z]{1,3}$/.test(r)); // 짧은 영문자만
+    // 극도로 성의 없는 응답 체크
+    const isExtremelyLowQuality = 
+      Object.values(responses).every(r => r.length < 3) || // 모든 응답이 3글자 미만
+      Object.values(responses).some(r => /^\d+$/.test(r)) || // 숫자만 입력
+      Object.values(responses).some(r => /^[a-zA-Z]{1,2}$/.test(r)) || // 매우 짧은 영문자만
+      Object.values(responses).some(r => /^[ㄱ-ㅎㅏ-ㅣ]{1,2}$/.test(r)) || // 자음/모음만
+      Object.values(responses).some(r => /^[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>?]+$/.test(r)); // 특수문자만
     
-    if (isLowQuality) {
-      alert('학생의 응답이 너무 간단합니다. 더 구체적인 응답을 작성하도록 안내해주세요.');
+    if (isExtremelyLowQuality) {
+      alert('학생의 응답이 너무 간단합니다. 더 구체적인 응답을 작성하도록 안내해주세요.\n\nAI 분석은 의미 있는 응답에 대해서만 실행됩니다.');
       return;
     }
 
@@ -162,43 +165,60 @@ const StudentResponseDetail: React.FC = () => {
     try {
       // Google Gemini API 호출을 위한 시스템 프롬프트 구성
       const systemPrompt = `당신은 사고루틴(Thinking Routines) 교육 전문가입니다. 
-See-Think-Wonder 사고루틴을 활용한 학생의 학습 활동을 분석하고 간결한 교육적 피드백을 제공하는 것이 당신의 역할입니다.
+교사의 평가 보조 수단으로 활용될 분석과 피드백을 제공하는 것이 당신의 핵심 역할입니다.
 
 **See-Think-Wonder 사고루틴 이해:**
 - See(관찰): 학생이 주어진 자료에서 객관적으로 관찰한 내용
 - Think(사고): 관찰한 내용을 바탕으로 한 학생의 해석, 추론, 연결
 - Wonder(궁금증): 학생이 가지게 된 의문, 호기심, 탐구하고 싶은 점
 
-**중요 지침:**
-1. 교사 제공 자료는 분석에만 활용하고, 결과에 다시 나열하지 마세요.
-2. 각 섹션을 명확히 구분하여 작성하세요.
-3. 간결하고 핵심적인 피드백을 제공하세요.
-4. 긍정적이고 건설적인 톤을 유지하세요.
+**응답 품질 평가 기준:**
+1. **내용의 적절성**: 각 단계의 목적에 맞는 응답인가?
+2. **구체성**: 추상적이지 않고 구체적인 내용인가?
+3. **논리적 연결**: See → Think → Wonder 단계가 논리적으로 연결되는가?
+4. **깊이**: 표면적이지 않고 깊이 있는 사고가 드러나는가?
+5. **창의성**: 독창적이고 다양한 관점이 포함되어 있는가?
+
+**다양한 응답 상황별 대응:**
+- **우수한 응답**: 구체적인 강점을 명시하고 더 발전시킬 방향 제시
+- **평균적 응답**: 잘한 부분을 인정하되 개선점을 명확히 제시
+- **부실한 응답**: 단계별 목적 재설명과 구체적 개선 방법 제시
+- **부적절한 응답**: 왜 부적절한지 설명하고 올바른 방향 안내
+- **성의 없는 응답**: 사고루틴의 의미와 중요성 강조
+
+**교사 활용을 위한 중요 지침:**
+1. 객관적이고 구체적인 분석 제공
+2. 교사가 점수를 매길 때 참고할 수 있는 명확한 근거 제시
+3. 학생 개별 지도를 위한 실용적 조언 포함
+4. 긍정적이면서도 정확한 평가 유지
 
 **출력 형식:**
 ## 1. 각 단계별 분석
 
 ### See (관찰)
-- [2-3줄 피드백]
+- [응답 품질 평가와 구체적 피드백 2-3줄]
 
 ### Think (사고)  
-- [2-3줄 피드백]
+- [응답 품질 평가와 구체적 피드백 2-3줄]
 
 ### Wonder (궁금증)
-- [2-3줄 피드백]
+- [응답 품질 평가와 구체적 피드백 2-3줄]
 
 ## 2. 종합 평가
 
 **강점:**
-- [핵심 강점 1-2개]
+- [구체적 강점과 근거 1-2개]
 
 **개선점:**
-- [구체적 개선점 1-2개]
+- [명확한 개선점과 개선 방법 1-2개]
+
+**교사 참고사항:**
+- [점수 평가 시 고려할 요소들]
 
 ## 3. 교육적 권장사항
 
 **다음 활동 제안:**
-- [구체적 제안 2-3개]
+- [학생 수준에 맞는 구체적 제안 2-3개]
 
 위 형식을 정확히 따라 작성해주세요.`;
 
