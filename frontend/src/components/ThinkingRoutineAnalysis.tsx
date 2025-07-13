@@ -38,13 +38,13 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     }
 
     const templateFiles = {
-      'see-think-wonder': 'templates/보기-생각하기-궁금하기_템플릿.pdf',
-      '4c': 'templates/연결-도전-개념-변화_템플릿.pdf',
-      'circle-of-viewpoints': 'templates/관점의원_템플릿.pdf',
-      'connect-extend-challenge': 'templates/연결-확장-도전_템플릿.pdf',
-      'frayer-model': 'templates/프레이어모델_템플릿.pdf',
-      'used-to-think-now-think': 'templates/이전생각-현재생각_템플릿.pdf',
-      'think-puzzle-explore': 'templates/생각-퍼즐-탐구_템플릿.pdf'
+      'see-think-wonder': 'templates/See-Think-Wonder_template.png',
+      '4c': 'templates/4C(Connect-Challenge-Concepts-Changes)_template-1.png',
+      'circle-of-viewpoints': 'templates/Circle of Viewpoints_template.jpg',
+      'connect-extend-challenge': 'templates/Connect, Extend, Challenge_template-1.png',
+      'frayer-model': 'templates/Frayer Model_template-1.png',
+      'used-to-think-now-think': 'templates/I Used to Think... Now I Think..._template.jpg',
+      'think-puzzle-explore': 'templates/Think Puzzle Explore_template-1.png'
     };
 
     const filePath = templateFiles[routineType as keyof typeof templateFiles];
@@ -66,7 +66,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
       }
 
       // 파일 다운로드 처리
-      const fileName = filePath.split('/').pop() || 'template.pdf';
+      const fileName = filePath.split('/').pop() || 'template.png';
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
@@ -121,6 +121,16 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     }
   };
 
+  // 이미지 삭제 처리
+  const handleCancelImage = () => {
+    setUploadedImage(null);
+    setImagePreview('');
+    setAnalysisResult(null);
+    setError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  };
+
   // AI 분석 실행
   const handleAnalyzeImage = async () => {
     if (!uploadedImage || !selectedRoutine) {
@@ -132,103 +142,53 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     setError('');
 
     try {
-      // 개발 환경에서만 실제 API 호출
-      if (process.env.NODE_ENV === 'development') {
-        const formData = new FormData();
-        formData.append('image', uploadedImage);
-        formData.append('routineType', selectedRoutine);
+      // 이미지를 base64로 변환
+      const imageBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(uploadedImage);
+      });
 
-        const apiUrl = 'http://localhost:3001/api/analyze-routine-image';
-        
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          body: formData
-        });
+      // 사고루틴별 맞춤형 프롬프트 생성
+      const systemPrompt = generateAIPrompt(selectedRoutine);
+      const userPrompt = generateUserPrompt(selectedRoutine, imageBase64);
 
-        if (!response.ok) {
-          throw new Error('분석 요청에 실패했습니다.');
-        }
+      console.log('AI 분석 요청 시작...');
+      
+      const apiResponse = await fetch('/api/gemini-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          systemPrompt,
+          userPrompt,
+          imageData: imageBase64
+        })
+      });
 
-        const result = await response.json();
-        setAnalysisResult(result);
-      } else {
-        // 프로덕션 환경에서는 더미 응답 반환
-        const routineLabels = {
-          'see-think-wonder': 'See-Think-Wonder',
-          '4c': '4C',
-          'circle-of-viewpoints': 'Circle of Viewpoints',
-          'connect-extend-challenge': 'Connect-Extend-Challenge',
-          'frayer-model': 'Frayer Model',
-          'used-to-think-now-think': 'Used to Think... Now Think',
-          'think-puzzle-explore': 'Think-Puzzle-Explore'
-        };
+      console.log('API 응답 상태:', apiResponse.status);
 
-        const routineLabel = routineLabels[selectedRoutine as keyof typeof routineLabels] || selectedRoutine;
-
-        // 2초 지연으로 실제 분석하는 것처럼 보이게 함
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        const dummyResult = {
-          extractedText: '업로드된 이미지에서 학생의 응답을 성공적으로 인식했습니다.',
-          analysis: `## 1. ${routineLabel} 분석 결과
-
-### 전체적인 평가
-학생이 제출한 ${routineLabel} 활동 결과물을 분석한 결과입니다.
-
-**강점:**
-- 각 단계별로 적절한 응답을 작성했습니다
-- 논리적인 사고 과정을 보여줍니다
-- 창의적인 아이디어를 제시했습니다
-
-**개선점:**
-- 더 구체적인 설명이 필요합니다
-- 단계별 연결성을 강화할 수 있습니다
-- 더 깊이 있는 분석이 가능합니다
-
-### 교육적 권장사항
-1. 학생의 사고 과정을 더 자세히 설명하도록 안내하세요
-2. 각 단계 간의 연결성을 강조하세요
-3. 추가적인 질문을 통해 더 깊은 사고를 유도하세요
-
-## 2. 세부 분석
-
-### 적절성 평가
-- **점수**: 4/5
-- **평가**: 주제에 적합한 응답을 제시했습니다.
-
-### 구체성 평가
-- **점수**: 3/5
-- **평가**: 보다 구체적인 예시와 설명이 필요합니다.
-
-### 논리적 연결성 평가
-- **점수**: 4/5
-- **평가**: 단계별 논리적 흐름이 잘 구성되어 있습니다.
-
-### 사고의 깊이 평가
-- **점수**: 3/5
-- **평가**: 더 깊이 있는 분석과 성찰이 필요합니다.
-
-### 창의성 평가
-- **점수**: 4/5
-- **평가**: 독창적인 아이디어와 관점을 보여줍니다.
-
-## 3. 종합 평가
-
-**총점**: 18/25점 (72%)
-
-**종합 의견**: 
-학생이 ${routineLabel} 사고루틴을 전반적으로 잘 이해하고 적용했습니다. 각 단계별로 적절한 응답을 제시했으며, 논리적인 사고 과정을 보여주었습니다. 다만, 더 구체적인 설명과 깊이 있는 분석을 통해 사고력을 한층 더 발전시킬 수 있을 것입니다.
-
-**다음 단계 제안**:
-1. 더 구체적인 예시와 근거 제시하기
-2. 각 단계 간의 연결성 강화하기
-3. 개인적인 경험과 연결하여 성찰하기
-4. 다양한 관점에서 주제 바라보기`,
-          confidence: 85
-        };
-
-        setAnalysisResult(dummyResult);
+      if (!apiResponse.ok) {
+        const errorData = await apiResponse.json();
+        console.error('API 오류 응답:', errorData);
+        throw new Error(errorData.error || 'AI 분석 요청 실패');
       }
+
+      const analysisResult = await apiResponse.json();
+      console.log('분석 결과 수신:', analysisResult);
+      
+      if (!analysisResult.analysis) {
+        throw new Error('AI 분석 결과가 없습니다');
+      }
+
+      setAnalysisResult({
+        extractedText: '업로드된 이미지에서 학생의 사고루틴 활동 내용을 성공적으로 인식했습니다.',
+        analysis: analysisResult.analysis,
+        confidence: 85
+      });
+
     } catch (error) {
       console.error('Analysis error:', error);
       setError('분석 중 오류가 발생했습니다. 다시 시도해주세요.');
@@ -237,30 +197,293 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     }
   };
 
-  // 초기화
-  const handleReset = () => {
-    setSelectedRoutine('');
-    setUploadedImage(null);
-    setImagePreview('');
-    setAnalysisResult(null);
-    setError('');
-    setShowCameraGuide(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  // 사고루틴별 AI 프롬프트 생성
+  const generateAIPrompt = (routineType: string) => {
+    const prompts = {
+      'see-think-wonder': `
+당신은 교육 전문가입니다. 학생이 작성한 See-Think-Wonder 사고루틴 활동 결과물을 분석하고 평가해주세요.
+
+**See-Think-Wonder 사고루틴 이해:**
+- See(보기): 관찰 가능한 사실과 정보를 기록
+- Think(생각하기): 관찰한 내용에 대한 해석과 추론
+- Wonder(궁금하기): 더 알고 싶은 점과 질문 생성
+
+**평가 기준:**
+1. 각 단계별 적절성 (관찰-해석-질문의 논리적 연결)
+2. 구체성과 명확성
+3. 사고의 깊이와 창의성
+4. 언어 표현의 정확성
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### See (보기)
+- [관찰 능력 평가와 구체적 피드백 2-3줄]
+### Think (생각하기)
+- [추론 능력 평가와 구체적 피드백 2-3줄]
+### Wonder (궁금하기)
+- [질문 생성 능력 평가와 구체적 피드백 2-3줄]
+
+## 2. 종합 평가
+### 강점
+- [구체적인 강점 2-3가지]
+### 개선점
+- [구체적인 개선 방안 2-3가지]
+
+## 3. 교육적 제안
+- [다음 단계 학습 방향 제시]`,
+
+      '4c': `
+당신은 교육 전문가입니다. 학생이 작성한 4C 사고루틴 활동 결과물을 분석하고 평가해주세요.
+
+**4C 사고루틴 이해:**
+- Connect(연결): 기존 지식이나 경험과의 연결점
+- Challenge(도전): 의문점이나 도전적인 아이디어
+- Concepts(개념): 핵심 개념과 아이디어
+- Changes(변화): 제안하는 변화나 행동
+
+**평가 기준:**
+1. 각 단계별 적절성과 논리적 연결
+2. 비판적 사고와 창의적 사고
+3. 개념 이해의 깊이
+4. 실행 가능한 변화 제안
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Connect (연결)
+- [연결 능력 평가와 구체적 피드백 2-3줄]
+### Challenge (도전)
+- [비판적 사고 능력 평가와 구체적 피드백 2-3줄]
+### Concepts (개념)
+- [개념 이해 능력 평가와 구체적 피드백 2-3줄]
+### Changes (변화)
+- [변화 제안 능력 평가와 구체적 피드백 2-3줄]
+
+## 2. 종합 평가
+### 강점
+- [구체적인 강점 2-3가지]
+### 개선점
+- [구체적인 개선 방안 2-3가지]
+
+## 3. 교육적 제안
+- [다음 단계 학습 방향 제시]`,
+
+      'circle-of-viewpoints': `
+당신은 교육 전문가입니다. 학생이 작성한 Circle of Viewpoints 사고루틴 활동 결과물을 분석하고 평가해주세요.
+
+**Circle of Viewpoints 사고루틴 이해:**
+- Viewpoints(관점 탐색): 다양한 관점을 가질 수 있는 사람들 식별
+- Perspective(관점 선택): 특정 관점에서 주제를 바라보기
+- Questions(관점별 질문): 선택한 관점에서 제기할 수 있는 질문
+
+**평가 기준:**
+1. 관점의 다양성과 창의성
+2. 관점 이해의 깊이
+3. 관점별 질문의 적절성
+4. 다각적 사고 능력
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Viewpoints (관점 탐색)
+- [관점 다양성 평가와 구체적 피드백 2-3줄]
+### Perspective (관점 선택)
+- [관점 이해 능력 평가와 구체적 피드백 2-3줄]
+### Questions (관점별 질문)
+- [질문 생성 능력 평가와 구체적 피드백 2-3줄]
+
+## 2. 종합 평가
+### 강점
+- [구체적인 강점 2-3가지]
+### 개선점
+- [구체적인 개선 방안 2-3가지]
+
+## 3. 교육적 제안
+- [다음 단계 학습 방향 제시]`,
+
+      'connect-extend-challenge': `
+당신은 교육 전문가입니다. 학생이 작성한 Connect-Extend-Challenge 사고루틴 활동 결과물을 분석하고 평가해주세요.
+
+**Connect-Extend-Challenge 사고루틴 이해:**
+- Connect(연결): 기존 지식과의 연결점 찾기
+- Extend(확장): 생각을 확장하거나 발전시키기
+- Challenge(도전): 의문점이나 도전적인 부분 제기
+
+**평가 기준:**
+1. 연결 능력과 배경지식 활용
+2. 사고 확장의 창의성
+3. 비판적 사고와 도전 정신
+4. 논리적 사고 과정
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Connect (연결)
+- [연결 능력 평가와 구체적 피드백 2-3줄]
+### Extend (확장)
+- [사고 확장 능력 평가와 구체적 피드백 2-3줄]
+### Challenge (도전)
+- [비판적 사고 능력 평가와 구체적 피드백 2-3줄]
+
+## 2. 종합 평가
+### 강점
+- [구체적인 강점 2-3가지]
+### 개선점
+- [구체적인 개선 방안 2-3가지]
+
+## 3. 교육적 제안
+- [다음 단계 학습 방향 제시]`,
+
+      'frayer-model': `
+당신은 교육 전문가입니다. 학생이 작성한 Frayer Model 사고루틴 활동 결과물을 분석하고 평가해주세요.
+
+**Frayer Model 사고루틴 이해:**
+- Definition(정의): 개념의 명확한 정의
+- Characteristics(특징): 개념의 핵심 특징들
+- Examples & Non-Examples(예시와 반례): 구체적인 예시와 반례
+
+**평가 기준:**
+1. 정의의 정확성과 명확성
+2. 특징 파악의 완전성
+3. 예시와 반례의 적절성
+4. 개념 이해의 깊이
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Definition (정의)
+- [정의 능력 평가와 구체적 피드백 2-3줄]
+### Characteristics (특징)
+- [특징 파악 능력 평가와 구체적 피드백 2-3줄]
+### Examples & Non-Examples (예시와 반례)
+- [예시 제시 능력 평가와 구체적 피드백 2-3줄]
+
+## 2. 종합 평가
+### 강점
+- [구체적인 강점 2-3가지]
+### 개선점
+- [구체적인 개선 방안 2-3가지]
+
+## 3. 교육적 제안
+- [다음 단계 학습 방향 제시]`,
+
+      'used-to-think-now-think': `
+당신은 교육 전문가입니다. 학생이 작성한 I Used to Think... Now I Think... 사고루틴 활동 결과물을 분석하고 평가해주세요.
+
+**I Used to Think... Now I Think... 사고루틴 이해:**
+- Used to Think(이전 생각): 학습 전의 생각이나 인식
+- Now Think(현재 생각): 학습 후의 새로운 생각이나 인식
+- Why Changed(변화 이유): 생각이 바뀐 이유와 과정
+
+**평가 기준:**
+1. 이전 생각의 솔직한 표현
+2. 현재 생각의 발전성
+3. 변화 과정의 논리성
+4. 성찰의 깊이
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Used to Think (이전 생각)
+- [이전 인식 표현 능력 평가와 구체적 피드백 2-3줄]
+### Now Think (현재 생각)
+- [새로운 인식 형성 능력 평가와 구체적 피드백 2-3줄]
+### Why Changed (변화 이유)
+- [성찰 능력 평가와 구체적 피드백 2-3줄]
+
+## 2. 종합 평가
+### 강점
+- [구체적인 강점 2-3가지]
+### 개선점
+- [구체적인 개선 방안 2-3가지]
+
+## 3. 교육적 제안
+- [다음 단계 학습 방향 제시]`,
+
+      'think-puzzle-explore': `
+당신은 교육 전문가입니다. 학생이 작성한 Think-Puzzle-Explore 사고루틴 활동 결과물을 분석하고 평가해주세요.
+
+**Think-Puzzle-Explore 사고루틴 이해:**
+- Think(생각하기): 주제에 대해 이미 알고 있는 것
+- Puzzle(퍼즐): 궁금하거나 혼란스러운 점
+- Explore(탐구하기): 탐구하고 싶은 방법이나 방향
+
+**평가 기준:**
+1. 기존 지식의 정확성
+2. 의문점의 창의성과 깊이
+3. 탐구 방법의 구체성
+4. 탐구 의지와 호기심
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Think (생각하기)
+- [기존 지식 활용 능력 평가와 구체적 피드백 2-3줄]
+### Puzzle (퍼즐)
+- [의문 제기 능력 평가와 구체적 피드백 2-3줄]
+### Explore (탐구하기)
+- [탐구 계획 능력 평가와 구체적 피드백 2-3줄]
+
+## 2. 종합 평가
+### 강점
+- [구체적인 강점 2-3가지]
+### 개선점
+- [구체적인 개선 방안 2-3가지]
+
+## 3. 교육적 제안
+- [다음 단계 학습 방향 제시]`
+    };
+
+    return prompts[routineType as keyof typeof prompts] || prompts['see-think-wonder'];
   };
 
-  // 마크다운 텍스트 포맷팅
+  // 사용자 프롬프트 생성
+  const generateUserPrompt = (routineType: string, imageBase64: string) => {
+    const routineLabels = {
+      'see-think-wonder': 'See-Think-Wonder',
+      '4c': '4C',
+      'circle-of-viewpoints': 'Circle of Viewpoints',
+      'connect-extend-challenge': 'Connect-Extend-Challenge',
+      'frayer-model': 'Frayer Model',
+      'used-to-think-now-think': 'I Used to Think... Now I Think...',
+      'think-puzzle-explore': 'Think-Puzzle-Explore'
+    };
+
+    const routineLabel = routineLabels[routineType as keyof typeof routineLabels] || routineType;
+
+    return `
+업로드된 이미지는 학생이 작성한 ${routineLabel} 사고루틴 활동 결과물입니다.
+
+**분석 요청:**
+1. 이미지에서 학생의 응답 내용을 정확히 읽어주세요
+2. ${routineLabel} 사고루틴의 각 단계별로 학생의 응답을 평가해주세요
+3. 교육적 관점에서 구체적이고 건설적인 피드백을 제공해주세요
+4. 학생의 사고 과정을 이해하고 다음 단계 학습을 위한 제안을 해주세요
+
+**주의사항:**
+- 학생의 연령대를 고려하여 이해하기 쉬운 언어로 피드백해주세요
+- 부정적인 평가보다는 건설적인 개선 방안을 제시해주세요
+- 학생의 노력과 시도를 인정하고 격려해주세요
+
+위의 형식에 맞춰 분석 결과를 제공해주세요.
+    `;
+  };
+
+  // 마크다운 텍스트 포맷팅 (StudentResponseDetail과 동일)
   const formatMarkdownText = (text: string) => {
-    return text
-      .replace(/## (\d+)\. (.*?)(?=\n|$)/g, '<h3 class="text-xl font-bold text-purple-800 mb-4 pb-2 border-b-2 border-purple-200">$1. $2</h3>')
-      .replace(/### (.*?)(?=\n|$)/g, '<h4 class="text-lg font-semibold text-gray-900 mt-6 mb-3 text-purple-700">$1</h4>')
-      .replace(/\*\*(.*?):\*\*/g, '<div class="mt-4 mb-2"><span class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">$1:</span></div>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
-      .replace(/^- (.*?)$/gm, '<div class="flex items-start mb-2"><span class="text-purple-500 mr-2 mt-1">•</span><span class="text-gray-700">$1</span></div>')
-      .replace(/\n\n/g, '</p><p class="mb-4">')
-      .replace(/\n/g, '<br/>')
-      .replace(/^/, '<p class="mb-4">')
-      .replace(/$/, '</p>');
+    const formatSection = (section: string) => {
+      return section
+        .replace(/## (\d+)\. (.*?)(?=\n|$)/g, '<h3 class="text-xl font-bold text-purple-800 mb-4 pb-2 border-b-2 border-purple-200">$1. $2</h3>')
+        .replace(/### (.*?)(?=\n|$)/g, '<h4 class="text-lg font-semibold text-gray-900 mt-6 mb-3 text-purple-700">$1</h4>')
+        .replace(/\*\*(.*?):\*\*/g, '<div class="mt-4 mb-2"><span class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">$1:</span></div>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+        .replace(/^- (.*?)$/gm, '<div class="flex items-start mb-2"><span class="text-purple-500 mr-2 mt-1">•</span><span class="text-gray-700">$1</span></div>')
+        .replace(/\n\n/g, '</p><p class="mb-4">')
+        .replace(/\n/g, '<br/>')
+        .replace(/^/, '<p class="mb-4">')
+        .replace(/$/, '</p>');
+    };
+
+    return formatSection(text);
+  };
+
+  // 디바이스 감지 함수
+  const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   };
 
   return (
@@ -378,7 +601,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
               <div 
                 className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
-                onClick={openCameraWithGuide}
+                onClick={isMobile() ? openCameraWithGuide : () => cameraInputRef.current?.click()}
               >
                 <input
                   ref={cameraInputRef}
@@ -393,9 +616,11 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <div className="text-blue-600 hover:text-blue-500 font-medium">
-                  카메라로 촬영하기
+                  {isMobile() ? '카메라로 촬영하기' : '웹캠으로 촬영하기'}
                 </div>
-                <p className="text-sm text-gray-500 mt-2">직접 촬영하여 업로드</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  {isMobile() ? '카메라 앱에서 촬영' : '웹캠으로 직접 촬영'}
+                </p>
               </div>
             </div>
 
@@ -412,26 +637,22 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                     />
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* 촬영 가이드 */}
-            {selectedRoutine && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-medium text-yellow-800 mb-2">📸 촬영 가이드</h4>
-                <div className="text-sm text-yellow-700 space-y-1">
-                  <p>• 템플릿 전체가 화면에 들어오도록 촬영하세요</p>
-                  <p>• 조명이 밝고 그림자가 없는 곳에서 촬영하세요</p>
-                  <p>• 글씨가 선명하게 보이도록 초점을 맞춰주세요</p>
-                  <p>• 템플릿이 기울어지지 않도록 수평을 맞춰주세요</p>
+                {/* 취소 버튼 추가 */}
+                <div className="flex justify-center mt-4">
+                  <button
+                    onClick={handleCancelImage}
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    이미지 삭제
+                  </button>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* 카메라 가이드 오버레이 */}
-        {showCameraGuide && (
+        {/* 카메라 가이드 오버레이 - 모바일에서만 표시 */}
+        {showCameraGuide && isMobile() && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md mx-4">
               <div className="text-center">
@@ -447,14 +668,6 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                   <p>💡 조명이 밝고 그림자가 없는 곳에서 촬영하세요</p>
                   <p>🔍 글씨가 선명하게 보이도록 초점을 맞춰주세요</p>
                   <p>📐 템플릿이 기울어지지 않도록 수평을 맞춰주세요</p>
-                </div>
-                <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 mb-4">
-                  <div className="text-blue-600 text-sm">
-                    이 영역 안에 템플릿이 들어오도록 촬영하세요
-                  </div>
-                  <div className="mt-2 h-32 bg-blue-50 rounded flex items-center justify-center">
-                    <div className="text-blue-400 text-xs">사고루틴 템플릿 위치</div>
-                  </div>
                 </div>
                 <div className="flex space-x-3">
                   <button
@@ -501,13 +714,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                 )}
               </div>
               
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleReset}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  초기화
-                </button>
+              <div>
                 <button
                   onClick={handleAnalyzeImage}
                   disabled={!selectedRoutine || !uploadedImage || analyzing}
@@ -535,7 +742,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
           </div>
         </div>
 
-        {/* 4단계: 분석 결과 */}
+        {/* 4단계: 분석 결과 - StudentResponseDetail과 동일한 레이아웃 */}
         {analysisResult && (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6">4단계: 분석 결과</h2>
@@ -545,12 +752,12 @@ const ThinkingRoutineAnalysis: React.FC = () => {
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">분석 신뢰도</span>
-                  <span className="text-sm text-gray-600">{Math.round(analysisResult.confidence * 100)}%</span>
+                  <span className="text-sm text-gray-600">{Math.round(analysisResult.confidence)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
                     className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${analysisResult.confidence * 100}%` }}
+                    style={{ width: `${analysisResult.confidence}%` }}
                   ></div>
                 </div>
               </div>
@@ -565,13 +772,15 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                 </div>
               </div>
 
-              {/* AI 분석 결과 */}
+              {/* AI 분석 결과 - StudentResponseDetail과 동일한 스타일 */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-3">🤖 AI 분석 및 피드백</h3>
-                <div 
-                  className="prose prose-sm max-w-none text-gray-800"
-                  dangerouslySetInnerHTML={{ __html: formatMarkdownText(analysisResult.analysis) }}
-                />
+                <div className="space-y-4">
+                  <div 
+                    className="prose prose-sm max-w-none text-gray-800 text-left"
+                    dangerouslySetInnerHTML={{ __html: formatMarkdownText(analysisResult.analysis) }}
+                  />
+                </div>
               </div>
             </div>
           </div>

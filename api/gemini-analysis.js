@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
   try {
     console.log('Gemini API 요청 시작');
     
-    const { systemPrompt, userPrompt, imageUrl, youtubeUrl } = req.body;
+    const { systemPrompt, userPrompt, imageUrl, youtubeUrl, imageData } = req.body;
 
     if (!systemPrompt || !userPrompt) {
       console.log('필수 프롬프트 누락');
@@ -43,22 +43,44 @@ module.exports = async function handler(req, res) {
       { text: userPrompt }
     ];
 
-    // 이미지가 있는 경우 추가
-    if (imageUrl) {
+    // 업로드된 이미지 데이터가 있는 경우 (ThinkingRoutineAnalysis에서 사용)
+    if (imageData) {
       try {
-        console.log('이미지 분석 포함:', imageUrl);
+        console.log('업로드된 이미지 분석 포함');
+        // base64 데이터에서 데이터 부분만 추출 (data:image/jpeg;base64, 제거)
+        const base64Data = imageData.split(',')[1] || imageData;
+        const mimeType = imageData.includes('data:') ? 
+          imageData.split(';')[0].split(':')[1] : 'image/jpeg';
+        
+        const imageDataObj = {
+          inlineData: {
+            data: base64Data,
+            mimeType: mimeType
+          }
+        };
+        parts.push(imageDataObj);
+        parts.push({ text: "\n\n위 이미지를 분석하여 학생의 사고루틴 활동을 평가해주세요." });
+      } catch (imageError) {
+        console.error('업로드된 이미지 처리 오류:', imageError);
+        parts.push({ text: "\n\n(이미지 분석 중 오류가 발생했습니다. 텍스트 기반으로만 분석합니다.)" });
+      }
+    }
+    // 이미지 URL이 있는 경우 (기존 StudentResponseDetail에서 사용)
+    else if (imageUrl) {
+      try {
+        console.log('이미지 URL 분석 포함:', imageUrl);
         const imageResponse = await fetch(imageUrl);
         const imageBuffer = await imageResponse.arrayBuffer();
-        const imageData = {
+        const imageDataObj = {
           inlineData: {
             data: Buffer.from(imageBuffer).toString('base64'),
             mimeType: imageResponse.headers.get('content-type') || 'image/jpeg'
           }
         };
-        parts.push(imageData);
+        parts.push(imageDataObj);
         parts.push({ text: "\n\n위 이미지를 분석하여 학생의 응답을 평가해주세요." });
       } catch (imageError) {
-        console.error('이미지 로드 오류:', imageError);
+        console.error('이미지 URL 로드 오류:', imageError);
         parts.push({ text: "\n\n(이미지 분석 중 오류가 발생했습니다. 텍스트 기반으로만 분석합니다.)" });
       }
     }
