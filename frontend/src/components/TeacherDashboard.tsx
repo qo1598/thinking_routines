@@ -200,54 +200,7 @@ const TeacherDashboard: React.FC = () => {
     return <ThinkingRoutineAnalysis />;
   };
 
-  const renderAnalysisViewOld = () => (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setCurrentView('main')}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                ← 대시보드로 돌아가기
-              </button>
-              <h1 className="text-2xl font-bold text-gray-900">사고루틴 분석 및 평가하기</h1>
-            </div>
-            <div className="flex flex-col items-end space-y-2">
-              <span className="text-sm text-gray-700">
-                안녕하세요, {user?.name}님!
-              </span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                로그아웃
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <div className="bg-white rounded-lg shadow p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              사고루틴 분석 및 평가 기능
-            </h2>
-            <p className="text-gray-600 mb-6">
-              이 기능은 현재 개발 중입니다. 곧 제공될 예정입니다.
-            </p>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-              <p className="text-yellow-800">
-                🚧 개발 예정 기능: 학생 응답 분석, 사고 패턴 시각화, 평가 도구 등
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderPortfolioView = () => (
     <div className="min-h-screen bg-gray-50">
