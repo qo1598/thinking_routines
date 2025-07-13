@@ -50,6 +50,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createStep, setCreateStep] = useState(1); // 1: 사고루틴 선택, 2: 활동 자료 설정, 3: 질문 입력
   const [newRoom, setNewRoom] = useState<NewRoomForm>({
     title: '',
     description: '',
@@ -291,6 +292,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
         fourth_question: ''
       } });
       setShowCreateForm(false);
+      setCreateStep(1);
       alert(`활동방이 생성되었습니다! 방 코드: ${roomCode}`);
     } catch (err) {
       console.error('Create room error:', err);
@@ -351,6 +353,9 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
         ...questions
       }
     });
+    
+    // 사고루틴 선택 후 다음 단계로 진행
+    setCreateStep(2);
   };
 
   const getYouTubeEmbedUrl = (url: string) => {
@@ -585,6 +590,23 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                   
                   <div className="space-y-4">
                     <div>
+                      <label htmlFor="textContent" className="block text-sm font-medium text-gray-700">
+                        텍스트 내용
+                      </label>
+                      <textarea
+                        id="textContent"
+                        rows={3}
+                        value={newRoom.template_content.text_content}
+                        onChange={(e) => setNewRoom({
+                          ...newRoom,
+                          template_content: { ...newRoom.template_content, text_content: e.target.value }
+                        })}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="학생들에게 제시할 텍스트를 입력하세요"
+                      />
+                    </div>
+
+                    <div>
                       <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">
                         이미지 URL
                       </label>
@@ -611,23 +633,6 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                           />
                         </div>
                       )}
-                    </div>
-
-                    <div>
-                      <label htmlFor="textContent" className="block text-sm font-medium text-gray-700">
-                        텍스트 내용
-                      </label>
-                      <textarea
-                        id="textContent"
-                        rows={3}
-                        value={newRoom.template_content.text_content}
-                        onChange={(e) => setNewRoom({
-                          ...newRoom,
-                          template_content: { ...newRoom.template_content, text_content: e.target.value }
-                        })}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="학생들에게 제시할 텍스트를 입력하세요"
-                      />
                     </div>
                     
                     <div>
@@ -773,7 +778,10 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setShowCreateForm(false)}
+                  onClick={() => {
+                    setShowCreateForm(false);
+                    setCreateStep(1);
+                  }}
                   className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
                 >
                   취소

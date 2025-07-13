@@ -168,7 +168,18 @@ const StudentEntry: React.FC = () => {
                 )}
                 <div className="flex justify-center">
                   <span className="bg-blue-100 text-blue-800 px-3 py-2 rounded-full text-sm font-medium">
-                    See-Think-Wonder
+                    {(() => {
+                      const labels: { [key: string]: string } = {
+                        'see-think-wonder': 'See-Think-Wonder',
+                        '4c': '4C',
+                        'circle-of-viewpoints': 'Circle of Viewpoints',
+                        'connect-extend-challenge': 'Connect-Extend-Challenge',
+                        'frayer-model': 'Frayer Model',
+                        'used-to-think-now-think': 'I Used to Think... Now I Think...',
+                        'think-puzzle-explore': 'Think-Puzzle-Explore'
+                      };
+                      return labels[room.thinking_routine_type] || room.thinking_routine_type;
+                    })()}
                   </span>
                 </div>
               </div>

@@ -24,6 +24,7 @@ interface RoutineTemplate {
     see_question?: string;
     think_question?: string;
     wonder_question?: string;
+    fourth_question?: string;
   };
 }
 
@@ -34,6 +35,103 @@ interface StudentResponse {
   response_data: any;
   submitted_at: string;
 }
+
+// 사고루틴별 설정 정보 추가
+const ROUTINE_CONFIGS = {
+  'see-think-wonder': {
+    name: 'See-Think-Wonder',
+    stepLabels: {
+      see: { title: 'See', subtitle: '보기' },
+      think: { title: 'Think', subtitle: '생각하기' },
+      wonder: { title: 'Wonder', subtitle: '궁금하기' }
+    },
+    defaultQuestions: {
+      see: '이 자료에서 무엇을 보았나요?',
+      think: '이것에 대해 어떻게 생각하나요?',
+      wonder: '이것에 대해 무엇이 궁금한가요?'
+    }
+  },
+  '4c': {
+    name: '4C',
+    stepLabels: {
+      see: { title: 'Connect', subtitle: '연결하기' },
+      think: { title: 'Challenge', subtitle: '도전하기' },
+      wonder: { title: 'Concepts', subtitle: '개념 파악' },
+      fourth_step: { title: 'Changes', subtitle: '변화 제안' }
+    },
+    defaultQuestions: {
+      see: '이 내용이 이미 알고 있는 것과 어떻게 연결되나요?',
+      think: '이 내용에서 어떤 아이디어나 가정에 도전하고 싶나요?',
+      wonder: '이 내용에서 중요하다고 생각하는 핵심 개념은 무엇인가요?',
+      fourth_step: '이 내용이 당신이나 다른 사람들에게 어떤 변화를 제안하나요?'
+    }
+  },
+  'circle-of-viewpoints': {
+    name: 'Circle of Viewpoints',
+    stepLabels: {
+      see: { title: 'Viewpoints', subtitle: '관점 탐색' },
+      think: { title: 'Perspective', subtitle: '관점 선택' },
+      wonder: { title: 'Questions', subtitle: '관점별 질문' }
+    },
+    defaultQuestions: {
+      see: '이 주제에 대해 다양한 관점을 가질 수 있는 사람들은 누구인가요?',
+      think: '선택한 관점에서 이 주제를 어떻게 바라볼까요?',
+      wonder: '이 관점에서 가질 수 있는 질문은 무엇인가요?'
+    }
+  },
+  'connect-extend-challenge': {
+    name: 'Connect-Extend-Challenge',
+    stepLabels: {
+      see: { title: 'Connect', subtitle: '연결하기' },
+      think: { title: 'Extend', subtitle: '확장하기' },
+      wonder: { title: 'Challenge', subtitle: '도전하기' }
+    },
+    defaultQuestions: {
+      see: '이 내용이 이미 알고 있는 것과 어떻게 연결되나요?',
+      think: '이 내용이 당신의 생각을 어떻게 확장시켰나요?',
+      wonder: '이 내용에서 어떤 것이 당신에게 도전이 되나요?'
+    }
+  },
+  'frayer-model': {
+    name: 'Frayer Model',
+    stepLabels: {
+      see: { title: 'Definition', subtitle: '정의' },
+      think: { title: 'Characteristics', subtitle: '특징' },
+      wonder: { title: 'Examples', subtitle: '예시와 반례' }
+    },
+    defaultQuestions: {
+      see: '이 개념을 어떻게 정의하겠나요?',
+      think: '이 개념의 주요 특징은 무엇인가요?',
+      wonder: '이 개념의 예시와 반례는 무엇인가요?'
+    }
+  },
+  'used-to-think-now-think': {
+    name: 'I Used to Think... Now I Think...',
+    stepLabels: {
+      see: { title: 'Used to Think', subtitle: '이전 생각' },
+      think: { title: 'Now Think', subtitle: '현재 생각' },
+      wonder: { title: 'Why Changed', subtitle: '변화 이유' }
+    },
+    defaultQuestions: {
+      see: '이 주제에 대해 이전에 어떻게 생각했나요?',
+      think: '지금은 어떻게 생각하나요?',
+      wonder: '생각이 바뀐 이유는 무엇인가요?'
+    }
+  },
+  'think-puzzle-explore': {
+    name: 'Think-Puzzle-Explore',
+    stepLabels: {
+      see: { title: 'Think', subtitle: '생각하기' },
+      think: { title: 'Puzzle', subtitle: '퍼즐' },
+      wonder: { title: 'Explore', subtitle: '탐구하기' }
+    },
+    defaultQuestions: {
+      see: '이 주제에 대해 무엇을 알고 있다고 생각하나요?',
+      think: '무엇이 퍼즐이나 의문점인가요?',
+      wonder: '이 퍼즐을 어떻게 탐구해보고 싶나요?'
+    }
+  }
+};
 
 const TeacherRoomDetail: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -49,9 +147,10 @@ const TeacherRoomDetail: React.FC = () => {
     image_url: '',
     text_content: '',
     youtube_url: '',
-    see_question: '이 자료에서 무엇을 보았나요?',
-    think_question: '이것에 대해 어떻게 생각하나요?',
-    wonder_question: '이것에 대해 무엇이 궁금한가요?'
+    see_question: '',
+    think_question: '',
+    wonder_question: '',
+    fourth_question: ''
   });
 
   const fetchRoomData = useCallback(async () => {
@@ -113,12 +212,24 @@ const TeacherRoomDetail: React.FC = () => {
       } else if (templateData) {
         setTemplate(templateData);
         setTemplateForm(templateData.content);
+      } else {
+        // 템플릿이 없는 경우 사고루틴 타입에 따른 기본 질문 설정
+        const routineConfig = ROUTINE_CONFIGS[roomData.thinking_routine_type as keyof typeof ROUTINE_CONFIGS];
+        if (routineConfig) {
+          setTemplateForm(prev => ({
+            ...prev,
+            see_question: routineConfig.defaultQuestions.see,
+            think_question: routineConfig.defaultQuestions.think,
+            wonder_question: routineConfig.defaultQuestions.wonder,
+            fourth_question: (routineConfig.defaultQuestions as any).fourth_step || ''
+          }));
+        }
       }
 
+      setLoading(false);
     } catch (error) {
       console.error('Fetch error:', error);
       setError('데이터를 불러오는 중 오류가 발생했습니다.');
-    } finally {
       setLoading(false);
     }
   }, [roomId, navigate]);
@@ -141,6 +252,12 @@ const TeacherRoomDetail: React.FC = () => {
       'think-pair-share': 'Think-Pair-Share'
     };
     return labels[type] || type;
+  };
+
+  // 사고루틴별 질문 라벨 가져오기
+  const getQuestionLabels = (routineType: string) => {
+    const config = ROUTINE_CONFIGS[routineType as keyof typeof ROUTINE_CONFIGS];
+    return config ? config.stepLabels : ROUTINE_CONFIGS['see-think-wonder'].stepLabels;
   };
 
   const handleSaveTemplate = async () => {
@@ -376,26 +493,41 @@ const TeacherRoomDetail: React.FC = () => {
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">See 질문</p>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-gray-900">{template.content.see_question}</p>
+              {(() => {
+                const questionLabels = getQuestionLabels(room.thinking_routine_type);
+                const hasFourth = room.thinking_routine_type === '4c';
+                
+                return (
+                  <div className={`grid grid-cols-1 gap-4 ${hasFourth ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-2">{questionLabels.see.title} 질문</p>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-gray-900">{template.content.see_question}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-2">{questionLabels.think.title} 질문</p>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-gray-900">{template.content.think_question}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-2">{questionLabels.wonder.title} 질문</p>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-gray-900">{template.content.wonder_question}</p>
+                      </div>
+                    </div>
+                    {hasFourth && (template.content as any).fourth_question && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-2">{(questionLabels as any).fourth_step?.title} 질문</p>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-gray-900">{(template.content as any).fourth_question}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">Think 질문</p>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-gray-900">{template.content.think_question}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">Wonder 질문</p>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-gray-900">{template.content.wonder_question}</p>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
           )}
 
@@ -492,41 +624,61 @@ const TeacherRoomDetail: React.FC = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    See 질문
-                  </label>
-                  <input
-                    type="text"
-                    value={templateForm.see_question}
-                    onChange={(e) => setTemplateForm({...templateForm, see_question: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Think 질문
-                  </label>
-                  <input
-                    type="text"
-                    value={templateForm.think_question}
-                    onChange={(e) => setTemplateForm({...templateForm, think_question: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Wonder 질문
-                  </label>
-                  <input
-                    type="text"
-                    value={templateForm.wonder_question}
-                    onChange={(e) => setTemplateForm({...templateForm, wonder_question: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
+              {(() => {
+                const questionLabels = getQuestionLabels(room.thinking_routine_type);
+                const hasFourth = room.thinking_routine_type === '4c';
+                
+                return (
+                  <div className={`grid grid-cols-1 gap-4 ${hasFourth ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {questionLabels.see.title} 질문
+                      </label>
+                      <input
+                        type="text"
+                        value={templateForm.see_question}
+                        onChange={(e) => setTemplateForm({...templateForm, see_question: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {questionLabels.think.title} 질문
+                      </label>
+                      <input
+                        type="text"
+                        value={templateForm.think_question}
+                        onChange={(e) => setTemplateForm({...templateForm, think_question: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {questionLabels.wonder.title} 질문
+                      </label>
+                      <input
+                        type="text"
+                        value={templateForm.wonder_question}
+                        onChange={(e) => setTemplateForm({...templateForm, wonder_question: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    {hasFourth && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {(questionLabels as any).fourth_step?.title} 질문
+                        </label>
+                        <input
+                          type="text"
+                          value={templateForm.fourth_question}
+                          onChange={(e) => setTemplateForm({...templateForm, fourth_question: e.target.value})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="flex justify-end space-x-3">
                 <button

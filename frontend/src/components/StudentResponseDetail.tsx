@@ -598,7 +598,18 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600">활동방: {room.title}</p>
-              <p className="text-sm text-gray-600">사고루틴: See-Think-Wonder</p>
+              <p className="text-sm text-gray-600">사고루틴: {(() => {
+                const labels: { [key: string]: string } = {
+                  'see-think-wonder': 'See-Think-Wonder',
+                  '4c': '4C',
+                  'circle-of-viewpoints': 'Circle of Viewpoints',
+                  'connect-extend-challenge': 'Connect-Extend-Challenge',
+                  'frayer-model': 'Frayer Model',
+                  'used-to-think-now-think': 'I Used to Think... Now I Think...',
+                  'think-puzzle-explore': 'Think-Puzzle-Explore'
+                };
+                return labels[room.thinking_routine_type] || room.thinking_routine_type;
+              })()}</p>
             </div>
           </div>
         </div>
@@ -713,7 +724,7 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                 'frayer-model': [
                   { key: 'see', title: 'Definition', subtitle: '정의', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'D' },
                   { key: 'think', title: 'Characteristics', subtitle: '특징', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'C' },
-                  { key: 'wonder', title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'E' }
+                  { key: 'wonder', title: 'Examples & Non-Examples', subtitle: '예시와 반례', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'E' }
                 ],
                 'used-to-think-now-think': [
                   { key: 'see', title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'U' },
@@ -729,6 +740,97 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
 
               const steps = stepConfigs[routineType as keyof typeof stepConfigs] || stepConfigs['see-think-wonder'];
 
+              // Frayer Model의 경우 특별한 레이아웃 적용
+              if (routineType === 'frayer-model') {
+                return (
+                  <div className="space-y-6">
+                    {/* Definition */}
+                    <div>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">D</span>
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900">Definition</h4>
+                          <p className="text-sm text-gray-600">정의</p>
+                        </div>
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <p className="text-gray-900 whitespace-pre-wrap">
+                          {response.response_data.see || '응답 없음'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Characteristics */}
+                    <div>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">C</span>
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900">Characteristics</h4>
+                          <p className="text-sm text-gray-600">특징</p>
+                        </div>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <p className="text-gray-900 whitespace-pre-wrap">
+                          {response.response_data.think || '응답 없음'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Examples & Non-Examples */}
+                    <div>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">E</span>
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900">Examples & Non-Examples</h4>
+                          <p className="text-sm text-gray-600">예시와 반례</p>
+                        </div>
+                      </div>
+                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="text-green-600 font-bold">✓</span>
+                              <span className="font-medium text-gray-900">예시 (Examples)</span>
+                            </div>
+                            <div className="bg-white p-3 rounded border">
+                              <p className="text-gray-900 whitespace-pre-wrap">
+                                {(() => {
+                                  const wonderResponse = response.response_data.wonder || '';
+                                  const parts = wonderResponse.split('|||');
+                                  return parts[0] || '응답 없음';
+                                })()}
+                              </p>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="text-red-600 font-bold">✗</span>
+                              <span className="font-medium text-gray-900">반례 (Non-Examples)</span>
+                            </div>
+                            <div className="bg-white p-3 rounded border">
+                              <p className="text-gray-900 whitespace-pre-wrap">
+                                {(() => {
+                                  const wonderResponse = response.response_data.wonder || '';
+                                  const parts = wonderResponse.split('|||');
+                                  return parts[1] || '응답 없음';
+                                })()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // 다른 사고루틴들의 기본 레이아웃
               return steps.map((step) => {
                 const responseValue = response.response_data[step.key as keyof typeof response.response_data];
                 if (!responseValue && step.key === 'fourth_step') return null; // 4단계가 없으면 표시하지 않음
