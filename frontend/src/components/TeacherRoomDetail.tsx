@@ -201,7 +201,7 @@ const TeacherRoomDetail: React.FC = () => {
   };
 
   const handleDeleteResponse = async (response: StudentResponse) => {
-    if (!confirm(`${response.student_name}님의 응답을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+    if (!window.confirm(`${response.student_name}님의 응답을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
       return;
     }
 
