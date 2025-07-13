@@ -674,10 +674,10 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                 </div>
               )}
               
-              {/* 질문 커스터마이징 - 사고루틴 타입이 선택된 경우에만 표시 */}
+              {/* 질문 입력 - 사고루틴 타입이 선택된 경우에만 표시 */}
               {newRoom.thinking_routine_type && (
                 <div className="border-t pt-4">
-                  <h4 className="text-md font-medium text-gray-900 mb-4">질문 커스터마이징</h4>
+                  <h4 className="text-md font-medium text-gray-900 mb-4">질문 입력</h4>
                   
                   <div className="space-y-4">
                     {/* 첫 번째 질문 */}

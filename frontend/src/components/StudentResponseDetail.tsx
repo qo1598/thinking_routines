@@ -671,19 +671,43 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
               {/* 질문들 */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">See 질문</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {room.thinking_routine_type === 'see-think-wonder' && 'See 질문'}
+                    {room.thinking_routine_type === '4c' && 'Connect 질문'}
+                    {room.thinking_routine_type === 'circle-of-viewpoints' && 'Viewpoints 질문'}
+                    {room.thinking_routine_type === 'connect-extend-challenge' && 'Connect 질문'}
+                    {room.thinking_routine_type === 'frayer-model' && 'Definition 질문'}
+                    {room.thinking_routine_type === 'used-to-think-now-think' && 'Used to Think 질문'}
+                    {room.thinking_routine_type === 'think-puzzle-explore' && 'Think 질문'}
+                  </p>
                   <div className="bg-blue-50 p-3 rounded-lg">
                     <p className="text-gray-900">{template.content.see_question}</p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">Think 질문</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {room.thinking_routine_type === 'see-think-wonder' && 'Think 질문'}
+                    {room.thinking_routine_type === '4c' && 'Challenge 질문'}
+                    {room.thinking_routine_type === 'circle-of-viewpoints' && 'Perspective 질문'}
+                    {room.thinking_routine_type === 'connect-extend-challenge' && 'Extend 질문'}
+                    {room.thinking_routine_type === 'frayer-model' && 'Characteristics 질문'}
+                    {room.thinking_routine_type === 'used-to-think-now-think' && 'Now Think 질문'}
+                    {room.thinking_routine_type === 'think-puzzle-explore' && 'Puzzle 질문'}
+                  </p>
                   <div className="bg-green-50 p-3 rounded-lg">
                     <p className="text-gray-900">{template.content.think_question}</p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">Wonder 질문</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {room.thinking_routine_type === 'see-think-wonder' && 'Wonder 질문'}
+                    {room.thinking_routine_type === '4c' && 'Concepts 질문'}
+                    {room.thinking_routine_type === 'circle-of-viewpoints' && 'Questions 질문'}
+                    {room.thinking_routine_type === 'connect-extend-challenge' && 'Challenge 질문'}
+                    {room.thinking_routine_type === 'frayer-model' && 'Examples 질문'}
+                    {room.thinking_routine_type === 'used-to-think-now-think' && 'Why Changed 질문'}
+                    {room.thinking_routine_type === 'think-puzzle-explore' && 'Explore 질문'}
+                  </p>
                   <div className="bg-purple-50 p-3 rounded-lg">
                     <p className="text-gray-900">{template.content.wonder_question}</p>
                   </div>
