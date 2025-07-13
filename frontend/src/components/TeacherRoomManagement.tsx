@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import ThinkingRoutineAnalysis from './ThinkingRoutineAnalysis';
 
 interface Teacher {
   id: string;
@@ -51,6 +52,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createStep, setCreateStep] = useState(1); // 1: 사고루틴 선택, 2: 활동 자료 설정, 3: 질문 입력
+  const [showAnalysis, setShowAnalysis] = useState(false); // 분석 모드 상태 추가
 
   const [newRoom, setNewRoom] = useState<NewRoomForm>({
     title: '',
@@ -449,30 +451,59 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
               >
                 ← 대시보드로 돌아가기
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">사고루틴 생성 및 적용하기</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {showAnalysis ? '사고루틴 분석 및 평가하기' : '사고루틴 생성 및 적용하기'}
+              </h1>
             </div>
-            <div className="flex flex-col items-end space-y-2">
-              <span className="text-sm text-gray-700">
-                안녕하세요, {user?.name}님!
-              </span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                로그아웃
-              </button>
+            <div className="flex items-center space-x-4">
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setShowAnalysis(false)}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    !showAnalysis 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  활동방 관리
+                </button>
+                <button
+                  onClick={() => setShowAnalysis(true)}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    showAnalysis 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  분석 및 평가
+                </button>
+              </div>
+              <div className="flex flex-col items-end space-y-2">
+                <span className="text-sm text-gray-700">
+                  안녕하세요, {user?.name}님!
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  로그아웃
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
       {/* 메인 컨텐츠 */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {error && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
-          </div>
-        )}
+      {showAnalysis ? (
+        <ThinkingRoutineAnalysis />
+      ) : (
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {error && (
+            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
 
         {/* 활동방 생성 버튼 */}
         <div className="mb-6">
@@ -921,6 +952,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
           )}
         </div>
       </main>
+      )}
     </div>
   );
 };

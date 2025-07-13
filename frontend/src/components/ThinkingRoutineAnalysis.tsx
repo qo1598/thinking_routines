@@ -104,10 +104,21 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
   const openCameraWithGuide = () => {
     setShowCameraGuide(true);
-    // 짧은 지연 후 카메라 실행
-    setTimeout(() => {
-      cameraInputRef.current?.click();
-    }, 100);
+  };
+
+  const startCamera = () => {
+    setShowCameraGuide(false);
+    // 카메라 input 클릭
+    if (cameraInputRef.current) {
+      cameraInputRef.current.click();
+    }
+  };
+
+  // 파일 선택 처리 (무한 반복 방지)
+  const handleFileSelect = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   // AI 분석 실행
@@ -347,7 +358,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div 
                 className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={handleFileSelect}
               >
                 <input
                   ref={fileInputRef}
@@ -453,10 +464,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                     취소
                   </button>
                   <button
-                    onClick={() => {
-                      setShowCameraGuide(false);
-                      cameraInputRef.current?.click();
-                    }}
+                    onClick={startCamera}
                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
                   >
                     촬영하기
