@@ -41,6 +41,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/rooms', require('./routes/rooms'));
 app.use('/api/responses', require('./routes/responses'));
+app.use('/api/analyze-routine-image', require('./routes/analyze-routine-image'));
 // app.use('/api/ai', require('./routes/ai'));
 
 // 에러 핸들링 미들웨어
