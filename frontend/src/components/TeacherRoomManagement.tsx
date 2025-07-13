@@ -50,6 +50,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createStep, setCreateStep] = useState(1); // 1: 사고루틴 선택, 2: 활동 자료 설정, 3: 질문 입력
 
   const [newRoom, setNewRoom] = useState<NewRoomForm>({
     title: '',
@@ -292,6 +293,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
         fourth_question: ''
       } });
       setShowCreateForm(false);
+      setCreateStep(1);
       alert(`활동방이 생성되었습니다! 방 코드: ${roomCode}`);
     } catch (err) {
       console.error('Create room error:', err);
@@ -523,32 +525,53 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
         {/* 활동방 생성 폼 */}
         {showCreateForm && (
           <div className="mb-6 bg-white p-6 rounded-lg shadow-sm border">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">새 활동방 만들기</h3>
-            <form onSubmit={handleCreateRoom} className="space-y-4">
-              {/* 1단계: 사고루틴 타입 선택 */}
-              <div>
-                <label htmlFor="thinkingRoutineType" className="block text-sm font-medium text-gray-700">
-                  사고루틴 타입
-                </label>
-                <select
-                  id="thinkingRoutineType"
-                  value={newRoom.thinking_routine_type}
-                  onChange={(e) => handleThinkingRoutineChange(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  <option value="">사고루틴 타입을 선택하세요</option>
-                  {thinkingRoutineOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+            {/* 단계 표시 */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">새 활동방 만들기</h3>
+                <div className="text-sm text-gray-500">
+                  {createStep === 1 && '1단계: 사고루틴 선택'}
+                  {createStep === 2 && '2단계: 활동 자료 설정'}
+                  {createStep === 3 && '3단계: 질문 입력'}
+                </div>
               </div>
-
-              {/* 2단계: 사고루틴이 선택된 경우에만 제목과 설명 입력 */}
-              {newRoom.thinking_routine_type && (
-                <>
+              <div className="flex items-center space-x-4">
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  1
+                </div>
+                <div className={`h-1 w-16 ${createStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  2
+                </div>
+                <div className={`h-1 w-16 ${createStep >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full ${createStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                  3
+                </div>
+              </div>
+            </div>
+            <form onSubmit={handleCreateRoom} className="space-y-4">
+              {/* 1단계: 사고루틴 선택 */}
+              {createStep === 1 && (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="thinkingRoutineType" className="block text-sm font-medium text-gray-700">
+                      사고루틴 타입
+                    </label>
+                    <select
+                      id="thinkingRoutineType"
+                      value={newRoom.thinking_routine_type}
+                      onChange={(e) => handleThinkingRoutineChange(e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    >
+                      <option value="">사고루틴 타입을 선택하세요</option>
+                      {thinkingRoutineOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div>
                     <label htmlFor="title" className="block text-sm font-medium text-gray-700">
                       활동방 제목
@@ -576,13 +599,12 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                       placeholder="활동방에 대한 간단한 설명을 입력하세요"
                     />
                   </div>
-                </>
+                </div>
               )}
-              
-              {/* 활동 자료 설정 - 사고루틴 타입이 선택된 경우에만 표시 */}
-              {newRoom.thinking_routine_type && (
-                <div className="border-t pt-4">
-                  <h4 className="text-md font-medium text-gray-900 mb-4">활동 자료 설정 (선택사항)</h4>
+
+              {/* 2단계: 활동 자료 설정 */}
+              {createStep === 2 && (
+                <div className="space-y-4">
                   
                   <div className="space-y-4">
                     <div>
@@ -674,10 +696,9 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                 </div>
               )}
               
-              {/* 질문 입력 - 사고루틴 타입이 선택된 경우에만 표시 */}
-              {newRoom.thinking_routine_type && (
-                <div className="border-t pt-4">
-                  <h4 className="text-md font-medium text-gray-900 mb-4">질문 입력</h4>
+              {/* 3단계: 질문 입력 */}
+              {createStep === 3 && (
+                <div className="space-y-4">
                   
                   <div className="space-y-4">
                     {/* 첫 번째 질문 */}
@@ -771,23 +792,55 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                 </div>
               )}
 
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateForm(false);
-                  }}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  취소
-                </button>
-                <button
-                  type="submit"
-                  disabled={createLoading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
-                >
-                  {createLoading ? '생성 중...' : '활동방 생성'}
-                </button>
+              {/* 단계별 네비게이션 버튼 */}
+              <div className="flex justify-between mt-6">
+                <div>
+                  {createStep > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setCreateStep(createStep - 1)}
+                      className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+                    >
+                      이전
+                    </button>
+                  )}
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setCreateStep(1);
+                    }}
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    취소
+                  </button>
+                  {createStep < 3 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // 1단계에서는 사고루틴 타입과 제목이 필수
+                        if (createStep === 1 && (!newRoom.thinking_routine_type || !newRoom.title)) {
+                          alert('사고루틴 타입과 활동방 제목을 입력해주세요.');
+                          return;
+                        }
+                        setCreateStep(createStep + 1);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                    >
+                      다음
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={createLoading}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+                    >
+                      {createLoading ? '생성 중...' : '활동방 생성'}
+                    </button>
+                  )}
+                </div>
               </div>
             </form>
           </div>
