@@ -33,7 +33,7 @@ module.exports = async function handler(req, res) {
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
     
     // 더 안정적인 모델 사용
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash	" });
 
     console.log('AI 분석 시작...');
     const result = await model.generateContent([
