@@ -304,54 +304,16 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
   };
 
   const handleThinkingRoutineChange = (routineType: string) => {
-    // 사고루틴 타입에 따라 기본 질문 설정
-    const defaultQuestions = {
-      'see-think-wonder': {
-        see_question: '이 자료에서 무엇을 보았나요?',
-        think_question: '이것에 대해 어떻게 생각하나요?',
-        wonder_question: '이것에 대해 무엇이 궁금한가요?'
-      },
-      '4c': {
-        see_question: '이 내용이 이미 알고 있는 것과 어떻게 연결되나요? (Connect)',
-        think_question: '이 내용에서 어떤 아이디어나 가정에 도전하고 싶나요? (Challenge)',
-        wonder_question: '이 내용에서 중요하다고 생각하는 핵심 개념은 무엇인가요? (Concepts)',
-        fourth_question: '이 내용이 당신이나 다른 사람들에게 어떤 변화를 제안하나요? (Changes)'
-      },
-      'circle-of-viewpoints': {
-        see_question: '이 주제에 대해 다양한 관점을 가질 수 있는 사람들은 누구인가요?',
-        think_question: '선택한 관점에서 이 주제를 어떻게 바라볼까요?',
-        wonder_question: '이 관점에서 가질 수 있는 질문은 무엇인가요?'
-      },
-      'connect-extend-challenge': {
-        see_question: '이 내용이 이미 알고 있는 것과 어떻게 연결되나요? (Connect)',
-        think_question: '이 내용이 당신의 생각을 어떻게 확장시켰나요? (Extend)',
-        wonder_question: '이 내용에서 어떤 것이 당신에게 도전이 되나요? (Challenge)'
-      },
-      'frayer-model': {
-        see_question: '이 개념을 어떻게 정의하겠나요? (Definition)',
-        think_question: '이 개념의 주요 특징은 무엇인가요? (Characteristics)',
-        wonder_question: '이 개념의 예시와 반례는 무엇인가요? (Examples & Non-Examples)'
-      },
-      'used-to-think-now-think': {
-        see_question: '이 주제에 대해 이전에 어떻게 생각했나요? (I Used to Think...)',
-        think_question: '지금은 어떻게 생각하나요? (Now I Think...)',
-        wonder_question: '생각이 바뀐 이유는 무엇인가요?'
-      },
-      'think-puzzle-explore': {
-        see_question: '이 주제에 대해 무엇을 알고 있다고 생각하나요? (Think)',
-        think_question: '무엇이 퍼즐이나 의문점인가요? (Puzzle)',
-        wonder_question: '이 퍼즐을 어떻게 탐구해보고 싶나요? (Explore)'
-      }
-    };
-
-    const questions = defaultQuestions[routineType as keyof typeof defaultQuestions] || defaultQuestions['see-think-wonder'];
-    
+    // 사고루틴 타입 변경 시 질문을 빈 문자열로 초기화
     setNewRoom({
       ...newRoom,
       thinking_routine_type: routineType,
       template_content: {
         ...newRoom.template_content,
-        ...questions
+        see_question: '',
+        think_question: '',
+        wonder_question: '',
+        fourth_question: ''
       }
     });
   };
@@ -728,7 +690,16 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                           template_content: { ...newRoom.template_content, see_question: e.target.value }
                         })}
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="첫 번째 질문을 입력하세요"
+                        placeholder={
+                          newRoom.thinking_routine_type === 'see-think-wonder' ? '예: 이 자료에서 무엇을 보았나요?' :
+                          newRoom.thinking_routine_type === '4c' ? '예: 이 내용이 이미 알고 있는 것과 어떻게 연결되나요? (Connect)' :
+                          newRoom.thinking_routine_type === 'circle-of-viewpoints' ? '예: 이 주제에 대해 다양한 관점을 가질 수 있는 사람들은 누구인가요?' :
+                          newRoom.thinking_routine_type === 'connect-extend-challenge' ? '예: 이 내용이 이미 알고 있는 것과 어떻게 연결되나요? (Connect)' :
+                          newRoom.thinking_routine_type === 'frayer-model' ? '예: 이 개념을 어떻게 정의하겠나요? (Definition)' :
+                          newRoom.thinking_routine_type === 'used-to-think-now-think' ? '예: 이 주제에 대해 이전에 어떻게 생각했나요? (I Used to Think...)' :
+                          newRoom.thinking_routine_type === 'think-puzzle-explore' ? '예: 이 주제에 대해 무엇을 알고 있다고 생각하나요? (Think)' :
+                          '첫 번째 질문을 입력하세요'
+                        }
                       />
                     </div>
                     
@@ -753,7 +724,16 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                           template_content: { ...newRoom.template_content, think_question: e.target.value }
                         })}
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="두 번째 질문을 입력하세요"
+                        placeholder={
+                          newRoom.thinking_routine_type === 'see-think-wonder' ? '예: 이것에 대해 어떻게 생각하나요?' :
+                          newRoom.thinking_routine_type === '4c' ? '예: 이 내용에서 어떤 아이디어나 가정에 도전하고 싶나요? (Challenge)' :
+                          newRoom.thinking_routine_type === 'circle-of-viewpoints' ? '예: 선택한 관점에서 이 주제를 어떻게 바라볼까요?' :
+                          newRoom.thinking_routine_type === 'connect-extend-challenge' ? '예: 이 내용이 당신의 생각을 어떻게 확장시켰나요? (Extend)' :
+                          newRoom.thinking_routine_type === 'frayer-model' ? '예: 이 개념의 주요 특징은 무엇인가요? (Characteristics)' :
+                          newRoom.thinking_routine_type === 'used-to-think-now-think' ? '예: 지금은 어떻게 생각하나요? (Now I Think...)' :
+                          newRoom.thinking_routine_type === 'think-puzzle-explore' ? '예: 무엇이 퍼즐이나 의문점인가요? (Puzzle)' :
+                          '두 번째 질문을 입력하세요'
+                        }
                       />
                     </div>
                     
@@ -778,7 +758,16 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                           template_content: { ...newRoom.template_content, wonder_question: e.target.value }
                         })}
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="세 번째 질문을 입력하세요"
+                        placeholder={
+                          newRoom.thinking_routine_type === 'see-think-wonder' ? '예: 이것에 대해 무엇이 궁금한가요?' :
+                          newRoom.thinking_routine_type === '4c' ? '예: 이 내용에서 중요하다고 생각하는 핵심 개념은 무엇인가요? (Concepts)' :
+                          newRoom.thinking_routine_type === 'circle-of-viewpoints' ? '예: 이 관점에서 가질 수 있는 질문은 무엇인가요?' :
+                          newRoom.thinking_routine_type === 'connect-extend-challenge' ? '예: 이 내용에서 어떤 것이 당신에게 도전이 되나요? (Challenge)' :
+                          newRoom.thinking_routine_type === 'frayer-model' ? '예: 이 개념의 예시와 반례는 무엇인가요? (Examples & Non-Examples)' :
+                          newRoom.thinking_routine_type === 'used-to-think-now-think' ? '예: 생각이 바뀐 이유는 무엇인가요?' :
+                          newRoom.thinking_routine_type === 'think-puzzle-explore' ? '예: 이 퍼즐을 어떻게 탐구해보고 싶나요? (Explore)' :
+                          '세 번째 질문을 입력하세요'
+                        }
                       />
                     </div>
                     
@@ -798,29 +787,13 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                             template_content: { ...newRoom.template_content, fourth_question: e.target.value }
                           })}
                           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="네 번째 질문을 입력하세요"
+                          placeholder="예: 이 내용이 당신이나 다른 사람들에게 어떤 변화를 제안하나요? (Changes)"
                         />
                       </div>
                     )}
                   </div>
                   
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="ml-3">
-                        <h4 className="text-sm font-medium text-yellow-800">
-                          질문을 확인하고 생성 버튼을 클릭하세요
-                        </h4>
-                        <p className="text-sm text-yellow-700 mt-1">
-                          모든 질문이 입력되어야 활동방을 생성할 수 있습니다. 질문을 검토한 후 "활동방 생성하기" 버튼을 클릭하세요.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+
                 </div>
               )}
 
@@ -878,7 +851,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                           활동방 생성 중...
                         </span>
                       ) : (
-                        '🎯 활동방 생성하기'
+                        '생성'
                       )}
                     </button>
                   )}
