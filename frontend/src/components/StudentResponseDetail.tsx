@@ -139,6 +139,28 @@ const StudentResponseDetail: React.FC = () => {
     return videoId ? `https://www.youtube.com/embed/${videoId[1]}` : null;
   };
 
+  // 마크다운 텍스트를 HTML로 변환하는 함수
+  const formatMarkdownText = (text: string) => {
+    return text
+      // ## 숫자. 제목 형식 처리 (예: ## 1. 각 단계별 분석)
+      .replace(/## (\d+)\. (.*?)(?=\n|$)/g, '<div class="mb-6"><h3 class="text-xl font-bold text-purple-800 mb-4 pb-2 border-b-2 border-purple-200">$1. $2</h3></div>')
+      // ### 제목 -> 중간 제목
+      .replace(/### (.*?)(?=\n|$)/g, '<h4 class="text-lg font-semibold text-gray-900 mt-6 mb-3 text-purple-700">$1</h4>')
+      // **강조:** 형식 처리
+      .replace(/\*\*(.*?):\*\*/g, '<div class="mt-4 mb-2"><span class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">$1:</span></div>')
+      // **일반 강조** 처리
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+      // - 리스트 항목 처리 (더 예쁜 불릿 포인트)
+      .replace(/^- (.*?)$/gm, '<div class="flex items-start mb-2"><span class="text-purple-500 mr-2 mt-1">•</span><span class="text-gray-700">$1</span></div>')
+      // 빈 줄을 단락으로 처리
+      .replace(/\n\n/g, '</p><p class="mb-4">')
+      // 단일 줄바꿈을 <br>로 처리
+      .replace(/\n/g, '<br/>')
+      // 전체를 단락으로 감싸기
+      .replace(/^/, '<p class="mb-4">')
+      .replace(/$/, '</p>');
+  };
+
   const handleAiAnalysis = async () => {
     if (!response || !template) return;
 
@@ -575,27 +597,11 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
           </div>
           
           {response.ai_analysis ? (
-            <div className="space-y-4">
-              {(() => {
-                const analysisText = response.ai_analysis;
-                const sections = analysisText.split(/## \d+\./);
-                
-                return sections.slice(1).map((section, index) => {
-                  const sectionTitle = section.split('\n')[0].trim();
-                  const sectionContent = section.split('\n').slice(1).join('\n').trim();
-                  
-                  return (
-                    <div key={index} className="bg-purple-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-gray-900 mb-3">
-                        {index + 1}. {sectionTitle}
-                      </h4>
-                      <div className="text-gray-800 whitespace-pre-wrap text-left">
-                        {sectionContent}
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
+            <div className="bg-purple-50 p-6 rounded-lg">
+              <div 
+                className="prose prose-sm max-w-none text-gray-800"
+                dangerouslySetInnerHTML={{ __html: formatMarkdownText(response.ai_analysis) }}
+              />
             </div>
           ) : (
             <div className="text-center py-8">
