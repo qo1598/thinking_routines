@@ -141,24 +141,37 @@ const StudentResponseDetail: React.FC = () => {
 
   // 마크다운 텍스트를 HTML로 변환하는 함수
   const formatMarkdownText = (text: string) => {
-    return text
-      // ## 숫자. 제목 형식 처리 (예: ## 1. 각 단계별 분석)
-      .replace(/## (\d+)\. (.*?)(?=\n|$)/g, '<div class="mb-6"><h3 class="text-xl font-bold text-purple-800 mb-4 pb-2 border-b-2 border-purple-200">$1. $2</h3></div>')
-      // ### 제목 -> 중간 제목
-      .replace(/### (.*?)(?=\n|$)/g, '<h4 class="text-lg font-semibold text-gray-900 mt-6 mb-3 text-purple-700">$1</h4>')
-      // **강조:** 형식 처리
-      .replace(/\*\*(.*?):\*\*/g, '<div class="mt-4 mb-2"><span class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">$1:</span></div>')
-      // **일반 강조** 처리
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
-      // - 리스트 항목 처리 (더 예쁜 불릿 포인트)
-      .replace(/^- (.*?)$/gm, '<div class="flex items-start mb-2"><span class="text-purple-500 mr-2 mt-1">•</span><span class="text-gray-700">$1</span></div>')
-      // 빈 줄을 단락으로 처리
-      .replace(/\n\n/g, '</p><p class="mb-4">')
-      // 단일 줄바꿈을 <br>로 처리
-      .replace(/\n/g, '<br/>')
-      // 전체를 단락으로 감싸기
-      .replace(/^/, '<p class="mb-4">')
-      .replace(/$/, '</p>');
+    // ## 숫자. 제목으로 섹션을 나누기
+    const sections = text.split(/(?=## \d+\.)/);
+    
+    const formatSection = (section: string) => {
+      return section
+        // ## 숫자. 제목 형식 처리 (예: ## 1. 각 단계별 분석)
+        .replace(/## (\d+)\. (.*?)(?=\n|$)/g, '<h3 class="text-xl font-bold text-purple-800 mb-4 pb-2 border-b-2 border-purple-200">$1. $2</h3>')
+        // ### 제목 -> 중간 제목
+        .replace(/### (.*?)(?=\n|$)/g, '<h4 class="text-lg font-semibold text-gray-900 mt-6 mb-3 text-purple-700">$1</h4>')
+        // **강조:** 형식 처리
+        .replace(/\*\*(.*?):\*\*/g, '<div class="mt-4 mb-2"><span class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">$1:</span></div>')
+        // **일반 강조** 처리
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+        // - 리스트 항목 처리 (더 예쁜 불릿 포인트)
+        .replace(/^- (.*?)$/gm, '<div class="flex items-start mb-2"><span class="text-purple-500 mr-2 mt-1">•</span><span class="text-gray-700">$1</span></div>')
+        // 빈 줄을 단락으로 처리
+        .replace(/\n\n/g, '</p><p class="mb-4">')
+        // 단일 줄바꿈을 <br>로 처리
+        .replace(/\n/g, '<br/>')
+        // 전체를 단락으로 감싸기
+        .replace(/^/, '<p class="mb-4">')
+        .replace(/$/, '</p>');
+    };
+
+    return sections.map((section, index) => {
+      if (!section.trim()) return '';
+      
+      return `<div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
+        ${formatSection(section)}
+      </div>`;
+    }).join('');
   };
 
   const handleAiAnalysis = async () => {
@@ -597,9 +610,9 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
           </div>
           
           {response.ai_analysis ? (
-            <div className="bg-purple-50 p-6 rounded-lg">
+            <div className="space-y-4">
               <div 
-                className="prose prose-sm max-w-none text-gray-800"
+                className="prose prose-sm max-w-none text-gray-800 text-left"
                 dangerouslySetInnerHTML={{ __html: formatMarkdownText(response.ai_analysis) }}
               />
             </div>
