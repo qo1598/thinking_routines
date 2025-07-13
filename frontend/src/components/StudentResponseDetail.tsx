@@ -104,8 +104,9 @@ const StudentResponseDetail: React.FC = () => {
       }
 
       setResponse(responseData);
+      // 기존 피드백과 점수를 입력창에 설정
       setTeacherFeedback(responseData.teacher_feedback || '');
-      setTeacherScore(responseData.teacher_score || '');
+      setTeacherScore(responseData.teacher_score !== null && responseData.teacher_score !== undefined ? responseData.teacher_score : '');
 
       // 활동 템플릿 조회
       const { data: templateData, error: templateError } = await supabase
@@ -293,22 +294,37 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
   const handleSaveTeacherFeedback = async () => {
     if (!response) return;
 
+    // 점수 유효성 검사
+    if (teacherScore !== '' && (isNaN(Number(teacherScore)) || Number(teacherScore) < 1 || Number(teacherScore) > 100)) {
+      alert('점수는 1-100 사이의 숫자여야 합니다.');
+      return;
+    }
+
     setSavingFeedback(true);
     try {
+      const updateData: any = {
+        teacher_feedback: teacherFeedback
+      };
+
+      // 점수가 입력되었을 때만 업데이트
+      if (teacherScore !== '') {
+        updateData.teacher_score = Number(teacherScore);
+      } else {
+        updateData.teacher_score = null;
+      }
+
       const { error } = await supabase!
         .from('student_responses')
-        .update({
-          teacher_feedback: teacherFeedback,
-          teacher_score: teacherScore === '' ? null : Number(teacherScore)
-        })
+        .update(updateData)
         .eq('id', responseId);
 
       if (error) {
         console.error('Feedback save error:', error);
-        alert('피드백 저장에 실패했습니다.');
+        alert('피드백 저장에 실패했습니다: ' + error.message);
         return;
       }
 
+      // 로컬 상태 업데이트
       setResponse(prev => prev ? {
         ...prev,
         teacher_feedback: teacherFeedback,
