@@ -31,6 +31,7 @@ interface NewRoomForm {
     see_question: string;
     think_question: string;
     wonder_question: string;
+    fourth_question?: string; // 4C의 Changes 단계용
   };
 }
 
@@ -59,7 +60,8 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
       youtube_url: '',
       see_question: '이 자료에서 무엇을 보았나요?',
       think_question: '이것에 대해 어떻게 생각하나요?',
-      wonder_question: '이것에 대해 무엇이 궁금한가요?'
+      wonder_question: '이것에 대해 무엇이 궁금한가요?',
+      fourth_question: ''
     }
   });
   const [createLoading, setCreateLoading] = useState(false);
@@ -69,20 +71,26 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
   // 사고루틴 타입 라벨 반환 함수
   const getThinkingRoutineLabel = (type: string) => {
     const labels: { [key: string]: string } = {
-      'see-think-wonder': 'See-Think-Wonder',
-      'connect-extend-challenge': 'Connect-Extend-Challenge',
-      'what-makes-you-say-that': 'What Makes You Say That?',
-      'think-pair-share': 'Think-Pair-Share'
+      'see-think-wonder': 'See-Think-Wonder (보기-생각하기-궁금하기)',
+      '4c': '4C (연결-도전-개념-변화)',
+      'circle-of-viewpoints': 'Circle of Viewpoints (관점의 원)',
+      'connect-extend-challenge': 'Connect-Extend-Challenge (연결-확장-도전)',
+      'frayer-model': 'Frayer Model (프레이어 모델)',
+      'used-to-think-now-think': 'I Used to Think... Now I Think... (이전 생각 - 현재 생각)',
+      'think-puzzle-explore': 'Think-Puzzle-Explore (생각-퍼즐-탐구)'
     };
     return labels[type] || type;
   };
 
   // 사고루틴 옵션
   const thinkingRoutineOptions = [
-    { value: 'see-think-wonder', label: 'See-Think-Wonder' },
-    { value: 'connect-extend-challenge', label: 'Connect-Extend-Challenge' },
-    { value: 'what-makes-you-say-that', label: 'What Makes You Say That?' },
-    { value: 'think-pair-share', label: 'Think-Pair-Share' }
+    { value: 'see-think-wonder', label: 'See-Think-Wonder (보기-생각하기-궁금하기)' },
+    { value: '4c', label: '4C (연결-도전-개념-변화)' },
+    { value: 'circle-of-viewpoints', label: 'Circle of Viewpoints (관점의 원)' },
+    { value: 'connect-extend-challenge', label: 'Connect-Extend-Challenge (연결-확장-도전)' },
+    { value: 'frayer-model', label: 'Frayer Model (프레이어 모델)' },
+    { value: 'used-to-think-now-think', label: 'I Used to Think... Now I Think... (이전 생각 - 현재 생각)' },
+    { value: 'think-puzzle-explore', label: 'Think-Puzzle-Explore (생각-퍼즐-탐구)' }
   ];
 
   useEffect(() => {
@@ -279,7 +287,8 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
         youtube_url: '',
         see_question: '이 자료에서 무엇을 보았나요?',
         think_question: '이것에 대해 어떻게 생각하나요?',
-        wonder_question: '이것에 대해 무엇이 궁금한가요?'
+        wonder_question: '이것에 대해 무엇이 궁금한가요?',
+        fourth_question: ''
       } });
       setShowCreateForm(false);
       alert(`활동방이 생성되었습니다! 방 코드: ${roomCode}`);
@@ -299,20 +308,36 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
         think_question: '이것에 대해 어떻게 생각하나요?',
         wonder_question: '이것에 대해 무엇이 궁금한가요?'
       },
+      '4c': {
+        see_question: '이 내용이 이미 알고 있는 것과 어떻게 연결되나요? (Connect)',
+        think_question: '이 내용에서 어떤 아이디어나 가정에 도전하고 싶나요? (Challenge)',
+        wonder_question: '이 내용에서 중요하다고 생각하는 핵심 개념은 무엇인가요? (Concepts)',
+        fourth_question: '이 내용이 당신이나 다른 사람들에게 어떤 변화를 제안하나요? (Changes)'
+      },
+      'circle-of-viewpoints': {
+        see_question: '이 주제에 대해 다양한 관점을 가질 수 있는 사람들은 누구인가요?',
+        think_question: '선택한 관점에서 이 주제를 어떻게 바라볼까요?',
+        wonder_question: '이 관점에서 가질 수 있는 질문은 무엇인가요?'
+      },
       'connect-extend-challenge': {
-        see_question: '이 내용이 이미 알고 있는 것과 어떻게 연결되나요?',
-        think_question: '이 내용이 당신의 생각을 어떻게 확장시켰나요?',
-        wonder_question: '이 내용에서 어떤 것이 당신에게 도전이 되나요?'
+        see_question: '이 내용이 이미 알고 있는 것과 어떻게 연결되나요? (Connect)',
+        think_question: '이 내용이 당신의 생각을 어떻게 확장시켰나요? (Extend)',
+        wonder_question: '이 내용에서 어떤 것이 당신에게 도전이 되나요? (Challenge)'
       },
-      'what-makes-you-say-that': {
-        see_question: '당신은 무엇을 보거나 알고 있나요?',
-        think_question: '그것이 당신으로 하여금 그렇게 말하게 하는 이유는 무엇인가요?',
-        wonder_question: '다른 관점에서는 어떻게 해석할 수 있을까요?'
+      'frayer-model': {
+        see_question: '이 개념을 어떻게 정의하겠나요? (Definition)',
+        think_question: '이 개념의 주요 특징은 무엇인가요? (Characteristics)',
+        wonder_question: '이 개념의 예시와 반례는 무엇인가요? (Examples & Non-Examples)'
       },
-      'think-pair-share': {
-        see_question: '이 주제에 대해 개인적으로 어떻게 생각하나요?',
-        think_question: '짝과 함께 논의한 후 생각이 어떻게 변했나요?',
-        wonder_question: '전체와 공유하고 싶은 새로운 아이디어는 무엇인가요?'
+      'used-to-think-now-think': {
+        see_question: '이 주제에 대해 이전에 어떻게 생각했나요? (I Used to Think...)',
+        think_question: '지금은 어떻게 생각하나요? (Now I Think...)',
+        wonder_question: '생각이 바뀐 이유는 무엇인가요?'
+      },
+      'think-puzzle-explore': {
+        see_question: '이 주제에 대해 무엇을 알고 있다고 생각하나요? (Think)',
+        think_question: '무엇이 퍼즐이나 의문점인가요? (Puzzle)',
+        wonder_question: '이 퍼즐을 어떻게 탐구해보고 싶나요? (Explore)'
       }
     };
 

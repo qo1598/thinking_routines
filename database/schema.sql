@@ -42,7 +42,7 @@ CREATE TABLE student_responses (
     room_id UUID REFERENCES activity_rooms(id) ON DELETE CASCADE,
     student_name TEXT NOT NULL,
     student_id TEXT,
-    response_data JSONB NOT NULL,
+    response_data JSONB NOT NULL, -- 사고루틴별 응답 데이터 (see, think, wonder, fourth_step 등)
     is_draft BOOLEAN DEFAULT FALSE,
     ai_analysis TEXT, -- AI 분석 결과
     teacher_feedback TEXT, -- 교사 피드백
@@ -50,6 +50,15 @@ CREATE TABLE student_responses (
     submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- 사고루틴별 response_data 구조 예시:
+-- See-Think-Wonder: {"see": "내용", "think": "내용", "wonder": "내용"}
+-- 4C: {"see": "Connect", "think": "Challenge", "wonder": "Concepts", "fourth_step": "Changes"}
+-- Circle of Viewpoints: {"see": "관점 목록", "think": "선택한 관점", "wonder": "관점별 질문"}
+-- Connect-Extend-Challenge: {"see": "Connect", "think": "Extend", "wonder": "Challenge"}
+-- Frayer Model: {"see": "Definition", "think": "Characteristics", "wonder": "Examples & Non-Examples"}
+-- Used to Think Now Think: {"see": "Used to Think", "think": "Now Think", "wonder": "Why Changed"}
+-- Think-Puzzle-Explore: {"see": "Think", "think": "Puzzle", "wonder": "Explore"}
 
 -- 학생 응답 테이블 인덱스
 CREATE INDEX idx_student_responses_room_id ON student_responses(room_id);

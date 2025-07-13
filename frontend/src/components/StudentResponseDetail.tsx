@@ -24,6 +24,7 @@ interface RoutineTemplate {
     see_question: string;
     think_question: string;
     wonder_question: string;
+    fourth_question?: string; // 4C의 Changes 단계용
   };
 }
 
@@ -35,6 +36,8 @@ interface StudentResponse {
     see: string;
     think: string;
     wonder: string;
+    fourth_step?: string; // 4C의 Changes 단계용
+    [key: string]: string | undefined;
   };
   submitted_at: string;
   ai_analysis?: string;
@@ -174,53 +177,10 @@ const StudentResponseDetail: React.FC = () => {
     }).join('');
   };
 
-  const handleAiAnalysis = async () => {
-    if (!response || !template) return;
-
-    // 응답 품질 검사
-    const responses = {
-      see: response.response_data.see?.trim() || '',
-      think: response.response_data.think?.trim() || '',
-      wonder: response.response_data.wonder?.trim() || ''
-    };
-    
-    // 극도로 성의 없는 응답 체크
-    const isExtremelyLowQuality = 
-      Object.values(responses).every(r => r.length < 3) || // 모든 응답이 3글자 미만
-      Object.values(responses).some(r => /^\d+$/.test(r)) || // 숫자만 입력
-      Object.values(responses).some(r => /^[a-zA-Z]{1,2}$/.test(r)) || // 매우 짧은 영문자만
-      Object.values(responses).some(r => /^[ㄱ-ㅎㅏ-ㅣ]{1,2}$/.test(r)) || // 자음/모음만
-      Object.values(responses).some(r => /^[!@#$%^&*()_+\-=[\]{};':"\\|,.<>?]+$/.test(r)); // 특수문자만
-    
-    if (isExtremelyLowQuality) {
-      alert('학생의 응답이 너무 간단합니다. 더 구체적인 응답을 작성하도록 안내해주세요.\n\nAI 분석은 의미 있는 응답에 대해서만 실행됩니다.');
-      return;
-    }
-
-    setAiAnalyzing(true);
-    try {
-      // Google Gemini API 호출을 위한 시스템 프롬프트 구성
-      const systemPrompt = `당신은 사고루틴(Thinking Routines) 교육 전문가입니다. 
+  // 사고루틴별 AI 분석 프롬프트 생성
+  const generateAIPrompt = (routineType: string, response: StudentResponse, template: RoutineTemplate) => {
+    const basePrompt = `당신은 사고루틴(Thinking Routines) 교육 전문가입니다. 
 교사의 평가 보조 수단으로 활용될 분석과 피드백을 제공하는 것이 당신의 핵심 역할입니다.
-
-**See-Think-Wonder 사고루틴 이해:**
-- See(관찰): 학생이 주어진 자료에서 객관적으로 관찰한 내용
-- Think(사고): 관찰한 내용을 바탕으로 한 학생의 해석, 추론, 연결
-- Wonder(궁금증): 학생이 가지게 된 의문, 호기심, 탐구하고 싶은 점
-
-**응답 품질 평가 기준:**
-1. **내용의 적절성**: 각 단계의 목적에 맞는 응답인가?
-2. **구체성**: 추상적이지 않고 구체적인 내용인가?
-3. **논리적 연결**: See → Think → Wonder 단계가 논리적으로 연결되는가?
-4. **깊이**: 표면적이지 않고 깊이 있는 사고가 드러나는가?
-5. **창의성**: 독창적이고 다양한 관점이 포함되어 있는가?
-
-**다양한 응답 상황별 대응:**
-- **우수한 응답**: 구체적인 강점을 명시하고 더 발전시킬 방향 제시
-- **평균적 응답**: 잘한 부분을 인정하되 개선점을 명확히 제시
-- **부실한 응답**: 단계별 목적 재설명과 구체적 개선 방법 제시
-- **부적절한 응답**: 왜 부적절한지 설명하고 올바른 방향 안내
-- **성의 없는 응답**: 사고루틴의 의미와 중요성 강조
 
 **교사 활용을 위한 중요 지침:**
 1. 객관적이고 구체적인 분석 제공
@@ -228,18 +188,124 @@ const StudentResponseDetail: React.FC = () => {
 3. 학생 개별 지도를 위한 실용적 조언 포함
 4. 긍정적이면서도 정확한 평가 유지
 
+**응답 품질 평가 기준:**
+1. **내용의 적절성**: 각 단계의 목적에 맞는 응답인가?
+2. **구체성**: 추상적이지 않고 구체적인 내용인가?
+3. **논리적 연결**: 단계들이 논리적으로 연결되는가?
+4. **깊이**: 표면적이지 않고 깊이 있는 사고가 드러나는가?
+5. **창의성**: 독창적이고 다양한 관점이 포함되어 있는가?`;
+
+    const routineSpecificPrompts = {
+      'see-think-wonder': `
+**See-Think-Wonder 사고루틴 이해:**
+- See(관찰): 학생이 주어진 자료에서 객관적으로 관찰한 내용
+- Think(사고): 관찰한 내용을 바탕으로 한 학생의 해석, 추론, 연결
+- Wonder(궁금증): 학생이 가지게 된 의문, 호기심, 탐구하고 싶은 점
+
 **출력 형식:**
 ## 1. 각 단계별 분석
-
 ### See (관찰)
 - [응답 품질 평가와 구체적 피드백 2-3줄]
-
 ### Think (사고)  
 - [응답 품질 평가와 구체적 피드백 2-3줄]
-
 ### Wonder (궁금증)
-- [응답 품질 평가와 구체적 피드백 2-3줄]
+- [응답 품질 평가와 구체적 피드백 2-3줄]`,
 
+      '4c': `
+**4C 사고루틴 이해:**
+- Connect(연결): 새로운 정보를 기존 지식과 연결하는 능력
+- Challenge(도전): 도전적이거나 논란이 될 수 있는 아이디어 식별
+- Concepts(개념): 핵심 개념과 아이디어 파악
+- Changes(변화): 태도나 사고, 행동의 변화 제안
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Connect (연결)
+- [연결 능력 평가와 구체적 피드백 2-3줄]
+### Challenge (도전)
+- [비판적 사고 능력 평가와 구체적 피드백 2-3줄]
+### Concepts (개념)
+- [핵심 개념 파악 능력 평가와 구체적 피드백 2-3줄]
+### Changes (변화)
+- [변화 제안 능력 평가와 구체적 피드백 2-3줄]`,
+
+      'circle-of-viewpoints': `
+**Circle of Viewpoints 사고루틴 이해:**
+- Viewpoints(관점 탐색): 다양한 관점을 가질 수 있는 사람들 식별
+- Perspective(관점 선택): 특정 관점에서 주제를 바라보기
+- Questions(관점별 질문): 선택한 관점에서 제기할 수 있는 질문
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Viewpoints (관점 탐색)
+- [관점 다양성 평가와 구체적 피드백 2-3줄]
+### Perspective (관점 선택)
+- [관점 이해 능력 평가와 구체적 피드백 2-3줄]
+### Questions (관점별 질문)
+- [질문 생성 능력 평가와 구체적 피드백 2-3줄]`,
+
+      'connect-extend-challenge': `
+**Connect-Extend-Challenge 사고루틴 이해:**
+- Connect(연결): 기존 지식과의 연결점 찾기
+- Extend(확장): 생각을 확장하거나 발전시키기
+- Challenge(도전): 의문점이나 도전적인 부분 제기
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Connect (연결)
+- [연결 능력 평가와 구체적 피드백 2-3줄]
+### Extend (확장)
+- [사고 확장 능력 평가와 구체적 피드백 2-3줄]
+### Challenge (도전)
+- [비판적 사고 능력 평가와 구체적 피드백 2-3줄]`,
+
+      'frayer-model': `
+**Frayer Model 사고루틴 이해:**
+- Definition(정의): 개념의 명확한 정의
+- Characteristics(특징): 개념의 핵심 특징들
+- Examples & Non-Examples(예시와 반례): 구체적인 예시와 반례
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Definition (정의)
+- [정의 능력 평가와 구체적 피드백 2-3줄]
+### Characteristics (특징)
+- [특징 파악 능력 평가와 구체적 피드백 2-3줄]
+### Examples & Non-Examples (예시와 반례)
+- [예시 제시 능력 평가와 구체적 피드백 2-3줄]`,
+
+      'used-to-think-now-think': `
+**I Used to Think... Now I Think... 사고루틴 이해:**
+- Used to Think(이전 생각): 학습 전 가지고 있던 생각
+- Now Think(현재 생각): 학습 후 변화된 생각
+- Why Changed(변화 이유): 생각이 변화한 이유와 과정
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Used to Think (이전 생각)
+- [이전 생각 표현 능력 평가와 구체적 피드백 2-3줄]
+### Now Think (현재 생각)
+- [현재 생각 표현 능력 평가와 구체적 피드백 2-3줄]
+### Why Changed (변화 이유)
+- [변화 성찰 능력 평가와 구체적 피드백 2-3줄]`,
+
+      'think-puzzle-explore': `
+**Think-Puzzle-Explore 사고루틴 이해:**
+- Think(생각): 주제에 대해 알고 있다고 생각하는 내용
+- Puzzle(퍼즐): 궁금하거나 의문스러운 점
+- Explore(탐구): 퍼즐을 해결하기 위한 탐구 방법
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Think (생각)
+- [기존 지식 활용 능력 평가와 구체적 피드백 2-3줄]
+### Puzzle (퍼즐)
+- [의문 제기 능력 평가와 구체적 피드백 2-3줄]
+### Explore (탐구)
+- [탐구 계획 능력 평가와 구체적 피드백 2-3줄]`
+    };
+
+    const commonEnd = `
 ## 2. 종합 평가
 
 **강점:**
@@ -258,7 +324,12 @@ const StudentResponseDetail: React.FC = () => {
 
 위 형식을 정확히 따라 작성해주세요.`;
 
-      const userPrompt = `
+    return basePrompt + (routineSpecificPrompts[routineType as keyof typeof routineSpecificPrompts] || routineSpecificPrompts['see-think-wonder']) + commonEnd;
+  };
+
+  const generateUserPrompt = (response: StudentResponse, template: RoutineTemplate) => {
+    const routineType = template.routine_type;
+    const baseInfo = `
 **학생:** ${response.student_name}
 
 **교사 제공 자료:**
@@ -266,12 +337,86 @@ ${template.content.image_url ? `- 이미지 자료 제공` : ''}
 ${template.content.text_content ? `- 텍스트: "${template.content.text_content}"` : ''}
 ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
 
-**학생 응답:**
+**학생 응답:**`;
+
+    const responseFormats = {
+      'see-think-wonder': `
 - **See (관찰):** ${response.response_data.see}
 - **Think (사고):** ${response.response_data.think}
-- **Wonder (궁금증):** ${response.response_data.wonder}
+- **Wonder (궁금증):** ${response.response_data.wonder}`,
+
+      '4c': `
+- **Connect (연결):** ${response.response_data.see}
+- **Challenge (도전):** ${response.response_data.think}
+- **Concepts (개념):** ${response.response_data.wonder}
+- **Changes (변화):** ${response.response_data.fourth_step || ''}`,
+
+      'circle-of-viewpoints': `
+- **Viewpoints (관점 탐색):** ${response.response_data.see}
+- **Perspective (관점 선택):** ${response.response_data.think}
+- **Questions (관점별 질문):** ${response.response_data.wonder}`,
+
+      'connect-extend-challenge': `
+- **Connect (연결):** ${response.response_data.see}
+- **Extend (확장):** ${response.response_data.think}
+- **Challenge (도전):** ${response.response_data.wonder}`,
+
+      'frayer-model': `
+- **Definition (정의):** ${response.response_data.see}
+- **Characteristics (특징):** ${response.response_data.think}
+- **Examples & Non-Examples (예시와 반례):** ${response.response_data.wonder}`,
+
+      'used-to-think-now-think': `
+- **Used to Think (이전 생각):** ${response.response_data.see}
+- **Now Think (현재 생각):** ${response.response_data.think}
+- **Why Changed (변화 이유):** ${response.response_data.wonder}`,
+
+      'think-puzzle-explore': `
+- **Think (생각):** ${response.response_data.see}
+- **Puzzle (퍼즐):** ${response.response_data.think}
+- **Explore (탐구):** ${response.response_data.wonder}`
+    };
+
+    const responseFormat = responseFormats[routineType as keyof typeof responseFormats] || responseFormats['see-think-wonder'];
+    
+    return baseInfo + responseFormat + `
 
 위 학생의 응답을 분석하고 교육적 피드백을 제공해주세요.`;
+  };
+
+  const handleAiAnalysis = async () => {
+    if (!response || !template) return;
+
+    // 응답 품질 검사
+    const responseValues = [
+      response.response_data.see?.trim() || '',
+      response.response_data.think?.trim() || '',
+      response.response_data.wonder?.trim() || ''
+    ];
+
+    // 4C의 경우 fourth_step도 포함
+    if (template.routine_type === '4c' && response.response_data.fourth_step) {
+      responseValues.push(response.response_data.fourth_step.trim());
+    }
+    
+    // 극도로 성의 없는 응답 체크
+    const isExtremelyLowQuality = 
+      responseValues.every(r => r.length < 3) || // 모든 응답이 3글자 미만
+      responseValues.some(r => /^\d+$/.test(r)) || // 숫자만 입력
+      responseValues.some(r => /^[a-zA-Z]{1,2}$/.test(r)) || // 매우 짧은 영문자만
+      responseValues.some(r => /^[ㄱ-ㅎㅏ-ㅣ]{1,2}$/.test(r)) || // 자음/모음만
+      responseValues.some(r => /^[!@#$%^&*()_+\-=[\]{};':"\\|,.<>?]+$/.test(r)); // 특수문자만
+    
+    if (isExtremelyLowQuality) {
+      alert('학생의 응답이 너무 간단합니다. 더 구체적인 응답을 작성하도록 안내해주세요.\n\nAI 분석은 의미 있는 응답에 대해서만 실행됩니다.');
+      return;
+    }
+
+    setAiAnalyzing(true);
+    try {
+      // 사고루틴별 맞춤형 프롬프트 생성
+      const systemPrompt = generateAIPrompt(template.routine_type, response, template);
+      const userPrompt = generateUserPrompt(response, template);
 
       // Google Gemini API 호출
       console.log('AI 분석 요청 시작...');
@@ -541,56 +686,73 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">학생 응답</h3>
           <div className="space-y-6">
-            <div>
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">S</span>
-                </div>
-                <div>
-                  <h4 className="text-lg font-medium text-gray-900">See</h4>
-                  <p className="text-sm text-gray-600">보기</p>
-                </div>
-              </div>
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-gray-900 whitespace-pre-wrap">
-                  {response.response_data.see || '응답 없음'}
-                </p>
-              </div>
-            </div>
+            {(() => {
+              const routineType = template?.routine_type || 'see-think-wonder';
+              const stepConfigs = {
+                'see-think-wonder': [
+                  { key: 'see', title: 'See', subtitle: '보기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'S' },
+                  { key: 'think', title: 'Think', subtitle: '생각하기', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'T' },
+                  { key: 'wonder', title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'W' }
+                ],
+                '4c': [
+                  { key: 'see', title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'C' },
+                  { key: 'think', title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500', bgColor: 'bg-red-50', icon: 'C' },
+                  { key: 'wonder', title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'C' },
+                  { key: 'fourth_step', title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'C' }
+                ],
+                'circle-of-viewpoints': [
+                  { key: 'see', title: 'Viewpoints', subtitle: '관점 탐색', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'V' },
+                  { key: 'think', title: 'Perspective', subtitle: '관점 선택', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'P' },
+                  { key: 'wonder', title: 'Questions', subtitle: '관점별 질문', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'Q' }
+                ],
+                'connect-extend-challenge': [
+                  { key: 'see', title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'C' },
+                  { key: 'think', title: 'Extend', subtitle: '확장하기', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'E' },
+                  { key: 'wonder', title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500', bgColor: 'bg-red-50', icon: 'C' }
+                ],
+                'frayer-model': [
+                  { key: 'see', title: 'Definition', subtitle: '정의', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'D' },
+                  { key: 'think', title: 'Characteristics', subtitle: '특징', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'C' },
+                  { key: 'wonder', title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'E' }
+                ],
+                'used-to-think-now-think': [
+                  { key: 'see', title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'U' },
+                  { key: 'think', title: 'Now Think', subtitle: '현재 생각', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'N' },
+                  { key: 'wonder', title: 'Why Changed', subtitle: '변화 이유', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'W' }
+                ],
+                'think-puzzle-explore': [
+                  { key: 'see', title: 'Think', subtitle: '생각하기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'T' },
+                  { key: 'think', title: 'Puzzle', subtitle: '퍼즐', color: 'bg-yellow-500', bgColor: 'bg-yellow-50', icon: 'P' },
+                  { key: 'wonder', title: 'Explore', subtitle: '탐구하기', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'E' }
+                ]
+              };
 
-            <div>
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">T</span>
-                </div>
-                <div>
-                  <h4 className="text-lg font-medium text-gray-900">Think</h4>
-                  <p className="text-sm text-gray-600">생각하기</p>
-                </div>
-              </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <p className="text-gray-900 whitespace-pre-wrap">
-                  {response.response_data.think || '응답 없음'}
-                </p>
-              </div>
-            </div>
+              const steps = stepConfigs[routineType as keyof typeof stepConfigs] || stepConfigs['see-think-wonder'];
 
-            <div>
-              <div className="flex items-center space-x-3 mb-3">
-                <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">W</span>
-                </div>
-                <div>
-                  <h4 className="text-lg font-medium text-gray-900">Wonder</h4>
-                  <p className="text-sm text-gray-600">궁금하기</p>
-                </div>
-              </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <p className="text-gray-900 whitespace-pre-wrap">
-                  {response.response_data.wonder || '응답 없음'}
-                </p>
-              </div>
-            </div>
+              return steps.map((step) => {
+                const responseValue = response.response_data[step.key as keyof typeof response.response_data];
+                if (!responseValue && step.key === 'fourth_step') return null; // 4단계가 없으면 표시하지 않음
+                
+                return (
+                  <div key={step.key}>
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className={`w-8 h-8 rounded-full ${step.color} flex items-center justify-center`}>
+                        <span className="text-white font-bold text-sm">{step.icon}</span>
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-medium text-gray-900">{step.title}</h4>
+                        <p className="text-sm text-gray-600">{step.subtitle}</p>
+                      </div>
+                    </div>
+                    <div className={`${step.bgColor} p-4 rounded-lg`}>
+                      <p className="text-gray-900 whitespace-pre-wrap">
+                        {responseValue || '응답 없음'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
 
