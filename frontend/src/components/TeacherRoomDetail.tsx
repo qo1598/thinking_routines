@@ -200,6 +200,32 @@ const TeacherRoomDetail: React.FC = () => {
     navigate(`/teacher/room/${roomId}/response/${response.id}`);
   };
 
+  const handleDeleteResponse = async (response: StudentResponse) => {
+    if (!confirm(`${response.student_name}님의 응답을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase!
+        .from('student_responses')
+        .delete()
+        .eq('id', response.id);
+
+      if (error) {
+        console.error('Delete response error:', error);
+        alert('응답 삭제에 실패했습니다.');
+        return;
+      }
+
+      // 성공적으로 삭제된 경우 목록에서 제거
+      setResponses(prev => prev.filter(r => r.id !== response.id));
+      alert('응답이 삭제되었습니다.');
+    } catch (err) {
+      console.error('Delete response error:', err);
+      alert('응답 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
 
 
   if (loading) {
@@ -554,12 +580,20 @@ const TeacherRoomDetail: React.FC = () => {
                         제출일: {new Date(response.submitted_at).toLocaleString()}
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleViewResponse(response)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
-                    >
-                      응답 보기
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleViewResponse(response)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+                      >
+                        응답 보기
+                      </button>
+                      <button
+                        onClick={() => handleDeleteResponse(response)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm"
+                      >
+                        삭제
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

@@ -141,6 +141,23 @@ const StudentResponseDetail: React.FC = () => {
   const handleAiAnalysis = async () => {
     if (!response || !template) return;
 
+    // 응답 품질 검사
+    const responses = [
+      response.response_data.see?.trim() || '',
+      response.response_data.think?.trim() || '',
+      response.response_data.wonder?.trim() || ''
+    ];
+    
+    // 모든 응답이 너무 짧거나 성의 없는 경우 체크
+    const isLowQuality = responses.every(r => r.length < 5) || 
+                        responses.some(r => /^\d+$/.test(r)) || // 숫자만 입력
+                        responses.some(r => /^[a-zA-Z]{1,3}$/.test(r)); // 짧은 영문자만
+    
+    if (isLowQuality) {
+      alert('학생의 응답이 너무 간단합니다. 더 구체적인 응답을 작성하도록 안내해주세요.');
+      return;
+    }
+
     setAiAnalyzing(true);
     try {
       // Google Gemini API 호출을 위한 시스템 프롬프트 구성
@@ -516,28 +533,31 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
               >
                 {aiAnalyzing ? '분석 중...' : 'AI 분석 실행'}
               </button>
-              <button
-                onClick={async () => {
-                  try {
-                    const response = await fetch('/api/test-env');
-                    const data = await response.json();
-                    console.log('환경변수 테스트:', data);
-                    alert(`환경변수 테스트 결과:\n- Gemini API 키: ${data.hasGeminiKey ? '설정됨' : '없음'}\n- 키 길이: ${data.geminiKeyLength}\n- Node 버전: ${data.nodeVersion}`);
-                  } catch (error) {
-                    console.error('환경변수 테스트 오류:', error);
-                    alert('환경변수 테스트 실패');
-                  }
-                }}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-md text-sm font-medium"
-              >
-                🔧 환경 테스트
-              </button>
             </div>
           </div>
           
           {response.ai_analysis ? (
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="text-gray-900 whitespace-pre-wrap">{response.ai_analysis}</div>
+            <div className="space-y-4">
+              {(() => {
+                const analysisText = response.ai_analysis;
+                const sections = analysisText.split(/## \d+\./);
+                
+                return sections.slice(1).map((section, index) => {
+                  const sectionTitle = section.split('\n')[0].trim();
+                  const sectionContent = section.split('\n').slice(1).join('\n').trim();
+                  
+                  return (
+                    <div key={index} className="bg-purple-50 p-4 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-3">
+                        {index + 1}. {sectionTitle}
+                      </h4>
+                      <div className="text-gray-800 whitespace-pre-wrap text-left">
+                        {sectionContent}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           ) : (
             <div className="text-center py-8">
@@ -567,15 +587,14 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                점수 (1-10점)
+                점수 (1-100점)
               </label>
               <input
                 type="number"
                 min="1"
-                max="10"
+                max="100"
                 value={teacherScore}
                 onChange={(e) => setTeacherScore(e.target.value === '' ? '' : Number(e.target.value))}
-                placeholder="1-10 사이의 점수를 입력하세요"
                 className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
