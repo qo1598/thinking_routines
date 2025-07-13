@@ -248,7 +248,9 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
         },
         body: JSON.stringify({
           systemPrompt,
-          userPrompt
+          userPrompt,
+          imageUrl: template.content.image_url,
+          youtubeUrl: template.content.youtube_url
         })
       });
 
