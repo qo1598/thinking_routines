@@ -826,7 +826,7 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                               <p className="text-gray-900 whitespace-pre-wrap">
                                 {(() => {
                                   const wonderResponse = response.response_data.wonder || '';
-                                  const parts = wonderResponse.split('|||');
+                                  const parts = wonderResponse.split('||');
                                   return parts[0] || '응답 없음';
                                 })()}
                               </p>
@@ -841,7 +841,7 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                               <p className="text-gray-900 whitespace-pre-wrap">
                                 {(() => {
                                   const wonderResponse = response.response_data.wonder || '';
-                                  const parts = wonderResponse.split('|||');
+                                  const parts = wonderResponse.split('||');
                                   return parts[1] || '응답 없음';
                                 })()}
                               </p>
