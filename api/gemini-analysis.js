@@ -24,16 +24,16 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required prompts' });
     }
 
-    if (!process.env.GOOGLE_GEMINI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       console.log('Gemini API 키 누락');
       return res.status(500).json({ error: 'Gemini API key not configured' });
     }
 
     console.log('Gemini API 초기화 중...');
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     
     // 더 안정적인 모델 사용
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     console.log('AI 분석 시작...');
     const result = await model.generateContent([

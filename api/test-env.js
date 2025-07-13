@@ -13,8 +13,8 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const hasGeminiKey = !!process.env.GOOGLE_GEMINI_API_KEY;
-    const geminiKeyLength = process.env.GOOGLE_GEMINI_API_KEY?.length || 0;
+    const hasGeminiKey = !!process.env.GEMINI_API_KEY;
+    const geminiKeyLength = process.env.GEMINI_API_KEY?.length || 0;
     
     return res.status(200).json({
       hasGeminiKey,
