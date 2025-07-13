@@ -145,53 +145,60 @@ const StudentResponseDetail: React.FC = () => {
     try {
       // Google Gemini API 호출을 위한 시스템 프롬프트 구성
       const systemPrompt = `당신은 사고루틴(Thinking Routines) 교육 전문가입니다. 
-See-Think-Wonder 사고루틴을 활용한 학생의 학습 활동을 분석하고 교육적 피드백을 제공하는 것이 당신의 역할입니다.
+See-Think-Wonder 사고루틴을 활용한 학생의 학습 활동을 분석하고 간결한 교육적 피드백을 제공하는 것이 당신의 역할입니다.
 
 **See-Think-Wonder 사고루틴 이해:**
 - See(관찰): 학생이 주어진 자료에서 객관적으로 관찰한 내용
 - Think(사고): 관찰한 내용을 바탕으로 한 학생의 해석, 추론, 연결
 - Wonder(궁금증): 학생이 가지게 된 의문, 호기심, 탐구하고 싶은 점
 
-**분석 기준:**
-1. 각 단계별 응답의 질과 깊이
-2. 단계 간 논리적 연결성
-3. 비판적 사고 능력
-4. 창의적 사고와 호기심
-5. 개념적 이해도
+**중요 지침:**
+1. 교사 제공 자료는 분석에만 활용하고, 결과에 다시 나열하지 마세요.
+2. 각 섹션을 명확히 구분하여 작성하세요.
+3. 간결하고 핵심적인 피드백을 제공하세요.
+4. 긍정적이고 건설적인 톤을 유지하세요.
 
-**피드백 구조:**
-1. 각 단계별 분석 (See, Think, Wonder)
-2. 종합 평가 (강점, 개선점, 추천 활동)
-3. 교육적 권장사항 (다음 단계 학습 방향)
+**출력 형식:**
+## 1. 각 단계별 분석
 
-분석 결과는 한국어로 작성하고, 학생의 학습 동기를 높이는 긍정적이고 건설적인 톤으로 작성해주세요.`;
+### See (관찰)
+- [2-3줄 피드백]
+
+### Think (사고)  
+- [2-3줄 피드백]
+
+### Wonder (궁금증)
+- [2-3줄 피드백]
+
+## 2. 종합 평가
+
+**강점:**
+- [핵심 강점 1-2개]
+
+**개선점:**
+- [구체적 개선점 1-2개]
+
+## 3. 교육적 권장사항
+
+**다음 활동 제안:**
+- [구체적 제안 2-3개]
+
+위 형식을 정확히 따라 작성해주세요.`;
 
       const userPrompt = `
-**활동 정보:**
-- 활동방: ${room?.title}
-- 사고루틴: See-Think-Wonder
+**학생:** ${response.student_name}
 
 **교사 제공 자료:**
-${template.content.image_url ? `- 이미지: ${template.content.image_url}` : ''}
-${template.content.text_content ? `- 텍스트 내용: ${template.content.text_content}` : ''}
-${template.content.youtube_url ? `- 유튜브 영상: ${template.content.youtube_url}` : ''}
-
-**교사 질문:**
-- See 질문: ${template.content.see_question}
-- Think 질문: ${template.content.think_question}
-- Wonder 질문: ${template.content.wonder_question}
-
-**학생 정보:**
-- 이름: ${response.student_name}
-- 학번: ${response.student_id}
-- 제출일: ${new Date(response.submitted_at).toLocaleString()}
+${template.content.image_url ? `- 이미지 자료 제공` : ''}
+${template.content.text_content ? `- 텍스트: "${template.content.text_content}"` : ''}
+${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
 
 **학생 응답:**
-- See (관찰): ${response.response_data.see}
-- Think (사고): ${response.response_data.think}
-- Wonder (궁금증): ${response.response_data.wonder}
+- **See (관찰):** ${response.response_data.see}
+- **Think (사고):** ${response.response_data.think}
+- **Wonder (궁금증):** ${response.response_data.wonder}
 
-위 정보를 바탕으로 이 학생의 사고루틴 학습을 분석하고 교육적 피드백을 제공해주세요.`;
+위 학생의 응답을 분석하고 교육적 피드백을 제공해주세요.`;
 
       // Google Gemini API 호출
       console.log('AI 분석 요청 시작...');
