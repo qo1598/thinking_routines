@@ -129,8 +129,8 @@ const TeacherRoomDetail: React.FC = () => {
     }
   }, [roomId, fetchRoomData]);
 
-  const handleBackToDashboard = () => {
-    navigate('/teacher/dashboard');
+  const handleBackToRoomManagement = () => {
+    navigate('/teacher/rooms');
   };
 
   const getThinkingRoutineLabel = (type: string) => {
@@ -243,10 +243,10 @@ const TeacherRoomDetail: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">오류가 발생했습니다</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={handleBackToDashboard}
+            onClick={handleBackToRoomManagement}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
           >
-            대시보드로 돌아가기
+            사고루틴 생성 및 적용하기로 돌아가기
           </button>
         </div>
       </div>
@@ -261,10 +261,10 @@ const TeacherRoomDetail: React.FC = () => {
           <div className="flex items-center justify-between py-6">
             <div className="flex items-center space-x-4">
               <button
-                onClick={handleBackToDashboard}
+                onClick={handleBackToRoomManagement}
                 className="text-gray-600 hover:text-gray-900"
               >
-                ← 대시보드로 돌아가기
+                ← 사고루틴 생성 및 적용하기로 돌아가기
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{room.title}</h1>

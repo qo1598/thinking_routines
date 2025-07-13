@@ -524,33 +524,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
           <div className="mb-6 bg-white p-6 rounded-lg shadow-sm border">
             <h3 className="text-lg font-medium text-gray-900 mb-4">새 활동방 만들기</h3>
             <form onSubmit={handleCreateRoom} className="space-y-4">
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                  활동방 제목
-                </label>
-                <input
-                  id="title"
-                  type="text"
-                  required
-                  value={newRoom.title}
-                  onChange={(e) => setNewRoom({...newRoom, title: e.target.value})}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="예: 미술 작품 감상하기"
-                />
-              </div>
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                  설명 (선택사항)
-                </label>
-                <textarea
-                  id="description"
-                  rows={3}
-                  value={newRoom.description}
-                  onChange={(e) => setNewRoom({...newRoom, description: e.target.value})}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="활동방에 대한 간단한 설명을 입력하세요"
-                />
-              </div>
+              {/* 1단계: 사고루틴 타입 선택 */}
               <div>
                 <label htmlFor="thinkingRoutineType" className="block text-sm font-medium text-gray-700">
                   사고루틴 타입
@@ -570,6 +544,39 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                   ))}
                 </select>
               </div>
+
+              {/* 2단계: 사고루틴이 선택된 경우에만 제목과 설명 입력 */}
+              {newRoom.thinking_routine_type && (
+                <>
+                  <div>
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                      활동방 제목
+                    </label>
+                    <input
+                      id="title"
+                      type="text"
+                      required
+                      value={newRoom.title}
+                      onChange={(e) => setNewRoom({...newRoom, title: e.target.value})}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="활동방 제목을 입력하세요"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                      설명 (선택사항)
+                    </label>
+                    <textarea
+                      id="description"
+                      rows={3}
+                      value={newRoom.description}
+                      onChange={(e) => setNewRoom({...newRoom, description: e.target.value})}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="활동방에 대한 간단한 설명을 입력하세요"
+                    />
+                  </div>
+                </>
+              )}
               
               {/* 활동 자료 설정 - 사고루틴 타입이 선택된 경우에만 표시 */}
               {newRoom.thinking_routine_type && (
@@ -672,67 +679,91 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                   <h4 className="text-md font-medium text-gray-900 mb-4">질문 커스터마이징</h4>
                   
                   <div className="space-y-4">
-                    {newRoom.thinking_routine_type === 'see-think-wonder' && (
-                      <>
-                        <div>
-                          <label htmlFor="seeQuestion" className="block text-sm font-medium text-gray-700">
-                            See 질문
-                          </label>
-                          <input
-                            id="seeQuestion"
-                            type="text"
-                            value={newRoom.template_content.see_question}
-                            onChange={(e) => setNewRoom({
-                              ...newRoom,
-                              template_content: { ...newRoom.template_content, see_question: e.target.value }
-                            })}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="thinkQuestion" className="block text-sm font-medium text-gray-700">
-                            Think 질문
-                          </label>
-                          <input
-                            id="thinkQuestion"
-                            type="text"
-                            value={newRoom.template_content.think_question}
-                            onChange={(e) => setNewRoom({
-                              ...newRoom,
-                              template_content: { ...newRoom.template_content, think_question: e.target.value }
-                            })}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="wonderQuestion" className="block text-sm font-medium text-gray-700">
-                            Wonder 질문
-                          </label>
-                          <input
-                            id="wonderQuestion"
-                            type="text"
-                            value={newRoom.template_content.wonder_question}
-                            onChange={(e) => setNewRoom({
-                              ...newRoom,
-                              template_content: { ...newRoom.template_content, wonder_question: e.target.value }
-                            })}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                      </>
-                    )}
+                    {/* 첫 번째 질문 */}
+                    <div>
+                      <label htmlFor="seeQuestion" className="block text-sm font-medium text-gray-700">
+                        {newRoom.thinking_routine_type === 'see-think-wonder' && '1단계: See 질문'}
+                        {newRoom.thinking_routine_type === '4c' && '1단계: Connect 질문'}
+                        {newRoom.thinking_routine_type === 'circle-of-viewpoints' && '1단계: Viewpoints 질문'}
+                        {newRoom.thinking_routine_type === 'connect-extend-challenge' && '1단계: Connect 질문'}
+                        {newRoom.thinking_routine_type === 'frayer-model' && '1단계: Definition 질문'}
+                        {newRoom.thinking_routine_type === 'used-to-think-now-think' && '1단계: Used to Think 질문'}
+                        {newRoom.thinking_routine_type === 'think-puzzle-explore' && '1단계: Think 질문'}
+                      </label>
+                      <input
+                        id="seeQuestion"
+                        type="text"
+                        value={newRoom.template_content.see_question}
+                        onChange={(e) => setNewRoom({
+                          ...newRoom,
+                          template_content: { ...newRoom.template_content, see_question: e.target.value }
+                        })}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
                     
-                    {/* 다른 사고루틴 타입들도 유사하게 추가 가능 */}
-                    {newRoom.thinking_routine_type !== 'see-think-wonder' && newRoom.thinking_routine_type !== '' && (
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-600">
-                          선택하신 사고루틴 타입: <strong>{thinkingRoutineOptions.find(opt => opt.value === newRoom.thinking_routine_type)?.label}</strong>
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          이 사고루틴의 상세 설정은 활동방 생성 후 관리 페이지에서 가능합니다.
-                        </p>
+                    {/* 두 번째 질문 */}
+                    <div>
+                      <label htmlFor="thinkQuestion" className="block text-sm font-medium text-gray-700">
+                        {newRoom.thinking_routine_type === 'see-think-wonder' && '2단계: Think 질문'}
+                        {newRoom.thinking_routine_type === '4c' && '2단계: Challenge 질문'}
+                        {newRoom.thinking_routine_type === 'circle-of-viewpoints' && '2단계: Perspective 질문'}
+                        {newRoom.thinking_routine_type === 'connect-extend-challenge' && '2단계: Extend 질문'}
+                        {newRoom.thinking_routine_type === 'frayer-model' && '2단계: Characteristics 질문'}
+                        {newRoom.thinking_routine_type === 'used-to-think-now-think' && '2단계: Now Think 질문'}
+                        {newRoom.thinking_routine_type === 'think-puzzle-explore' && '2단계: Puzzle 질문'}
+                      </label>
+                      <input
+                        id="thinkQuestion"
+                        type="text"
+                        value={newRoom.template_content.think_question}
+                        onChange={(e) => setNewRoom({
+                          ...newRoom,
+                          template_content: { ...newRoom.template_content, think_question: e.target.value }
+                        })}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    
+                    {/* 세 번째 질문 */}
+                    <div>
+                      <label htmlFor="wonderQuestion" className="block text-sm font-medium text-gray-700">
+                        {newRoom.thinking_routine_type === 'see-think-wonder' && '3단계: Wonder 질문'}
+                        {newRoom.thinking_routine_type === '4c' && '3단계: Concepts 질문'}
+                        {newRoom.thinking_routine_type === 'circle-of-viewpoints' && '3단계: Questions 질문'}
+                        {newRoom.thinking_routine_type === 'connect-extend-challenge' && '3단계: Challenge 질문'}
+                        {newRoom.thinking_routine_type === 'frayer-model' && '3단계: Examples 질문'}
+                        {newRoom.thinking_routine_type === 'used-to-think-now-think' && '3단계: Why Changed 질문'}
+                        {newRoom.thinking_routine_type === 'think-puzzle-explore' && '3단계: Explore 질문'}
+                      </label>
+                      <input
+                        id="wonderQuestion"
+                        type="text"
+                        value={newRoom.template_content.wonder_question}
+                        onChange={(e) => setNewRoom({
+                          ...newRoom,
+                          template_content: { ...newRoom.template_content, wonder_question: e.target.value }
+                        })}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    
+                    {/* 네 번째 질문 (4C만 해당) */}
+                    {newRoom.thinking_routine_type === '4c' && (
+                      <div>
+                        <label htmlFor="fourthQuestion" className="block text-sm font-medium text-gray-700">
+                          4단계: Changes 질문
+                        </label>
+                        <input
+                          id="fourthQuestion"
+                          type="text"
+                          value={newRoom.template_content.fourth_question || ''}
+                          onChange={(e) => setNewRoom({
+                            ...newRoom,
+                            template_content: { ...newRoom.template_content, fourth_question: e.target.value }
+                          })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
                       </div>
                     )}
                   </div>
