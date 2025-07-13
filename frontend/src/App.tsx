@@ -19,6 +19,7 @@ function App() {
           {/* 교사 관련 경로 */}
           <Route path="/teacher" element={<TeacherLogin />} />
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+          <Route path="/teacher/thinking-routines" element={<TeacherDashboard />} />
           <Route path="/teacher/room/:roomId" element={<TeacherRoomDetail />} />
           <Route path="/teacher/room/:roomId/response/:responseId" element={<StudentResponseDetail />} />
           

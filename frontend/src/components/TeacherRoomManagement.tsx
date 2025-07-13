@@ -479,7 +479,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
               <button
-                onClick={onBack}
+                onClick={() => navigate('/teacher/dashboard')}
                 className="text-gray-600 hover:text-gray-900"
               >
                 ← 대시보드로 돌아가기

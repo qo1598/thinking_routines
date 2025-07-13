@@ -711,13 +711,224 @@ const ThinkingRoutineForm: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              <textarea
-                value={responses[currentStep]}
-                onChange={(e) => handleInputChange(e.target.value)}
-                placeholder={stepInfo.placeholder}
-                rows={6}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-              />
+              {/* 사고루틴별 특화된 입력 컴포넌트 */}
+              {template.routine_type === 'frayer-model' && currentStep === 'see' && (
+                <div className="bg-blue-50 p-6 rounded-lg border-2 border-blue-200">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-bold text-blue-800">Definition (정의)</h3>
+                    <p className="text-sm text-blue-600">이 개념을 명확하게 정의해보세요</p>
+                  </div>
+                  <textarea
+                    value={responses[currentStep]}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    placeholder="이 개념을 한 문장으로 정의해보세요..."
+                    rows={4}
+                    className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white"
+                  />
+                </div>
+              )}
+              
+              {template.routine_type === 'frayer-model' && currentStep === 'think' && (
+                <div className="bg-green-50 p-6 rounded-lg border-2 border-green-200">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-bold text-green-800">Characteristics (특징)</h3>
+                    <p className="text-sm text-green-600">이 개념의 주요 특징들을 나열해보세요</p>
+                  </div>
+                  <textarea
+                    value={responses[currentStep]}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    placeholder="• 특징 1: 
+• 특징 2: 
+• 특징 3: "
+                    rows={6}
+                    className="w-full px-4 py-3 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white"
+                  />
+                </div>
+              )}
+              
+              {template.routine_type === 'frayer-model' && currentStep === 'wonder' && (
+                <div className="bg-purple-50 p-6 rounded-lg border-2 border-purple-200">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-bold text-purple-800">Examples & Non-Examples</h3>
+                    <p className="text-sm text-purple-600">예시와 반례를 들어보세요</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-semibold text-purple-700 mb-2">✓ 예시 (Examples)</h4>
+                      <textarea
+                        value={responses[currentStep]?.split('||')[0] || ''}
+                        onChange={(e) => {
+                          const nonExamples = responses[currentStep]?.split('||')[1] || '';
+                          handleInputChange(e.target.value + '||' + nonExamples);
+                        }}
+                        placeholder="이 개념에 해당하는 예시들을 적어보세요..."
+                        rows={4}
+                        className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none bg-white"
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-purple-700 mb-2">✗ 반례 (Non-Examples)</h4>
+                      <textarea
+                        value={responses[currentStep]?.split('||')[1] || ''}
+                        onChange={(e) => {
+                          const examples = responses[currentStep]?.split('||')[0] || '';
+                          handleInputChange(examples + '||' + e.target.value);
+                        }}
+                        placeholder="이 개념에 해당하지 않는 반례들을 적어보세요..."
+                        rows={4}
+                        className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {template.routine_type === '4c' && (
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border-2 border-blue-200">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-bold text-blue-800">
+                      {currentStep === 'see' && 'Connect (연결하기)'}
+                      {currentStep === 'think' && 'Challenge (도전하기)'}
+                      {currentStep === 'wonder' && 'Concepts (개념 파악)'}
+                      {currentStep === 'fourth_step' && 'Changes (변화 제안)'}
+                    </h3>
+                    <p className="text-sm text-blue-600">
+                      {currentStep === 'see' && '이전 지식과 연결점을 찾아보세요'}
+                      {currentStep === 'think' && '기존 생각에 도전해보세요'}
+                      {currentStep === 'wonder' && '핵심 개념을 파악해보세요'}
+                      {currentStep === 'fourth_step' && '변화를 제안해보세요'}
+                    </p>
+                  </div>
+                  <textarea
+                    value={responses[currentStep]}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    placeholder={stepInfo.placeholder}
+                    rows={5}
+                    className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white"
+                  />
+                </div>
+              )}
+              
+              {template.routine_type === 'used-to-think-now-think' && (
+                <div className="bg-gradient-to-r from-orange-50 to-blue-50 p-6 rounded-lg border-2 border-orange-200">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-bold text-orange-800">
+                      {currentStep === 'see' && '🤔 I Used to Think... (이전 생각)'}
+                      {currentStep === 'think' && '💡 Now I Think... (현재 생각)'}
+                      {currentStep === 'wonder' && '🔄 Why Changed? (변화 이유)'}
+                    </h3>
+                    <p className="text-sm text-orange-600">
+                      {currentStep === 'see' && '이 주제에 대해 예전에 어떻게 생각했나요?'}
+                      {currentStep === 'think' && '지금은 어떻게 생각하나요?'}
+                      {currentStep === 'wonder' && '생각이 바뀐 이유는 무엇인가요?'}
+                    </p>
+                  </div>
+                  <textarea
+                    value={responses[currentStep]}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    placeholder={stepInfo.placeholder}
+                    rows={5}
+                    className="w-full px-4 py-3 border border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none bg-white"
+                  />
+                </div>
+              )}
+              
+              {template.routine_type === 'think-puzzle-explore' && (
+                <div className="bg-gradient-to-r from-green-50 to-yellow-50 p-6 rounded-lg border-2 border-green-200">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-bold text-green-800">
+                      {currentStep === 'see' && '🧠 Think (생각하기)'}
+                      {currentStep === 'think' && '🧩 Puzzle (퍼즐)'}
+                      {currentStep === 'wonder' && '🔍 Explore (탐구하기)'}
+                    </h3>
+                    <p className="text-sm text-green-600">
+                      {currentStep === 'see' && '이 주제에 대해 무엇을 알고 있나요?'}
+                      {currentStep === 'think' && '어떤 것이 궁금하거나 혼란스러운가요?'}
+                      {currentStep === 'wonder' && '어떻게 탐구해보고 싶나요?'}
+                    </p>
+                  </div>
+                  <textarea
+                    value={responses[currentStep]}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    placeholder={stepInfo.placeholder}
+                    rows={5}
+                    className="w-full px-4 py-3 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white"
+                  />
+                </div>
+              )}
+              
+              {template.routine_type === 'circle-of-viewpoints' && (
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-lg border-2 border-indigo-200">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-bold text-indigo-800">
+                      {currentStep === 'see' && '👥 Viewpoints (관점 탐색)'}
+                      {currentStep === 'think' && '🎭 Perspective (관점 선택)'}
+                      {currentStep === 'wonder' && '❓ Questions (관점별 질문)'}
+                    </h3>
+                    <p className="text-sm text-indigo-600">
+                      {currentStep === 'see' && '다양한 관점을 가진 사람들을 생각해보세요'}
+                      {currentStep === 'think' && '선택한 관점에서 바라보세요'}
+                      {currentStep === 'wonder' && '이 관점에서 가질 수 있는 질문들을 생각해보세요'}
+                    </p>
+                  </div>
+                  <textarea
+                    value={responses[currentStep]}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    placeholder={stepInfo.placeholder}
+                    rows={5}
+                    className="w-full px-4 py-3 border border-indigo-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none bg-white"
+                  />
+                </div>
+              )}
+              
+              {template.routine_type === 'connect-extend-challenge' && (
+                <div className="bg-gradient-to-r from-cyan-50 to-teal-50 p-6 rounded-lg border-2 border-cyan-200">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-bold text-cyan-800">
+                      {currentStep === 'see' && '🔗 Connect (연결하기)'}
+                      {currentStep === 'think' && '📈 Extend (확장하기)'}
+                      {currentStep === 'wonder' && '⚡ Challenge (도전하기)'}
+                    </h3>
+                    <p className="text-sm text-cyan-600">
+                      {currentStep === 'see' && '이미 알고 있는 것과 어떻게 연결되나요?'}
+                      {currentStep === 'think' && '생각이 어떻게 확장되었나요?'}
+                      {currentStep === 'wonder' && '어떤 것이 도전이 되나요?'}
+                    </p>
+                  </div>
+                  <textarea
+                    value={responses[currentStep]}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    placeholder={stepInfo.placeholder}
+                    rows={5}
+                    className="w-full px-4 py-3 border border-cyan-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none bg-white"
+                  />
+                </div>
+              )}
+              
+              {/* 기본 See-Think-Wonder 템플릿 */}
+              {template.routine_type === 'see-think-wonder' && (
+                <div className="bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-lg border-2 border-blue-200">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-bold text-blue-800">
+                      {currentStep === 'see' && '👁️ See (보기)'}
+                      {currentStep === 'think' && '🤔 Think (생각하기)'}
+                      {currentStep === 'wonder' && '❓ Wonder (궁금하기)'}
+                    </h3>
+                    <p className="text-sm text-blue-600">
+                      {currentStep === 'see' && '무엇을 보고 관찰했나요?'}
+                      {currentStep === 'think' && '어떤 생각이 드나요?'}
+                      {currentStep === 'wonder' && '무엇이 궁금한가요?'}
+                    </p>
+                  </div>
+                  <textarea
+                    value={responses[currentStep]}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    placeholder={stepInfo.placeholder}
+                    rows={5}
+                    className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-white"
+                  />
+                </div>
+              )}
               
               <div className="flex justify-between">
                 <button

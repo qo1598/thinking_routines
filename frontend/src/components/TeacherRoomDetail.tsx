@@ -130,7 +130,7 @@ const TeacherRoomDetail: React.FC = () => {
   }, [roomId, fetchRoomData]);
 
   const handleBackToRoomManagement = () => {
-    navigate('/teacher/rooms');
+    navigate('/teacher/thinking-routines');
   };
 
   const getThinkingRoutineLabel = (type: string) => {

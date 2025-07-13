@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import TeacherRoomManagement from './TeacherRoomManagement';
 
@@ -16,10 +16,20 @@ const TeacherDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<DashboardView>('main');
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     checkAuth();
   }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // URL 경로에 따라 초기 뷰 설정
+  useEffect(() => {
+    if (location.pathname === '/teacher/thinking-routines') {
+      setCurrentView('room-management');
+    } else {
+      setCurrentView('main');
+    }
+  }, [location.pathname]);
 
   const checkAuth = async () => {
     if (!isSupabaseConfigured() || !supabase) {
