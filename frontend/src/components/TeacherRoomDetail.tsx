@@ -44,8 +44,7 @@ const TeacherRoomDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showTemplateForm, setShowTemplateForm] = useState(false);
-  const [selectedResponse, setSelectedResponse] = useState<StudentResponse | null>(null);
-  const [showResponseModal, setShowResponseModal] = useState(false);
+
   const [templateForm, setTemplateForm] = useState({
     image_url: '',
     text_content: '',
@@ -198,14 +197,10 @@ const TeacherRoomDetail: React.FC = () => {
   };
 
   const handleViewResponse = (response: StudentResponse) => {
-    setSelectedResponse(response);
-    setShowResponseModal(true);
+    navigate(`/teacher/room/${roomId}/response/${response.id}`);
   };
 
-  const handleCloseResponseModal = () => {
-    setSelectedResponse(null);
-    setShowResponseModal(false);
-  };
+
 
   if (loading) {
     return (
@@ -573,81 +568,7 @@ const TeacherRoomDetail: React.FC = () => {
         </div>
       </main>
 
-      {/* 응답 모달 */}
-      {selectedResponse && showResponseModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-full overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                {selectedResponse.student_name}
-                {selectedResponse.student_id && (
-                  <span className="text-sm text-gray-500 ml-2">({selectedResponse.student_id})</span>
-                )}
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                제출일: {new Date(selectedResponse.submitted_at).toLocaleString()}
-              </p>
-              
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 gap-6">
-                  <div>
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">S</span>
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-medium text-gray-900">See</h4>
-                        <p className="text-sm text-gray-600">보기</p>
-                      </div>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <p className="text-gray-900 whitespace-pre-wrap">{selectedResponse.response_data.see || '응답 없음'}</p>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">T</span>
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-medium text-gray-900">Think</h4>
-                        <p className="text-sm text-gray-600">생각하기</p>
-                      </div>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <p className="text-gray-900 whitespace-pre-wrap">{selectedResponse.response_data.think || '응답 없음'}</p>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">W</span>
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-medium text-gray-900">Wonder</h4>
-                        <p className="text-sm text-gray-600">궁금하기</p>
-                      </div>
-                    </div>
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <p className="text-gray-900 whitespace-pre-wrap">{selectedResponse.response_data.wonder || '응답 없음'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="p-4 border-t border-gray-200 flex justify-end">
-              <button
-                onClick={handleCloseResponseModal}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
-              >
-                닫기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

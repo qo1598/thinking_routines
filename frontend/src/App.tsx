@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import TeacherLogin from './components/TeacherLogin';
 import TeacherDashboard from './components/TeacherDashboard';
 import TeacherRoomDetail from './components/TeacherRoomDetail';
+import StudentResponseDetail from './components/StudentResponseDetail';
 import StudentEntry from './components/StudentEntry';
 import SeeThinkWonderForm from './components/SeeThinkWonderForm';
 import './App.css';
@@ -19,6 +20,7 @@ function App() {
           <Route path="/teacher" element={<TeacherLogin />} />
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/room/:roomId" element={<TeacherRoomDetail />} />
+          <Route path="/teacher/room/:roomId/response/:responseId" element={<StudentResponseDetail />} />
           
           {/* 학생 관련 경로 */}
           <Route path="/student" element={<StudentEntry />} />

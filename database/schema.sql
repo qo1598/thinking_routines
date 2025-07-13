@@ -44,6 +44,9 @@ CREATE TABLE student_responses (
     student_id TEXT,
     response_data JSONB NOT NULL,
     is_draft BOOLEAN DEFAULT FALSE,
+    ai_analysis TEXT, -- AI 분석 결과
+    teacher_feedback TEXT, -- 교사 피드백
+    teacher_score INTEGER CHECK (teacher_score >= 1 AND teacher_score <= 10), -- 교사 점수 (1-10)
     submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
