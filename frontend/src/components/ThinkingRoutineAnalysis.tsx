@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AnalysisResult {
@@ -9,7 +8,6 @@ interface AnalysisResult {
 }
 
 const ThinkingRoutineAnalysis: React.FC = () => {
-  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   
@@ -82,86 +80,6 @@ const ThinkingRoutineAnalysis: React.FC = () => {
       console.error('Download error:', error);
       alert('템플릿 다운로드 중 오류가 발생했습니다.');
     }
-  };
-
-  // 템플릿 생성 함수들 (실제로는 PDF 생성 라이브러리 사용)
-  const generateSeeThinkWonderTemplate = () => {
-    return `
-보기-생각하기-궁금하기 (See-Think-Wonder)
-
-┌─────────────────────────────────────────────────────────────┐
-│                    보기-생각하기-궁금하기                      │
-├─────────────────┬─────────────────┬─────────────────────────┤
-│      보기        │    생각하기      │       궁금하기           │
-│     (See)       │    (Think)      │      (Wonder)          │
-│                 │                 │                        │
-│ 무엇을 보았나요?  │ 어떻게 생각하나요? │ 무엇이 궁금한가요?      │
-│                 │                 │                        │
-│                 │                 │                        │
-│                 │                 │                        │
-│                 │                 │                        │
-│                 │                 │                        │
-│                 │                 │                        │
-│                 │                 │                        │
-│                 │                 │                        │
-│                 │                 │                        │
-│                 │                 │                        │
-└─────────────────┴─────────────────┴─────────────────────────┘
-
-이름: ________________    날짜: ________________
-`;
-  };
-
-  const generate4CTemplate = () => {
-    return `
-연결-도전-개념-변화 (4C)
-
-┌─────────────────────────────────────────────────────────────┐
-│                    연결-도전-개념-변화                         │
-├─────────────────────────────┬───────────────────────────────┤
-│            연결              │            도전               │
-│         (Connect)           │         (Challenge)          │
-│                             │                              │
-│ 이미 알고 있는 것과 어떻게    │ 어떤 아이디어나 가정에        │
-│ 연결되나요?                  │ 도전하고 싶나요?              │
-│                             │                              │
-│                             │                              │
-│                             │                              │
-│                             │                              │
-├─────────────────────────────┼───────────────────────────────┤
-│            개념              │            변화               │
-│         (Concepts)          │          (Changes)           │
-│                             │                              │
-│ 중요하다고 생각하는          │ 어떤 변화를 제안하나요?       │
-│ 핵심 개념은 무엇인가요?      │                              │
-│                             │                              │
-│                             │                              │
-│                             │                              │
-│                             │                              │
-└─────────────────────────────┴───────────────────────────────┘
-
-이름: ________________    날짜: ________________
-`;
-  };
-
-  const generateCircleOfViewpointsTemplate = () => {
-    return `관점의 원 (Circle of Viewpoints) 템플릿`;
-  };
-
-  const generateConnectExtendChallengeTemplate = () => {
-    return `연결-확장-도전 (Connect-Extend-Challenge) 템플릿`;
-  };
-
-  const generateFrayerModelTemplate = () => {
-    return `프레이어 모델 (Frayer Model) 템플릿`;
-  };
-
-  const generateUsedToThinkNowThinkTemplate = () => {
-    return `이전 생각 - 현재 생각 (I Used to Think... Now I Think...) 템플릿`;
-  };
-
-  const generateThinkPuzzleExploreTemplate = () => {
-    return `생각-퍼즐-탐구 (Think-Puzzle-Explore) 템플릿`;
   };
 
   // 이미지 업로드 처리
@@ -248,35 +166,61 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
 **강점:**
 - 각 단계별로 적절한 응답을 작성했습니다
-- 사고 과정이 논리적으로 연결되어 있습니다
-- 구체적인 예시와 설명이 포함되어 있습니다
+- 논리적인 사고 과정을 보여줍니다
+- 창의적인 아이디어를 제시했습니다
 
 **개선점:**
-- 더 깊이 있는 분석과 성찰이 필요합니다
-- 다양한 관점에서의 접근을 시도해보세요
-- 창의적인 사고를 더 발휘할 수 있습니다
+- 더 구체적인 설명이 필요합니다
+- 단계별 연결성을 강화할 수 있습니다
+- 더 깊이 있는 분석이 가능합니다
 
-## 2. 교육적 권장사항
+### 교육적 권장사항
+1. 학생의 사고 과정을 더 자세히 설명하도록 안내하세요
+2. 각 단계 간의 연결성을 강조하세요
+3. 추가적인 질문을 통해 더 깊은 사고를 유도하세요
 
-### 교사를 위한 피드백 가이드
-- 학생의 사고 과정을 인정하고 격려해주세요
-- 추가적인 질문을 통해 더 깊은 사고를 유도하세요
-- 다른 학생들과의 토론 기회를 제공하세요
+## 2. 세부 분석
 
-### 다음 단계 제안
-- 관련된 다른 사고루틴 활동을 시도해보세요
-- 동일한 주제로 다른 접근 방식을 탐구해보세요
-- 학습한 내용을 실제 상황에 적용해보세요
+### 적절성 평가
+- **점수**: 4/5
+- **평가**: 주제에 적합한 응답을 제시했습니다.
 
-*현재 백엔드 서버가 배포되지 않아 더미 응답을 표시하고 있습니다. 개발 환경에서는 실제 AI 분석이 수행됩니다.*`,
-          confidence: 0.85
+### 구체성 평가
+- **점수**: 3/5
+- **평가**: 보다 구체적인 예시와 설명이 필요합니다.
+
+### 논리적 연결성 평가
+- **점수**: 4/5
+- **평가**: 단계별 논리적 흐름이 잘 구성되어 있습니다.
+
+### 사고의 깊이 평가
+- **점수**: 3/5
+- **평가**: 더 깊이 있는 분석과 성찰이 필요합니다.
+
+### 창의성 평가
+- **점수**: 4/5
+- **평가**: 독창적인 아이디어와 관점을 보여줍니다.
+
+## 3. 종합 평가
+
+**총점**: 18/25점 (72%)
+
+**종합 의견**: 
+학생이 ${routineLabel} 사고루틴을 전반적으로 잘 이해하고 적용했습니다. 각 단계별로 적절한 응답을 제시했으며, 논리적인 사고 과정을 보여주었습니다. 다만, 더 구체적인 설명과 깊이 있는 분석을 통해 사고력을 한층 더 발전시킬 수 있을 것입니다.
+
+**다음 단계 제안**:
+1. 더 구체적인 예시와 근거 제시하기
+2. 각 단계 간의 연결성 강화하기
+3. 개인적인 경험과 연결하여 성찰하기
+4. 다양한 관점에서 주제 바라보기`,
+          confidence: 85
         };
 
         setAnalysisResult(dummyResult);
       }
-    } catch (err) {
-      console.error('Analysis error:', err);
-      setError('이미지 분석 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } catch (error) {
+      console.error('Analysis error:', error);
+      setError('분석 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setAnalyzing(false);
     }
@@ -289,11 +233,12 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     setImagePreview('');
     setAnalysisResult(null);
     setError('');
+    setShowCameraGuide(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
-  // 마크다운 텍스트를 HTML로 변환
+  // 마크다운 텍스트 포맷팅
   const formatMarkdownText = (text: string) => {
     return text
       .replace(/## (\d+)\. (.*?)(?=\n|$)/g, '<h3 class="text-xl font-bold text-purple-800 mb-4 pb-2 border-b-2 border-purple-200">$1. $2</h3>')
