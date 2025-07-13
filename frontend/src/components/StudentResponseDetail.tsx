@@ -294,9 +294,9 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
   const handleSaveTeacherFeedback = async () => {
     if (!response) return;
 
-    // 점수 유효성 검사
-    if (teacherScore !== '' && (isNaN(Number(teacherScore)) || Number(teacherScore) < 1 || Number(teacherScore) > 100)) {
-      alert('점수는 1-100 사이의 숫자여야 합니다.');
+    // 점수 유효성 검사 (현재 데이터베이스 제약 조건에 맞춰 1-10점)
+    if (teacherScore !== '' && (isNaN(Number(teacherScore)) || Number(teacherScore) < 1 || Number(teacherScore) > 10)) {
+      alert('점수는 1-10 사이의 숫자여야 합니다.');
       return;
     }
 
