@@ -12,8 +12,8 @@ const LandingPage: React.FC = () => {
             사고루틴 학습 플랫폼
           </h1>
         </div>
-        <div className="max-w-2xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 justify-center items-center">
+        <div className="max-w-md mx-auto"> 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 justify-center items-center">
             {/* Teacher Button */}
             <button
               onClick={() => navigate('/teacher')}
@@ -40,7 +40,7 @@ const LandingPage: React.FC = () => {
         </div>
         <footer className="mt-20 pt-8 border-t border-gray-200">
           <p className="text-center text-gray-500">
-            © 2025 사고루틴 학습 플랫폼. 개념기반 탐구 학습과 사고루틴의 연계적 적용.
+            © 2025 사고루틴 학습 플랫폼. (개발자: Bae.T 문의사항은 qo1598@dge.go.kr.)
           </p>
         </footer>
       </div>
@@ -48,4 +48,4 @@ const LandingPage: React.FC = () => {
   );
 };
 
-export default LandingPage; 
+export default LandingPage;
