@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@channel.io/channel-web-sdk-loader": "^2.5.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.50.5",
     "@tailwindcss/forms": "^0.5.10",
