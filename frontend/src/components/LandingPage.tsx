@@ -8,12 +8,12 @@ const LandingPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="container mx-auto px-4 py-16">
         <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-10 leading-tight">
-            <span className="text-blue-600">사고루틴 학습 플랫폼</span>
+          <h1 className="text-4xl md:text-5xl font-bold text-black mb-10 leading-tight">
+            사고루틴 학습 플랫폼
           </h1>
         </div>
         <div className="max-w-2xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-center items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 justify-center items-center">
             {/* Teacher Button */}
             <button
               onClick={() => navigate('/teacher')}
@@ -21,7 +21,7 @@ const LandingPage: React.FC = () => {
             >
               <div className="relative z-10 flex flex-col items-center justify-center h-full">
                 <div className="text-3xl mb-2">👨‍🏫</div>
-                <h4 className="text-lg font-bold">교사용</h4>
+                <h4 className="text-2xl font-bold">교사용</h4>
               </div>
               <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
             </button>
@@ -32,7 +32,7 @@ const LandingPage: React.FC = () => {
             >
               <div className="relative z-10 flex flex-col items-center justify-center h-full">
                 <div className="text-3xl mb-2">👨‍🎓</div>
-                <h4 className="text-lg font-bold">학생용</h4>
+                <h4 className="text-2xl font-bold">학생용</h4>
               </div>
               <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
             </button>
