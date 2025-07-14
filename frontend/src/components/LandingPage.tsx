@@ -13,7 +13,7 @@ const LandingPage: React.FC = () => {
           </h1>
         </div>
         <div className="max-w-2xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 justify-center items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 justify-center items-center">
             {/* Teacher Button */}
             <button
               onClick={() => navigate('/teacher')}
