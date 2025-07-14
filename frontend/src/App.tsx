@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import LandingPage from './components/LandingPage';
 import TeacherLogin from './components/TeacherLogin';
 import TeacherDashboard from './components/TeacherDashboard';
 import TeacherRoomDetail from './components/TeacherRoomDetail';
@@ -13,8 +14,8 @@ function App() {
     <Router>
     <div className="App">
         <Routes>
-          {/* 기본 경로를 교사 로그인 페이지로 설정 */}
-          <Route path="/" element={<TeacherLogin />} />
+          {/* 기본 경로를 랜딩 페이지로 설정 */}
+          <Route path="/" element={<LandingPage />} />
           
           {/* 교사 관련 경로 */}
           <Route path="/teacher" element={<TeacherLogin />} />
