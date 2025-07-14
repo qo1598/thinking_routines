@@ -10,17 +10,19 @@ import SeeThinkWonderForm from './components/SeeThinkWonderForm';
 import './App.css';
 import * as ChannelService from '@channel.io/channel-web-sdk-loader';
 
+// Vercel 빌드 캐시 문제 해결을 위한 주석
+
 function App() {
   useEffect(() => {
     ChannelService.loadScript();
     ChannelService.boot({
-      pluginKey: '31d0c99e-1966-4296-b7bd-208b69dba1e0',
+      pluginKey: '31d0c99e-1966-4296-b7bd-208b69dba1e0', // 여기에 실제 플러그인 키를 입력하세요.
     });
   }, []);
 
   return (
     <Router>
-    <div className="App">
+      <div className="App">
         <Routes>
           {/* 기본 경로를 랜딩 페이지로 설정 */}
           <Route path="/" element={<LandingPage />} />
@@ -34,7 +36,7 @@ function App() {
           <Route path="/student" element={<StudentEntry />} />
           <Route path="/student/activity/:roomId" element={<SeeThinkWonderForm />} />
         </Routes>
-    </div>
+      </div>
     </Router>
   );
 }
