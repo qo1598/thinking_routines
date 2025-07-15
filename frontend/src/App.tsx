@@ -14,10 +14,13 @@ import * as ChannelService from '@channel.io/channel-web-sdk-loader';
 
 function App() {
   useEffect(() => {
-    ChannelService.loadScript();
-    ChannelService.boot({
-      pluginKey: '31d0c99e-1966-4296-b7bd-208b69dba1e0', // 여기에 실제 플러그인 키를 입력하세요.
-    });
+    // Check if the current path is not a student path before loading ChannelService
+    if (!window.location.pathname.startsWith('/student')) {
+      ChannelService.loadScript();
+      ChannelService.boot({
+        pluginKey: '31d0c99e-1966-4296-b7bd-208b69dba1e0', // 여기에 실제 플러그인 키를 입력하세요.
+      });
+    }
   }, []);
 
   return (
