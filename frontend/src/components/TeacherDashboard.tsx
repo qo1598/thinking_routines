@@ -25,8 +25,12 @@ const TeacherDashboard: React.FC = () => {
 
   // URL 경로에 따라 초기 뷰 설정
   useEffect(() => {
-    if (location.pathname === '/teacher/thinking-routines') {
+    if (location.pathname === '/teacher/activate' || location.pathname === '/teacher/thinking-routines') {
       setCurrentView('room-management');
+    } else if (location.pathname === '/teacher/analysis') {
+      setCurrentView('analysis');
+    } else if (location.pathname === '/teacher/portfolio') {
+      setCurrentView('portfolio');
     } else {
       setCurrentView('main');
     }
@@ -138,7 +142,7 @@ const TeacherDashboard: React.FC = () => {
                 다양한 사고루틴을 생성하고 학생들과 함께 활동할 수 있습니다.
               </p>
               <button
-                onClick={() => setCurrentView('room-management')}
+                onClick={() => navigate('/teacher/activate')}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors duration-200"
               >
                 시작하기
@@ -161,7 +165,7 @@ const TeacherDashboard: React.FC = () => {
                 학생들의 사고루틴 활동 결과를 분석하고 평가할 수 있습니다.
               </p>
               <button
-                onClick={() => setCurrentView('analysis')}
+                onClick={() => navigate('/teacher/analysis')}
                 className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-md transition-colors duration-200"
               >
                 시작하기
@@ -184,7 +188,7 @@ const TeacherDashboard: React.FC = () => {
                 각 학생의 사고루틴 학습 과정과 성장을 추적할 수 있습니다.
               </p>
               <button
-                onClick={() => setCurrentView('portfolio')}
+                onClick={() => navigate('/teacher/portfolio')}
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-md transition-colors duration-200"
               >
                 시작하기
@@ -209,7 +213,7 @@ const TeacherDashboard: React.FC = () => {
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => setCurrentView('main')}
+                onClick={() => navigate('/teacher/dashboard')}
                 className="text-gray-600 hover:text-gray-900"
               >
                 ← 대시보드로 돌아가기
@@ -274,7 +278,7 @@ const TeacherDashboard: React.FC = () => {
 
   switch (currentView) {
     case 'room-management':
-      return <TeacherRoomManagement onBack={() => setCurrentView('main')} />;
+      return <TeacherRoomManagement onBack={() => navigate('/teacher/dashboard')} />;
     case 'analysis':
       return renderAnalysisView();
     case 'portfolio':

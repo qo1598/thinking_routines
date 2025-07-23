@@ -43,6 +43,9 @@
             {/* 교사 관련 경로 */}
             <Route path="/teacher" element={<TeacherLogin />} />
             <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+            <Route path="/teacher/activate" element={<TeacherDashboard />} />
+            <Route path="/teacher/analysis" element={<TeacherDashboard />} />
+            <Route path="/teacher/portfolio" element={<TeacherDashboard />} />
             <Route path="/teacher/thinking-routines" element={<TeacherDashboard />} />
             <Route path="/teacher/room/:roomId" element={<TeacherRoomDetail />} />
             <Route path="/teacher/room/:roomId/response/:responseId" element={<StudentResponseDetail />} />
