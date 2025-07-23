@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AnalysisResult {
@@ -10,6 +11,7 @@ interface AnalysisResult {
 const ThinkingRoutineAnalysis: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
   
   const [selectedRoutine, setSelectedRoutine] = useState('');
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
@@ -494,7 +496,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => window.location.href = '/teacher/dashboard'}
+                onClick={() => navigate('/teacher/dashboard')}
                 className="text-gray-600 hover:text-gray-900"
               >
                 ← 대시보드로 돌아가기
