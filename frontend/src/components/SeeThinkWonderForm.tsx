@@ -6,6 +6,7 @@ interface StudentInfo {
   name: string;
   class: string;
   number: string;
+  groupName?: string | null; // 모둠명 (선택사항)
   roomId: string;
   roomCode: string;
 }
@@ -304,6 +305,7 @@ const ThinkingRoutineForm: React.FC = () => {
             room_id: roomId,
             student_name: studentInfo.name,
             student_id: studentId,
+            group_name: studentInfo.groupName || null,
             response_data: currentResponses,
             is_draft: true,
             submitted_at: new Date().toISOString()
@@ -454,6 +456,7 @@ const ThinkingRoutineForm: React.FC = () => {
             room_id: roomId,
             student_name: studentInfo.name,
             student_id: studentId,
+            group_name: studentInfo.groupName || null,
             response_data: responses,
             is_draft: false,
             submitted_at: new Date().toISOString()

@@ -9,6 +9,7 @@ interface ActivityRoom {
   room_code: string;
   thinking_routine_type: string;
   status: string;
+  participation_type: string; // 'individual' | 'group'
   teachers?: Array<{
     name: string;
   }>;
@@ -22,6 +23,7 @@ const StudentEntry: React.FC = () => {
   const [studentName, setStudentName] = useState('');
   const [studentClass, setStudentClass] = useState('');
   const [studentNumber, setStudentNumber] = useState('');
+  const [groupName, setGroupName] = useState(''); // 모둠명
 
   const navigate = useNavigate();
 
@@ -52,7 +54,8 @@ const StudentEntry: React.FC = () => {
           description,
           room_code,
           thinking_routine_type,
-          status
+          status,
+          participation_type
         `)
         .eq('room_code', roomCode)
         .single();
@@ -88,11 +91,18 @@ const StudentEntry: React.FC = () => {
       return;
     }
 
+    // 모둠 참여인 경우 모둠명 확인
+    if (room?.participation_type === 'group' && !groupName.trim()) {
+      setError('모둠명을 입력해주세요.');
+      return;
+    }
+
     // 학생 정보를 로컬 스토리지에 저장
     const studentInfo = {
       name: studentName,
       class: studentClass,
       number: studentNumber,
+      groupName: room?.participation_type === 'group' ? groupName : null,
       roomId: room?.id,
       roomCode: roomCode
     };
@@ -235,6 +245,35 @@ const StudentEntry: React.FC = () => {
                     </select>
                   </div>
                 </div>
+
+                {/* 모둠 선택 (모둠 참여인 경우에만 표시) */}
+                {room.participation_type === 'group' && (
+                  <div>
+                    <label htmlFor="groupName" className="block text-sm font-medium text-gray-700">
+                      모둠명 *
+                    </label>
+                    <select
+                      id="groupName"
+                      value={groupName}
+                      onChange={(e) => setGroupName(e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary-500 focus:border-secondary-500"
+                      required
+                    >
+                      <option value="">모둠을 선택하세요</option>
+                      <option value="1모둠">1모둠</option>
+                      <option value="2모둠">2모둠</option>
+                      <option value="3모둠">3모둠</option>
+                      <option value="4모둠">4모둠</option>
+                      <option value="5모둠">5모둠</option>
+                      <option value="6모둠">6모둠</option>
+                      <option value="7모둠">7모둠</option>
+                      <option value="8모둠">8모둠</option>
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      모둠을 선택하여 함께 사고루틴을 수행하세요.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>

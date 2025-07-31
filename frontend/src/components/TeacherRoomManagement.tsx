@@ -23,6 +23,7 @@ interface NewRoomForm {
   title: string;
   description: string;
   thinking_routine_type: string;
+  participation_type: string; // 참여 유형: 'individual' | 'group'
   // 템플릿 내용도 함께 관리
   template_content: {
     image_url: string;
@@ -56,6 +57,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
     title: '',
     description: '',
     thinking_routine_type: '',
+    participation_type: 'individual', // 기본값: 개인 참여
     template_content: {
       image_url: '',
       text_content: '',
@@ -245,6 +247,7 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
             description: newRoom.description || '',
             room_code: roomCode,
             thinking_routine_type: newRoom.thinking_routine_type,
+            participation_type: newRoom.participation_type,
             status: 'active',
             created_at: new Date().toISOString()
           }
@@ -283,15 +286,21 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
       };
 
       setRooms([newRoomWithCount, ...rooms]);
-      setNewRoom({ title: '', description: '', thinking_routine_type: '', template_content: {
-        image_url: '',
-        text_content: '',
-        youtube_url: '',
-        see_question: '이 자료에서 무엇을 보았나요?',
-        think_question: '이것에 대해 어떻게 생각하나요?',
-        wonder_question: '이것에 대해 무엇이 궁금한가요?',
-        fourth_question: ''
-      } });
+      setNewRoom({ 
+        title: '', 
+        description: '', 
+        thinking_routine_type: '', 
+        participation_type: 'individual',
+        template_content: {
+          image_url: '',
+          text_content: '',
+          youtube_url: '',
+          see_question: '이 자료에서 무엇을 보았나요?',
+          think_question: '이것에 대해 어떻게 생각하나요?',
+          wonder_question: '이것에 대해 무엇이 궁금한가요?',
+          fourth_question: ''
+        }
+      });
       setShowCreateForm(false);
       setCreateStep(1);
       alert(`활동방이 생성되었습니다! 방 코드: ${roomCode}`);
@@ -549,6 +558,26 @@ const TeacherRoomManagement: React.FC<TeacherRoomManagementProps> = ({ onBack })
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       placeholder="활동방 제목을 입력하세요"
                     />
+                  </div>
+                  <div>
+                    <label htmlFor="participationType" className="block text-sm font-medium text-gray-700">
+                      참여 유형
+                    </label>
+                    <select
+                      id="participationType"
+                      value={newRoom.participation_type}
+                      onChange={(e) => setNewRoom({...newRoom, participation_type: e.target.value})}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    >
+                      <option value="individual">개인 참여</option>
+                      <option value="group">모둠 참여</option>
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {newRoom.participation_type === 'individual' 
+                        ? '학생들이 개별적으로 사고루틴을 수행합니다.' 
+                        : '학생들이 모둠을 구성하여 사고루틴을 수행합니다.'}
+                    </p>
                   </div>
                   <div>
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700">
