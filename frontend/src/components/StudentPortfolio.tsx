@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface StudentPortfolioProps {
   onBack: () => void;
 }
 
-interface PortfolioItem {
+interface StudentInfo {
+  student_grade?: string;
+  student_name: string;
+  student_class?: string;
+  student_number?: number;
+}
+
+interface ActivityItem {
   id: string;
+  type: 'online' | 'offline';
   student_grade?: string;
   student_name: string;
   student_class?: string;
@@ -19,29 +27,28 @@ interface PortfolioItem {
   teacher_score?: number;
   submitted_at: string;
   room_title?: string;
+  response_data?: any;
+  selected?: boolean;
 }
 
-interface FilterState {
+interface SearchForm {
   grade: string;
-  studentName: string;
-  routineType: string;
-  dateRange: {
-    start: string;
-    end: string;
-  };
+  class: string;
+  number: string;
+  name: string;
 }
 
 const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
-  const [filteredItems, setFilteredItems] = useState<PortfolioItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [filters, setFilters] = useState<FilterState>({
+  const [searchForm, setSearchForm] = useState<SearchForm>({
     grade: '',
-    studentName: '',
-    routineType: '',
-    dateRange: { start: '', end: '' }
+    class: '',
+    number: '',
+    name: ''
   });
+  const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // 사고루틴 타입 라벨
   const routineLabels: { [key: string]: string } = {
@@ -54,35 +61,32 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
     'think-puzzle-explore': 'Think-Puzzle-Explore'
   };
 
-  // 사고루틴 타입별 아이콘 및 색상
-  const routineStyles: { [key: string]: { icon: string; bgColor: string; textColor: string } } = {
-    'see-think-wonder': { icon: 'STW', bgColor: 'bg-blue-500', textColor: 'text-white' },
-    '4c': { icon: '4C', bgColor: 'bg-green-500', textColor: 'text-white' },
-    'circle-of-viewpoints': { icon: 'COV', bgColor: 'bg-purple-500', textColor: 'text-white' },
-    'connect-extend-challenge': { icon: 'CEC', bgColor: 'bg-yellow-500', textColor: 'text-white' },
-    'frayer-model': { icon: 'FM', bgColor: 'bg-red-500', textColor: 'text-white' },
-    'used-to-think-now-think': { icon: 'UTT', bgColor: 'bg-indigo-500', textColor: 'text-white' },
-    'think-puzzle-explore': { icon: 'TPE', bgColor: 'bg-pink-500', textColor: 'text-white' }
-  };
-
-  useEffect(() => {
-    fetchPortfolioData();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [portfolioItems, filters]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fetchPortfolioData = async () => {
-    if (!isSupabaseConfigured() || !supabase) {
-      setError('시스템 설정이 완료되지 않았습니다.');
-      setLoading(false);
+  // 학생 검색 및 활동 내역 가져오기
+  const searchStudentActivities = async () => {
+    if (!searchForm.name.trim()) {
+      setError('학생 이름을 입력해주세요.');
       return;
     }
 
+    if (!isSupabaseConfigured() || !supabase) {
+      setError('시스템 설정이 완료되지 않았습니다.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
     try {
-      // student_responses와 activity_rooms를 조인하여 포트폴리오 데이터 가져오기
-      const { data, error } = await supabase
+      // 학생 정보 설정
+      const studentInfo: StudentInfo = {
+        student_grade: searchForm.grade,
+        student_name: searchForm.name,
+        student_class: searchForm.class,
+        student_number: searchForm.number ? parseInt(searchForm.number) : undefined
+      };
+
+      // 1. 오프라인 활동 (사고루틴 분석 및 평가)
+      let offlineQuery = supabase
         .from('student_responses')
         .select(`
           id,
@@ -97,17 +101,49 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
           teacher_feedback,
           teacher_score,
           submitted_at,
-          activity_rooms!inner(title)
+          response_data
         `)
+        .eq('student_name', searchForm.name)
+        .eq('is_draft', false);
+
+      if (searchForm.grade) offlineQuery = offlineQuery.eq('student_grade', searchForm.grade);
+      if (searchForm.class) offlineQuery = offlineQuery.eq('student_class', searchForm.class);
+      if (searchForm.number) offlineQuery = offlineQuery.eq('student_number', parseInt(searchForm.number));
+
+      const { data: offlineData, error: offlineError } = await offlineQuery;
+
+      if (offlineError) throw offlineError;
+
+      // 2. 온라인 활동 (사고루틴 생성 및 적용)
+      let onlineQuery = supabase
+        .from('student_responses')
+        .select(`
+          id,
+          student_grade,
+          student_name,
+          student_class,
+          student_number,
+          team_name,
+          response_data,
+          submitted_at,
+          activity_rooms!inner(title, thinking_routine_type)
+        `)
+        .eq('student_name', searchForm.name)
         .eq('is_draft', false)
-        .order('submitted_at', { ascending: false });
+        .is('routine_type', null); // routine_type이 null인 것은 온라인 활동
 
-      if (error) {
-        throw error;
-      }
+      if (searchForm.grade) onlineQuery = onlineQuery.eq('student_grade', searchForm.grade);
+      if (searchForm.class) onlineQuery = onlineQuery.eq('student_class', searchForm.class);
+      if (searchForm.number) onlineQuery = onlineQuery.eq('student_number', parseInt(searchForm.number));
 
-      const formattedData: PortfolioItem[] = data?.map(item => ({
-        id: item.id,
+      const { data: onlineData, error: onlineError } = await onlineQuery;
+
+      if (onlineError) throw onlineError;
+
+      // 데이터 변환
+      const offlineActivities: ActivityItem[] = offlineData?.map(item => ({
+        id: `offline-${item.id}`,
+        type: 'offline' as const,
         student_grade: item.student_grade,
         student_name: item.student_name,
         student_class: item.student_class,
@@ -119,48 +155,196 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
         teacher_feedback: item.teacher_feedback,
         teacher_score: item.teacher_score,
         submitted_at: item.submitted_at,
-        room_title: (item.activity_rooms as any)?.title
+        room_title: '사고루틴 분석 및 평가',
+        response_data: item.response_data,
+        selected: false
       })) || [];
 
-      setPortfolioItems(formattedData);
+      const onlineActivities: ActivityItem[] = onlineData?.map(item => ({
+        id: `online-${item.id}`,
+        type: 'online' as const,
+        student_grade: item.student_grade,
+        student_name: item.student_name,
+        student_class: item.student_class,
+        student_number: item.student_number,
+        team_name: item.team_name,
+        routine_type: (item.activity_rooms as any)?.thinking_routine_type,
+        submitted_at: item.submitted_at,
+        room_title: (item.activity_rooms as any)?.title,
+        response_data: item.response_data,
+        selected: false
+      })) || [];
+
+      const allActivities = [...offlineActivities, ...onlineActivities]
+        .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime());
+
+      setActivities(allActivities);
+      setSelectedStudent(studentInfo);
+      
     } catch (err) {
-      console.error('Portfolio fetch error:', err);
-      setError('포트폴리오 데이터를 불러오는데 실패했습니다.');
+      console.error('Student search error:', err);
+      setError('학생 활동 내역을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  const applyFilters = () => {
-    let filtered = [...portfolioItems];
+  // 체크박스 선택/해제
+  const toggleActivitySelection = (activityId: string) => {
+    setActivities(prev => prev.map(activity => 
+      activity.id === activityId 
+        ? { ...activity, selected: !activity.selected }
+        : activity
+    ));
+  };
 
-    if (filters.grade) {
-      filtered = filtered.filter(item => item.student_grade === filters.grade);
+  // 전체 선택/해제
+  const toggleAllSelection = () => {
+    const allSelected = activities.every(activity => activity.selected);
+    setActivities(prev => prev.map(activity => ({ ...activity, selected: !allSelected })));
+  };
+
+  // 인쇄하기
+  const handlePrint = () => {
+    const selectedActivities = activities.filter(activity => activity.selected);
+    if (selectedActivities.length === 0) {
+      alert('인쇄할 활동을 선택해주세요.');
+      return;
     }
 
-    if (filters.studentName) {
-      filtered = filtered.filter(item => 
-        item.student_name.toLowerCase().includes(filters.studentName.toLowerCase())
-      );
+    // 인쇄용 HTML 생성
+    const printContent = generatePrintContent(selectedActivities);
+    const printWindow = window.open('', '_blank');
+    
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }
+  };
+
+  // PDF 저장하기
+  const handleSavePDF = async () => {
+    const selectedActivities = activities.filter(activity => activity.selected);
+    if (selectedActivities.length === 0) {
+      alert('저장할 활동을 선택해주세요.');
+      return;
     }
 
-    if (filters.routineType) {
-      filtered = filtered.filter(item => item.routine_type === filters.routineType);
+    try {
+      // PDF 생성 (html2pdf 라이브러리 사용을 가정)
+      const printContent = generatePrintContent(selectedActivities);
+      
+      // 간단한 PDF 다운로드 (실제로는 html2pdf 등의 라이브러리 필요)
+      const blob = new Blob([printContent], { type: 'text/html' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${selectedStudent?.student_name}_사고루틴_포트폴리오.html`;
+      link.click();
+      
+      alert('HTML 파일로 저장되었습니다. PDF 변환은 브라우저의 인쇄 기능을 이용해주세요.');
+    } catch (error) {
+      console.error('PDF 저장 오류:', error);
+      alert('PDF 저장 중 오류가 발생했습니다.');
     }
+  };
 
-    if (filters.dateRange.start) {
-      filtered = filtered.filter(item => 
-        new Date(item.submitted_at) >= new Date(filters.dateRange.start)
-      );
-    }
+  // 인쇄용 HTML 생성
+  const generatePrintContent = (selectedActivities: ActivityItem[]) => {
+    const studentInfo = selectedStudent;
+    const studentInfoText = [
+      studentInfo?.student_grade,
+      studentInfo?.student_class ? `${studentInfo.student_class}반` : '',
+      studentInfo?.student_number ? `${studentInfo.student_number}번` : '',
+      studentInfo?.student_name
+    ].filter(Boolean).join(' ');
 
-    if (filters.dateRange.end) {
-      filtered = filtered.filter(item => 
-        new Date(item.submitted_at) <= new Date(filters.dateRange.end + 'T23:59:59')
-      );
-    }
-
-    setFilteredItems(filtered);
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${studentInfo?.student_name} 사고루틴 포트폴리오</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+          .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+          .student-info { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+          .activity { margin-bottom: 40px; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+          .activity-header { background: #f5f5f5; padding: 10px; margin: -20px -20px 20px -20px; }
+          .activity-title { font-size: 16px; font-weight: bold; color: #333; }
+          .activity-meta { font-size: 12px; color: #666; margin-top: 5px; }
+          .response-section { margin-top: 15px; }
+          .response-title { font-weight: bold; color: #444; margin-bottom: 5px; }
+          .response-content { background: #f9f9f9; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+          .feedback-section { background: #e8f4fd; padding: 15px; border-radius: 4px; margin-top: 15px; }
+          .score { color: #e67e22; font-weight: bold; }
+          @media print { 
+            body { margin: 0; } 
+            .activity { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>사고루틴 포트폴리오</h1>
+          <div class="student-info">${studentInfoText}</div>
+          <div>생성일: ${new Date().toLocaleDateString('ko-KR')}</div>
+        </div>
+        
+        ${selectedActivities.map(activity => `
+          <div class="activity">
+            <div class="activity-header">
+              <div class="activity-title">
+                ${routineLabels[activity.routine_type] || activity.routine_type}
+                <span style="color: #666; font-size: 12px; margin-left: 10px;">
+                  (${activity.type === 'online' ? '온라인' : '오프라인'} 활동)
+                </span>
+              </div>
+              <div class="activity-meta">
+                활동방: ${activity.room_title} | 
+                제출일: ${new Date(activity.submitted_at).toLocaleDateString('ko-KR')} |
+                ${activity.team_name ? `모둠: ${activity.team_name}` : '개별 활동'}
+              </div>
+            </div>
+            
+            ${activity.response_data ? `
+              <div class="response-section">
+                ${Object.entries(activity.response_data).map(([key, value]) => {
+                                if (!value || (key === 'fourth_step' && !value)) return '';
+                                const labels: any = {
+                    see: 'See (관찰/연결)',
+                    think: 'Think (생각/도전)',
+                    wonder: 'Wonder (궁금증/개념)',
+                    fourth_step: 'Changes (변화)'
+                  };
+                  return `
+                    <div class="response-title">${labels[key] || key}:</div>
+                    <div class="response-content">${value}</div>
+                  `;
+                }).join('')}
+              </div>
+            ` : ''}
+            
+            ${activity.ai_analysis ? `
+              <div class="feedback-section">
+                <div class="response-title">AI 분석 결과:</div>
+                <div>${activity.ai_analysis.replace(/\n/g, '<br>')}</div>
+              </div>
+            ` : ''}
+            
+            ${activity.teacher_feedback ? `
+              <div class="feedback-section">
+                <div class="response-title">교사 피드백:</div>
+                <div>${activity.teacher_feedback}</div>
+                ${activity.teacher_score ? `<div class="score">점수: ${activity.teacher_score}점</div>` : ''}
+              </div>
+            ` : ''}
+          </div>
+        `).join('')}
+      </body>
+      </html>
+    `;
   };
 
   const formatDate = (dateString: string) => {
@@ -172,50 +356,15 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
     });
   };
 
-  const getStudentInfo = (item: PortfolioItem) => {
+  const getStudentInfoText = () => {
+    if (!selectedStudent) return '';
     const parts = [];
-    if (item.student_grade) parts.push(item.student_grade);
-    if (item.student_class) parts.push(`${item.student_class}반`);
-    if (item.student_number) parts.push(`${item.student_number}번`);
+    if (selectedStudent.student_grade) parts.push(selectedStudent.student_grade);
+    if (selectedStudent.student_class) parts.push(`${selectedStudent.student_class}반`);
+    if (selectedStudent.student_number) parts.push(`${selectedStudent.student_number}번`);
+    if (selectedStudent.student_name) parts.push(selectedStudent.student_name);
     return parts.join(' ');
   };
-
-  const exportPortfolio = () => {
-    // CSV 내보내기 기능
-    const csvHeaders = ['학년', '반', '번호', '이름', '모둠', '사고루틴', '활동방', '제출일', '교사점수'];
-    const csvData = filteredItems.map(item => [
-      item.student_grade || '',
-      item.student_class || '',
-      item.student_number || '',
-      item.student_name,
-      item.team_name || '',
-      routineLabels[item.routine_type] || item.routine_type,
-      item.room_title || '',
-      formatDate(item.submitted_at),
-      item.teacher_score || ''
-    ]);
-
-    const csvContent = [csvHeaders, ...csvData]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `사고루틴_포트폴리오_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">포트폴리오 로딩 중...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -230,212 +379,282 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
               >
                 ← 대시보드로 돌아가기
               </button>
-              <h1 className="text-3xl font-bold text-blue-600">포트폴리오 목록</h1>
+              <h1 className="text-3xl font-bold text-blue-600">사고루틴 포트폴리오</h1>
             </div>
-            <button
-              onClick={exportPortfolio}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-            >
-              📊 내보내기
-            </button>
+            
+            {selectedStudent && (
+              <div className="flex space-x-2">
+                <button
+                  onClick={handlePrint}
+                  className="bg-blue-600 hover:bg-blue-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium shadow-lg"
+                  title="인쇄하기"
+                >
+                  🖨️
+                </button>
+                <button
+                  onClick={handleSavePDF}
+                  className="bg-green-600 hover:bg-green-700 text-white w-12 h-12 rounded-full flex items-center justify-center text-sm font-medium shadow-lg"
+                  title="저장하기"
+                >
+                  💾
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* 필터 섹션 */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">필터</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">학년</label>
-              <select
-                value={filters.grade}
-                onChange={(e) => setFilters({...filters, grade: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">전체</option>
-                <option value="1학년">1학년</option>
-                <option value="2학년">2학년</option>
-                <option value="3학년">3학년</option>
-                <option value="4학년">4학년</option>
-                <option value="5학년">5학년</option>
-                <option value="6학년">6학년</option>
-              </select>
+        {!selectedStudent ? (
+          /* 학생 검색 화면 */
+          <div className="max-w-md mx-auto">
+            <div className="bg-white rounded-lg shadow-lg p-8">
+              <div className="text-center mb-6">
+                <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-10 h-10 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">학생별 사고루틴 포트폴리오</h2>
+                <p className="text-gray-600">각 학생의 사고루틴 학습 과정과 성장을 추적할 수 있습니다.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">학년</label>
+                    <select
+                      value={searchForm.grade}
+                      onChange={(e) => setSearchForm({...searchForm, grade: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">전체</option>
+                      <option value="1학년">1학년</option>
+                      <option value="2학년">2학년</option>
+                      <option value="3학년">3학년</option>
+                      <option value="4학년">4학년</option>
+                      <option value="5학년">5학년</option>
+                      <option value="6학년">6학년</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">반</label>
+                    <input
+                      type="text"
+                      value={searchForm.class}
+                      onChange={(e) => setSearchForm({...searchForm, class: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="예: 1"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">번호</label>
+                    <input
+                      type="text"
+                      value={searchForm.number}
+                      onChange={(e) => setSearchForm({...searchForm, number: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="예: 15"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">학생 이름 *</label>
+                    <input
+                      type="text"
+                      value={searchForm.name}
+                      onChange={(e) => setSearchForm({...searchForm, name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="이름 검색"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={searchStudentActivities}
+                  disabled={loading || !searchForm.name.trim()}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? '검색 중...' : '시작하기'}
+                </button>
+              </div>
+
+              {error && (
+                <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">학생 이름</label>
-              <input
-                type="text"
-                value={filters.studentName}
-                onChange={(e) => setFilters({...filters, studentName: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="이름 검색"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">사고루틴</label>
-              <select
-                value={filters.routineType}
-                onChange={(e) => setFilters({...filters, routineType: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">전체</option>
-                {Object.entries(routineLabels).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">시작일</label>
-              <input
-                type="date"
-                value={filters.dateRange.start}
-                onChange={(e) => setFilters({
-                  ...filters, 
-                  dateRange: {...filters.dateRange, start: e.target.value}
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">종료일</label>
-              <input
-                type="date"
-                value={filters.dateRange.end}
-                onChange={(e) => setFilters({
-                  ...filters, 
-                  dateRange: {...filters.dateRange, end: e.target.value}
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex justify-between items-center">
-            <p className="text-sm text-gray-600">
-              총 {filteredItems.length}개의 활동 결과
-            </p>
-            <button
-              onClick={() => setFilters({
-                grade: '',
-                studentName: '',
-                routineType: '',
-                dateRange: { start: '', end: '' }
-              })}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              필터 초기화
-            </button>
-          </div>
-        </div>
-
-        {/* 포트폴리오 그리드 */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-            <p className="text-red-800">{error}</p>
-          </div>
-        )}
-
-        {filteredItems.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <div className="text-gray-400 mb-4">
-              <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">포트폴리오가 없습니다</h3>
-            <p className="text-gray-600">
-              {portfolioItems.length === 0 
-                ? "아직 제출된 학생 활동이 없습니다."
-                : "필터 조건에 맞는 활동이 없습니다. 필터를 조정해 보세요."
-              }
-            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredItems.map((item) => {
-              const style = routineStyles[item.routine_type] || routineStyles['see-think-wonder'];
-              return (
-                <div key={item.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                  <div className="p-6">
-                    <div className="flex items-start space-x-4">
-                      {/* 사고루틴 아이콘 */}
-                      <div className={`w-16 h-16 rounded-lg ${style.bgColor} ${style.textColor} flex items-center justify-center flex-shrink-0`}>
-                        <span className="text-sm font-bold">{style.icon}</span>
-                      </div>
+          /* 활동 목록 화면 */
+          <div>
+            {/* 학생 정보 헤더 */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{getStudentInfoText()}</h2>
+                  <p className="text-gray-600">총 {activities.length}개의 활동 기록</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedStudent(null);
+                    setActivities([]);
+                    setError('');
+                  }}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  ← 학생 검색으로 돌아가기
+                </button>
+              </div>
+            </div>
 
-                      {/* 내용 */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 truncate">
-                          {routineLabels[item.routine_type] || item.routine_type}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-2 truncate">
-                          {item.room_title}
-                        </p>
-                        
-                        {/* 학생 정보 */}
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm text-gray-600">
-                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                            </svg>
-                            <span className="font-medium">{getStudentInfo(item)}</span>
-                            <span className="ml-1">{item.student_name}</span>
-                            {item.team_name && (
-                              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                {item.team_name}
+            {/* 필터 */}
+            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-gray-600">필터</span>
+                  {activities.length > 0 && (
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={activities.every(activity => activity.selected)}
+                        onChange={toggleAllSelection}
+                        className="rounded"
+                      />
+                      <span className="text-sm text-gray-700">전체 선택</span>
+                    </label>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <span>총 {activities.length}개의 활동 기록</span>
+                  <span>•</span>
+                  <span>선택됨: {activities.filter(a => a.selected).length}개</span>
+                  <button
+                    onClick={() => {
+                      // 필터 초기화 시 전체 선택 해제
+                      setActivities(prev => prev.map(activity => ({ ...activity, selected: false })));
+                    }}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    선택 초기화
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 활동 목록 */}
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">활동 내역 로딩 중...</p>
+              </div>
+            ) : error ? (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+                <p className="text-red-800">{error}</p>
+              </div>
+            ) : activities.length === 0 ? (
+              <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+                <div className="text-gray-400 mb-4">
+                  <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">포트폴리오가 없습니다</h3>
+                <p className="text-gray-600">아직 제출된 학생 활동이 없습니다.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {activities.map((activity) => (
+                  <div key={activity.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div className="flex items-start space-x-4">
+                      {/* 체크박스 */}
+                      <input
+                        type="checkbox"
+                        checked={activity.selected}
+                        onChange={() => toggleActivitySelection(activity.id)}
+                        className="mt-1 rounded"
+                      />
+
+                      {/* 활동 내용 */}
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-3">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {routineLabels[activity.routine_type] || activity.routine_type}
+                            </h3>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              activity.type === 'online' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {activity.type === 'online' ? '온라인' : '오프라인'}
+                            </span>
+                            {activity.team_name && (
+                              <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
+                                {activity.team_name}
                               </span>
                             )}
                           </div>
-
-                          <div className="flex items-center text-sm text-gray-600">
-                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                            </svg>
-                            <span>{formatDate(item.submitted_at)}</span>
+                          <div className="text-sm text-gray-600">
+                            {formatDate(activity.submitted_at)}
                           </div>
-
-                          {item.teacher_score && (
-                            <div className="flex items-center text-sm text-gray-600">
-                              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                              <span className="font-medium text-yellow-600">{item.teacher_score}점</span>
-                            </div>
-                          )}
                         </div>
+
+                        <p className="text-gray-600 mb-3">{activity.room_title}</p>
+
+                        {/* 응답 미리보기 */}
+                        {activity.response_data && (
+                          <div className="bg-gray-50 rounded-lg p-4 mb-3">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">활동 응답</h4>
+                            <div className="space-y-2">
+                              {Object.entries(activity.response_data).map(([key, value]) => {
+                                if (!value) return null;
+                                const labels: any = {
+                                  see: 'See (관찰/연결)',
+                                  think: 'Think (생각/도전)',
+                                  wonder: 'Wonder (궁금증/개념)',
+                                  fourth_step: 'Changes (변화)'
+                                };
+                                return (
+                                  <div key={key} className="text-sm">
+                                    <span className="font-medium text-gray-700">{labels[key] || key}:</span>
+                                    <span className="ml-2 text-gray-600">{String(value).substring(0, 100)}...</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 교사 피드백 */}
+                        {(activity.teacher_feedback || activity.teacher_score) && (
+                          <div className="bg-blue-50 rounded-lg p-4">
+                            <h4 className="text-sm font-medium text-blue-800 mb-2">교사 평가</h4>
+                            {activity.teacher_feedback && (
+                              <p className="text-sm text-blue-700 mb-2">{activity.teacher_feedback}</p>
+                            )}
+                            {activity.teacher_score && (
+                              <div className="flex items-center text-sm text-blue-700">
+                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                <span className="font-medium">{activity.teacher_score}점</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-
-                    {/* 이미지 미리보기 */}
-                    {item.image_url && (
-                      <div className="mt-4">
-                        <img
-                          src={item.image_url}
-                          alt="활동 결과물"
-                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                        />
-                      </div>
-                    )}
-
-                    {/* 피드백 미리보기 */}
-                    {item.teacher_feedback && (
-                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs text-gray-600 mb-1">교사 피드백</p>
-                        <p className="text-sm text-gray-800 line-clamp-2">
-                          {item.teacher_feedback}
-                        </p>
-                      </div>
-                    )}
                   </div>
-                </div>
-              );
-            })}
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
