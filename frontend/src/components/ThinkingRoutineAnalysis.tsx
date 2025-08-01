@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -11,6 +11,8 @@ interface AnalysisResult {
 const ThinkingRoutineAnalysis: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
   
   const [selectedRoutine, setSelectedRoutine] = useState('');
@@ -20,6 +22,10 @@ const ThinkingRoutineAnalysis: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState('');
   const [showCameraGuide, setShowCameraGuide] = useState(false);
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string>('');
+  const [hasCameraAccess, setHasCameraAccess] = useState<boolean | null>(null);
 
   // 사고루틴 옵션
   const routineOptions = [
@@ -85,16 +91,31 @@ const ThinkingRoutineAnalysis: React.FC = () => {
   };
 
   // 이미지 업로드 처리
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setUploadedImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-      setError('');
+      try {
+        // Supabase에 업로드
+        await uploadImageToSupabase(file);
+        
+        setUploadedImage(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setImagePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+        setError('');
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        // 업로드 실패해도 로컬에서는 계속 작업
+        setUploadedImage(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setImagePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+        setError('');
+      }
     }
   };
 
@@ -488,6 +509,160 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   };
 
+  // 카메라 접근 권한 확인
+  useEffect(() => {
+    const checkCameraAccess = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop());
+        setHasCameraAccess(true);
+      } catch (error) {
+        console.warn('Camera access denied or not available:', error);
+        setHasCameraAccess(false);
+      }
+    };
+
+    if (!isMobile()) {
+      checkCameraAccess();
+    }
+
+    // 컴포넌트 언마운트 시 카메라 스트림 정리
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
+
+  // 카메라 스트림 시작
+  const startCameraStream = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' }
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setError('카메라에 접근할 수 없습니다. 권한을 확인해주세요.');
+      return false;
+    }
+  };
+
+  // 카메라 스트림 정지
+  const stopCameraStream = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  };
+
+  // 사진 촬영
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      if (context) {
+        context.drawImage(video, 0, 0);
+        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setCapturedImage(imageDataUrl);
+      }
+    }
+  };
+
+  // 촬영 이미지를 파일로 변환 및 업로드
+  const uploadCapturedImage = async () => {
+    if (!capturedImage) return;
+
+    try {
+      // Base64를 Blob으로 변환
+      const response = await fetch(capturedImage);
+      const blob = await response.blob();
+      
+      // File 객체 생성
+      const file = new File([blob], `captured-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      
+      // 이미지 저장을 Supabase에 업로드 (실패해도 계속 진행)
+      await uploadImageToSupabase(file);
+      
+      // 로컬에서도 이미지 설정
+      setUploadedImage(file);
+      setImagePreview(capturedImage);
+      setShowCameraModal(false);
+      setCapturedImage('');
+      stopCameraStream();
+    } catch (error) {
+      console.error('Error uploading captured image:', error);
+      setError('촬영한 이미지 업로드 중 오류가 발생했습니다.');
+    }
+  };
+
+  // Supabase에 이미지 업로드
+  const uploadImageToSupabase = async (file: File): Promise<string | null> => {
+    if (!isSupabaseConfigured()) {
+      console.warn('Supabase not configured, skipping upload');
+      return null;
+    }
+
+    try {
+      const fileName = `routine-images/${Date.now()}-${file.name}`;
+      const { data, error } = await supabase!.storage
+        .from('routine-uploads')
+        .upload(fileName, file);
+
+      if (error) {
+        console.error('Supabase upload error:', error);
+        throw error;
+      }
+
+      // 업로드된 파일의 공개 URL 가져오기
+      const { data: { publicUrl } } = supabase!.storage
+        .from('routine-uploads')
+        .getPublicUrl(fileName);
+
+      console.log('Image uploaded to Supabase:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading to Supabase:', error);
+      // Supabase 업로드가 실패해도 로컬에서는 계속 작업할 수 있도록 함
+      return null;
+    }
+  };
+
+  // PC 카메라 모달 열기
+  const openPCCameraModal = async () => {
+    if (hasCameraAccess === false) {
+      setError('카메라가 연결되어 있지 않거나 접근 권한이 없습니다.');
+      return;
+    }
+
+    setShowCameraModal(true);
+    const success = await startCameraStream();
+    if (!success) {
+      setShowCameraModal(false);
+    }
+  };
+
+  // 카메라 모달 닫기
+  const closeCameraModal = () => {
+    setShowCameraModal(false);
+    setCapturedImage('');
+    stopCameraStream();
+  };
+
+  // 다시 촬영
+  const retakePhoto = () => {
+    setCapturedImage('');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 헤더 */}
@@ -596,14 +771,14 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                   <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <div className="text-blue-600 hover:text-blue-500 font-medium">
-                  파일에서 이미지 선택
+                  파일로 업로드
                 </div>
                 <p className="text-sm text-gray-500 mt-2">PNG, JPG, JPEG 파일 지원</p>
               </div>
 
               <div 
                 className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
-                onClick={isMobile() ? openCameraWithGuide : () => cameraInputRef.current?.click()}
+                onClick={isMobile() ? openCameraWithGuide : openPCCameraModal}
               >
                 <input
                   ref={cameraInputRef}
@@ -618,10 +793,10 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <div className="text-blue-600 hover:text-blue-500 font-medium">
-                  {isMobile() ? '카메라로 촬영하기' : '웹캠으로 촬영하기'}
+                  촬영하여 업로드
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
-                  {isMobile() ? '카메라 앱에서 촬영' : '웹캠으로 직접 촬영'}
+                  {isMobile() ? '모바일 카메라로 촬영' : 'PC 카메라로 촬영'}
                 </p>
               </div>
             </div>
@@ -653,38 +828,195 @@ const ThinkingRoutineAnalysis: React.FC = () => {
           </div>
         </div>
 
-        {/* 카메라 가이드 오버레이 - 모바일에서만 표시 */}
-        {showCameraGuide && isMobile() && (
+        {/* PC 카메라 모달 */}
+        {showCameraModal && !isMobile() && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="text-center">
-                <div className="mb-4">
-                  <svg className="mx-auto h-16 w-16 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <h3 className="text-lg font-medium text-gray-900 mb-4">사고루틴 촬영</h3>
+                
+                {!capturedImage ? (
+                  <>
+                    {/* 카메라 화면 */}
+                    <div className="relative mb-4">
+                      <div className="bg-gray-200 rounded-lg overflow-hidden" style={{ aspectRatio: '4/3' }}>
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          className="w-full h-full object-cover"
+                          style={{ transform: 'scaleX(-1)' }}
+                        />
+                        {/* 가이드 오버레이 */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="border-2 border-white border-dashed rounded-lg" 
+                               style={{ width: '80%', height: '60%' }}>
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded">
+                                템플릿이 이 영역 안에 들어오도록 조정해주세요
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 촬영 안내 */}
+                    <div className="text-sm text-gray-600 mb-6 text-left space-y-2">
+                      <p>📄 템플릿 전체가 화면에 들어오도록 조정하세요</p>
+                      <p>💡 조명이 밝고 그림자가 없는 곳에서 촬영하세요</p>
+                      <p>🔍 글씨가 선명하게 보이도록 초점을 맞춰주세요</p>
+                      <p>📐 템플릿이 기울어지지 않도록 수평을 맞춰주세요</p>
+                    </div>
+                    
+                    {/* 촬영 버튼 */}
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={closeCameraModal}
+                        className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-md font-medium"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={capturePhoto}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium flex items-center justify-center space-x-2"
+                      >
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>촬영</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* 촬영된 이미지 미리보기 */}
+                    <div className="relative mb-4">
+                      <img
+                        src={capturedImage}
+                        alt="촬영된 이미지"
+                        className="w-full max-w-2xl mx-auto rounded-lg"
+                        style={{ transform: 'scaleX(-1)' }}
+                      />
+                    </div>
+                    
+                    {/* 업로드/다시촬영 버튼 */}
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={retakePhoto}
+                        className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-md font-medium"
+                      >
+                        다시 촬영
+                      </button>
+                      <button
+                        onClick={uploadCapturedImage}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium"
+                      >
+                        업로드
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* 숨겨진 캔버스 */}
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+          </div>
+        )}
+
+        {/* 모바일 카메라 가이드 오버레이 - 개선된 버전 */}
+        {showCameraGuide && isMobile() && (
+          <div className="fixed inset-0 bg-gray-800 flex flex-col z-50">
+            {/* 헤더 */}
+            <div className="bg-white shadow-lg">
+              <div className="flex items-center justify-between p-4">
+                <h3 className="text-lg font-semibold text-gray-900">사고루틴 촬영</h3>
+                <button
+                  onClick={() => setShowCameraGuide(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* 카메라 프리뷰 영역 */}
+            <div className="flex-1 relative">
+              {/* 카메라 가이드 프레임 */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative">
+                  {/* 가이드 프레임 */}
+                  <div 
+                    className="border-2 border-white rounded-lg"
+                    style={{ 
+                      width: '280px', 
+                      height: '200px',
+                      boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)'
+                    }}
+                  >
+                    {/* 모서리 가이드 */}
+                    <div className="absolute -top-1 -left-1 w-4 h-4 border-l-2 border-t-2 border-white"></div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 border-r-2 border-t-2 border-white"></div>
+                    <div className="absolute -bottom-1 -left-1 w-4 h-4 border-l-2 border-b-2 border-white"></div>
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 border-r-2 border-b-2 border-white"></div>
+                  </div>
+                  
+                  {/* 가이드 텍스트 */}
+                  <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center">
+                    <p className="text-white text-sm font-medium">
+                      템플릿이 이 영역 안에<br/>
+                      들어오도록 조정해주세요
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 하단 가이드 및 버튼 */}
+            <div className="bg-white p-4">
+              <div className="text-center mb-4">
+                <div className="grid grid-cols-2 gap-3 text-xs text-gray-600 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-500">📄</span>
+                    <span>템플릿 전체가 보이도록</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-500">💡</span>
+                    <span>밝은 조명에서 촬영하세요</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-500">🔍</span>
+                    <span>글씨가 선명하게 보이도록</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-500">📐</span>
+                    <span>수평을 맞춰주세요</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* 촬영 버튼 */}
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowCameraGuide(false)}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-3 rounded-full text-sm font-medium"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={startCamera}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-full text-sm font-medium flex items-center justify-center space-x-2"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">촬영 가이드</h3>
-                <div className="text-sm text-gray-600 text-left space-y-2 mb-6">
-                  <p>📄 템플릿 전체가 화면에 들어오도록 촬영하세요</p>
-                  <p>💡 조명이 밝고 그림자가 없는 곳에서 촬영하세요</p>
-                  <p>🔍 글씨가 선명하게 보이도록 초점을 맞춰주세요</p>
-                  <p>📐 템플릿이 기울어지지 않도록 수평을 맞춰주세요</p>
-                </div>
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => setShowCameraGuide(false)}
-                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={startCamera}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                  >
-                    촬영하기
-                  </button>
-                </div>
+                  <span>촬영하기</span>
+                </button>
               </div>
             </div>
           </div>
