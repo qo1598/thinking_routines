@@ -484,15 +484,23 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     `;
   };
 
-  // 마크다운 텍스트 포맷팅 (StudentResponseDetail과 동일)
+  // 마크다운 텍스트 포맷팅 (불필요한 기호 제거 및 정리)
   const formatMarkdownText = (text: string) => {
     const formatSection = (section: string) => {
       return section
+        // 불필요한 기호들 제거
+        .replace(/^\*\s*/gm, '') // 줄 시작의 * 제거
+        .replace(/^---\s*/gm, '') // --- 제거
+        .replace(/^\s*\*\s*$/gm, '') // * 만 있는 줄 제거
+        // 제목 포맷팅
         .replace(/## (\d+)\. (.*?)(?=\n|$)/g, '<h3 class="text-xl font-bold text-purple-800 mb-4 pb-2 border-b-2 border-purple-200">$1. $2</h3>')
         .replace(/### (.*?)(?=\n|$)/g, '<h4 class="text-lg font-semibold text-gray-900 mt-6 mb-3 text-purple-700">$1</h4>')
-        .replace(/\*\*(.*?):\*\*/g, '<div class="mt-4 mb-2"><span class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">$1:</span></div>')
+        // 연보라색 태그에서 콜론 제거
+        .replace(/\*\*(.*?):\*\*/g, '<div class="mt-4 mb-2"><span class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">$1</span></div>')
         .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
         .replace(/^- (.*?)$/gm, '<div class="flex items-start mb-2"><span class="text-purple-500 mr-2 mt-1">•</span><span class="text-gray-700">$1</span></div>')
+        // 빈 줄 정리
+        .replace(/\n\s*\n\s*\n/g, '\n\n') // 3개 이상의 연속 줄바꿈을 2개로
         .replace(/\n\n/g, '</p><p class="mb-4">')
         .replace(/\n/g, '<br/>')
         .replace(/^/, '<p class="mb-4">')
@@ -1149,19 +1157,6 @@ const ThinkingRoutineAnalysis: React.FC = () => {
             <h2 className="text-xl font-bold text-gray-900 mb-6">4단계: 분석 결과</h2>
             
             <div className="space-y-6">
-              {/* 신뢰도 표시 */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">분석 신뢰도</span>
-                  <span className="text-sm text-gray-600">{Math.round(analysisResult.confidence)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${analysisResult.confidence}%` }}
-                  ></div>
-                </div>
-              </div>
 
               {/* AI 분석 결과 - 모던하고 고급스러운 디자인 */}
               <div>
