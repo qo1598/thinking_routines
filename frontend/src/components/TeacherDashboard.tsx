@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import TeacherRoomManagement from './TeacherRoomManagement';
 import ThinkingRoutineAnalysis from './ThinkingRoutineAnalysis';
+import StudentPortfolio from './StudentPortfolio';
 
 interface Teacher {
   id: string;
@@ -206,54 +207,9 @@ const TeacherDashboard: React.FC = () => {
 
 
 
-  const renderPortfolioView = () => (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/teacher/dashboard')}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                ← 대시보드로 돌아가기
-              </button>
-              <h1 className="text-2xl font-bold text-gray-900">학생별 사고루틴 포트폴리오</h1>
-            </div>
-            <div className="flex flex-col items-end space-y-2">
-              <span className="text-sm text-gray-700">
-                안녕하세요, {user?.name}님!
-              </span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                로그아웃
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <div className="bg-white rounded-lg shadow p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              학생별 사고루틴 포트폴리오
-            </h2>
-            <p className="text-gray-600 mb-6">
-              이 기능은 현재 개발 중입니다. 곧 제공될 예정입니다.
-            </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-              <p className="text-blue-800">
-                📚 개발 예정 기능: 개별 학생 진도 추적, 성장 기록, 포트폴리오 관리 등
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const renderPortfolioView = () => {
+    return <StudentPortfolio onBack={() => navigate('/teacher/dashboard')} />;
+  };
 
   if (loading) {
     return (
