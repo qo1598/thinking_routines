@@ -614,7 +614,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
     try {
       const fileName = `routine-images/${Date.now()}-${file.name}`;
-      const { data, error } = await supabase!.storage
+      const { error } = await supabase!.storage
         .from('routine-uploads')
         .upload(fileName, file);
 
