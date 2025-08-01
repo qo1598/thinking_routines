@@ -26,6 +26,15 @@ const ThinkingRoutineAnalysis: React.FC = () => {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string>('');
   const [hasCameraAccess, setHasCameraAccess] = useState<boolean | null>(null);
+  
+  // 학생 정보 및 교사 피드백 관련 state
+  const [studentName, setStudentName] = useState('');
+  const [studentClass, setStudentClass] = useState('');
+  const [studentNumber, setStudentNumber] = useState('');
+  const [teamName, setTeamName] = useState('');
+  const [isTeamActivity, setIsTeamActivity] = useState(false);
+  const [teacherFeedback, setTeacherFeedback] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // 사고루틴 옵션
   const routineOptions = [
@@ -103,13 +112,8 @@ const ThinkingRoutineAnalysis: React.FC = () => {
       reader.readAsDataURL(file);
       setError('');
 
-      // 백그라운드에서 Supabase에 업로드 (실패해도 로컬 작업은 계속)
-      try {
-        await uploadImageToSupabase(file);
-        console.log('Supabase upload completed successfully');
-      } catch (error) {
-        console.warn('Supabase upload failed, but continuing with local processing:', error);
-      }
+      // 이제는 로컬에만 저장하고, 최종 저장 시에만 Supabase에 업로드
+      console.log('Image loaded locally, ready for analysis');
     }
   };
 
@@ -591,13 +595,8 @@ const ThinkingRoutineAnalysis: React.FC = () => {
       setCapturedImage('');
       stopCameraStream();
 
-      // 백그라운드에서 Supabase에 업로드 (실패해도 로컬 작업은 계속)
-      try {
-        await uploadImageToSupabase(file);
-        console.log('Captured image uploaded to Supabase successfully');
-      } catch (uploadError) {
-        console.warn('Supabase upload failed, but continuing with local processing:', uploadError);
-      }
+      // 이제는 로컬에만 저장하고, 최종 저장 시에만 Supabase에 업로드
+      console.log('Captured image loaded locally, ready for analysis');
     } catch (error) {
       console.error('Error processing captured image:', error);
       setError('촬영한 이미지 처리 중 오류가 발생했습니다.');
@@ -664,6 +663,70 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     const success = await startCameraStream();
     if (!success) {
       setError('카메라를 다시 시작할 수 없습니다.');
+    }
+  };
+
+  // 최종 저장 (Supabase에 이미지 + 데이터 저장)
+  const handleFinalSave = async () => {
+    if (!uploadedImage || !analysisResult || !studentName || !studentClass || !studentNumber) {
+      setError('모든 필수 정보를 입력해주세요.');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+
+    try {
+      // 1. Supabase에 이미지 업로드
+      const imageUrl = await uploadImageToSupabase(uploadedImage);
+      
+      if (!imageUrl) {
+        throw new Error('이미지 업로드에 실패했습니다.');
+      }
+
+      // 2. 데이터베이스에 학생 응답 저장
+      const studentResponseData = {
+        student_name: studentName,
+        student_class: studentClass,
+        student_number: parseInt(studentNumber),
+        team_name: isTeamActivity ? teamName : null,
+        routine_type: selectedRoutine,
+        image_url: imageUrl,
+        ai_analysis: analysisResult.analysis,
+        teacher_feedback: teacherFeedback,
+        confidence_score: analysisResult.confidence,
+        created_at: new Date().toISOString()
+      };
+
+      const { error: dbError } = await supabase!
+        .from('student_responses')
+        .insert(studentResponseData);
+
+      if (dbError) {
+        console.error('Database save error:', dbError);
+        throw dbError;
+      }
+
+      // 성공 메시지 및 초기화
+      alert('학생 결과물이 성공적으로 저장되었습니다!');
+      
+      // 폼 초기화
+      setUploadedImage(null);
+      setImagePreview('');
+      setAnalysisResult(null);
+      setStudentName('');
+      setStudentClass('');
+      setStudentNumber('');
+      setTeamName('');
+      setIsTeamActivity(false);
+      setTeacherFeedback('');
+      setSelectedRoutine('');
+
+    } catch (error) {
+      console.error('Error saving to database:', error);
+      setError('저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1119,6 +1182,130 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                     dangerouslySetInnerHTML={{ __html: formatMarkdownText(analysisResult.analysis) }}
                   />
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 5단계: 학생 정보 입력 및 교사 피드백 - AI 분석 완료 후에만 표시 */}
+        {analysisResult && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">5단계: 학생 정보 입력 및 피드백</h2>
+            
+            <div className="space-y-6">
+              {/* 학생 정보 */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">학생 정보</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      학생 이름 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="학생 이름을 입력하세요"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      반 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={studentClass}
+                      onChange={(e) => setStudentClass(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="예: 3학년 2반"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      번호 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={studentNumber}
+                      onChange={(e) => setStudentNumber(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="번호"
+                      min="1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 모둠 활동 여부 */}
+              <div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="teamActivity"
+                    checked={isTeamActivity}
+                    onChange={(e) => setIsTeamActivity(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="teamActivity" className="ml-2 text-sm font-medium text-gray-700">
+                    모둠 활동
+                  </label>
+                </div>
+                
+                {isTeamActivity && (
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      모둠 이름
+                    </label>
+                    <input
+                      type="text"
+                      value={teamName}
+                      onChange={(e) => setTeamName(e.target.value)}
+                      className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="모둠 이름을 입력하세요"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* 교사 피드백 */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">교사 피드백</h3>
+                <textarea
+                  value={teacherFeedback}
+                  onChange={(e) => setTeacherFeedback(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="학생에게 전달할 피드백을 입력하세요..."
+                />
+              </div>
+
+              {/* 저장 버튼 */}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleFinalSave}
+                  disabled={!studentName || !studentClass || !studentNumber || saving}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {saving ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>저장 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span>포트폴리오에 저장</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
