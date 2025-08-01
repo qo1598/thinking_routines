@@ -94,27 +94,21 @@ const ThinkingRoutineAnalysis: React.FC = () => {
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // 먼저 로컬에서 이미지 설정
+      setUploadedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      setError('');
+
+      // 백그라운드에서 Supabase에 업로드 (실패해도 로컬 작업은 계속)
       try {
-        // Supabase에 업로드
         await uploadImageToSupabase(file);
-        
-        setUploadedImage(file);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setImagePreview(e.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-        setError('');
+        console.log('Supabase upload completed successfully');
       } catch (error) {
-        console.error('Error uploading file:', error);
-        // 업로드 실패해도 로컬에서는 계속 작업
-        setUploadedImage(file);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setImagePreview(e.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-        setError('');
+        console.warn('Supabase upload failed, but continuing with local processing:', error);
       }
     }
   };
@@ -590,18 +584,23 @@ const ThinkingRoutineAnalysis: React.FC = () => {
       // File 객체 생성
       const file = new File([blob], `captured-${Date.now()}.jpg`, { type: 'image/jpeg' });
       
-      // 이미지 저장을 Supabase에 업로드 (실패해도 계속 진행)
-      await uploadImageToSupabase(file);
-      
-      // 로컬에서도 이미지 설정
+      // 먼저 로컬에서 이미지 설정
       setUploadedImage(file);
       setImagePreview(capturedImage);
       setShowCameraModal(false);
       setCapturedImage('');
       stopCameraStream();
+
+      // 백그라운드에서 Supabase에 업로드 (실패해도 로컬 작업은 계속)
+      try {
+        await uploadImageToSupabase(file);
+        console.log('Captured image uploaded to Supabase successfully');
+      } catch (uploadError) {
+        console.warn('Supabase upload failed, but continuing with local processing:', uploadError);
+      }
     } catch (error) {
-      console.error('Error uploading captured image:', error);
-      setError('촬영한 이미지 업로드 중 오류가 발생했습니다.');
+      console.error('Error processing captured image:', error);
+      setError('촬영한 이미지 처리 중 오류가 발생했습니다.');
     }
   };
 
@@ -615,7 +614,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     try {
       const fileName = `routine-images/${Date.now()}-${file.name}`;
       const { error } = await supabase!.storage
-        .from('routine-uploads')
+        .from('templates')
         .upload(fileName, file);
 
       if (error) {
@@ -625,7 +624,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
       // 업로드된 파일의 공개 URL 가져오기
       const { data: { publicUrl } } = supabase!.storage
-        .from('routine-uploads')
+        .from('templates')
         .getPublicUrl(fileName);
 
       console.log('Image uploaded to Supabase:', publicUrl);
@@ -659,8 +658,13 @@ const ThinkingRoutineAnalysis: React.FC = () => {
   };
 
   // 다시 촬영
-  const retakePhoto = () => {
+  const retakePhoto = async () => {
     setCapturedImage('');
+    // 카메라 스트림을 다시 시작
+    const success = await startCameraStream();
+    if (!success) {
+      setError('카메라를 다시 시작할 수 없습니다.');
+    }
   };
 
   return (
@@ -850,7 +854,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                         {/* 가이드 오버레이 */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                           <div className="border-2 border-white border-dashed rounded-lg" 
-                               style={{ width: '80%', height: '60%' }}>
+                               style={{ width: '90%', height: '75%' }}>
                             <div className="w-full h-full flex items-center justify-center">
                               <span className="text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded">
                                 템플릿이 이 영역 안에 들어오도록 조정해주세요
