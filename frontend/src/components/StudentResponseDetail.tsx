@@ -30,7 +30,11 @@ interface RoutineTemplate {
 
 interface StudentResponse {
   id: string;
+  student_grade?: string;
   student_name: string;
+  student_class?: string;
+  student_number?: number;
+  team_name?: string;
   student_id: string;
   response_data: {
     see: string;
@@ -330,7 +334,7 @@ const StudentResponseDetail: React.FC = () => {
   const generateUserPrompt = (response: StudentResponse, template: RoutineTemplate) => {
     const routineType = template.routine_type;
     const baseInfo = `
-**학생:** ${response.student_name}
+**학생:** ${response.student_grade ? `${response.student_grade} ` : ''}${response.student_class ? `${response.student_class}반 ` : ''}${response.student_number ? `${response.student_number}번 ` : ''}${response.student_name}${response.team_name ? ` (${response.team_name})` : ''}
 
 **교사 제공 자료:**
 ${template.content.image_url ? `- 이미지 자료 제공` : ''}
@@ -587,9 +591,14 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900">
+                {response.student_grade && <span className="text-lg">{response.student_grade} </span>}
+                {response.student_class && <span className="text-lg">{response.student_class}반 </span>}
+                {response.student_number && <span className="text-lg">{response.student_number}번 </span>}
                 {response.student_name}
-                {response.student_id && (
-                  <span className="text-sm text-gray-500 ml-2">({response.student_id})</span>
+                {response.team_name && (
+                  <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">
+                    {response.team_name}
+                  </span>
                 )}
               </h2>
               <p className="text-sm text-gray-600">

@@ -30,7 +30,11 @@ interface RoutineTemplate {
 
 interface StudentResponse {
   id: string;
+  student_grade?: string;
   student_name: string;
+  student_class?: string;
+  student_number?: number;
+  team_name?: string;
   student_id: string;
   response_data: any;
   submitted_at: string;
@@ -723,9 +727,14 @@ const TeacherRoomDetail: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-medium text-gray-900">
+                        {response.student_grade && <span className="text-base">{response.student_grade} </span>}
+                        {response.student_class && <span className="text-base">{response.student_class}반 </span>}
+                        {response.student_number && <span className="text-base">{response.student_number}번 </span>}
                         {response.student_name}
-                        {response.student_id && (
-                          <span className="text-sm text-gray-500 ml-2">({response.student_id})</span>
+                        {response.team_name && (
+                          <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">
+                            {response.team_name}
+                          </span>
                         )}
                       </h3>
                       <p className="text-sm text-gray-600">
