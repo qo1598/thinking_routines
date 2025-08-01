@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface StudentInfo {
+  grade: string;
   name: string;
   class: string;
   number: string;
@@ -216,7 +217,7 @@ const ThinkingRoutineForm: React.FC = () => {
     if (!supabase || !roomId) return;
 
     try {
-      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.class}반 ${studentInfo.number}번` : '';
+      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.grade} ${studentInfo.class}반 ${studentInfo.number}번` : '';
       
       // 먼저 임시저장된 응답 확인
       const { data: draftData } = await supabase
@@ -276,7 +277,7 @@ const ThinkingRoutineForm: React.FC = () => {
     if (!supabase || !studentInfo || !roomId) return;
 
     try {
-      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.class}반 ${studentInfo.number}번` : '';
+      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.grade} ${studentInfo.class}반 ${studentInfo.number}번` : '';
       
       // 기존 임시저장 데이터 확인
       const { data: existingDraft } = await supabase
@@ -303,9 +304,11 @@ const ThinkingRoutineForm: React.FC = () => {
           .from('student_responses')
           .insert([{
             room_id: roomId,
+            student_grade: studentInfo.grade,
             student_name: studentInfo.name,
-            student_id: studentId,
-            group_name: studentInfo.groupName || null,
+            student_class: studentInfo.class,
+            student_number: parseInt(studentInfo.number),
+            team_name: studentInfo.groupName || null,
             response_data: currentResponses,
             is_draft: true,
             submitted_at: new Date().toISOString()
@@ -400,7 +403,7 @@ const ThinkingRoutineForm: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.class}반 ${studentInfo.number}번` : '';
+      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.grade} ${studentInfo.class}반 ${studentInfo.number}번` : '';
       
       // 기존 임시저장 데이터 확인 및 삭제
       const { data: existingDraft } = await supabase

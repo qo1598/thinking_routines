@@ -20,6 +20,7 @@ const StudentEntry: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [room, setRoom] = useState<ActivityRoom | null>(null);
+  const [studentGrade, setStudentGrade] = useState('');
   const [studentName, setStudentName] = useState('');
   const [studentClass, setStudentClass] = useState('');
   const [studentNumber, setStudentNumber] = useState('');
@@ -86,6 +87,11 @@ const StudentEntry: React.FC = () => {
   };
 
   const handleJoinRoom = () => {
+    if (!studentGrade.trim()) {
+      setError('학년을 선택해주세요.');
+      return;
+    }
+
     if (!studentName.trim()) {
       setError('이름을 입력해주세요.');
       return;
@@ -99,6 +105,7 @@ const StudentEntry: React.FC = () => {
 
     // 학생 정보를 로컬 스토리지에 저장
     const studentInfo = {
+      grade: studentGrade,
       name: studentName,
       class: studentClass,
       number: studentNumber,
@@ -197,6 +204,27 @@ const StudentEntry: React.FC = () => {
               {/* 학생 정보 입력 */}
               <div className="space-y-4">
                 <div>
+                  <label htmlFor="studentGrade" className="block text-sm font-medium text-gray-700">
+                    학년 *
+                  </label>
+                  <select
+                    id="studentGrade"
+                    required
+                    value={studentGrade}
+                    onChange={(e) => setStudentGrade(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary-500 focus:border-secondary-500"
+                  >
+                    <option value="">선택하세요</option>
+                    <option value="1학년">1학년</option>
+                    <option value="2학년">2학년</option>
+                    <option value="3학년">3학년</option>
+                    <option value="4학년">4학년</option>
+                    <option value="5학년">5학년</option>
+                    <option value="6학년">6학년</option>
+                  </select>
+                </div>
+
+                <div>
                   <label htmlFor="studentName" className="block text-sm font-medium text-gray-700">
                     이름 *
                   </label>
@@ -279,7 +307,7 @@ const StudentEntry: React.FC = () => {
               <div>
                 <button
                   onClick={handleJoinRoom}
-                  disabled={!studentName.trim()}
+                  disabled={!studentGrade.trim() || !studentName.trim()}
                   className="w-full bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
                 >
                   활동 시작하기

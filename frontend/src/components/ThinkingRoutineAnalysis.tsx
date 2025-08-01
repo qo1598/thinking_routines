@@ -28,9 +28,10 @@ const ThinkingRoutineAnalysis: React.FC = () => {
   const [hasCameraAccess, setHasCameraAccess] = useState<boolean | null>(null);
   
   // 학생 정보 및 교사 피드백 관련 state
-  const [studentName, setStudentName] = useState('');
+  const [studentGrade, setStudentGrade] = useState('');
   const [studentClass, setStudentClass] = useState('');
   const [studentNumber, setStudentNumber] = useState('');
+  const [studentName, setStudentName] = useState('');
   const [teamName, setTeamName] = useState('');
   const [isTeamActivity, setIsTeamActivity] = useState(false);
   const [teacherFeedback, setTeacherFeedback] = useState('');
@@ -676,7 +677,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
   // 최종 저장 (Supabase에 이미지 + 데이터 저장)
   const handleFinalSave = async () => {
-    if (!uploadedImage || !analysisResult || !studentName || !studentClass || !studentNumber) {
+    if (!uploadedImage || !analysisResult || !studentGrade || !studentClass || !studentNumber || !studentName) {
       setError('모든 필수 정보를 입력해주세요.');
       return;
     }
@@ -694,6 +695,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
       // 2. 데이터베이스에 학생 응답 저장
       const studentResponseData = {
+        student_grade: studentGrade,
         student_name: studentName,
         student_class: studentClass,
         student_number: parseInt(studentNumber),
@@ -722,6 +724,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
       setUploadedImage(null);
       setImagePreview('');
       setAnalysisResult(null);
+      setStudentGrade('');
       setStudentName('');
       setStudentClass('');
       setStudentNumber('');
@@ -1192,7 +1195,26 @@ const ThinkingRoutineAnalysis: React.FC = () => {
               {/* 학생 정보 */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">학생 정보</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      학년 <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={studentGrade}
+                      onChange={(e) => setStudentGrade(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">선택하세요</option>
+                      <option value="1학년">1학년</option>
+                      <option value="2학년">2학년</option>
+                      <option value="3학년">3학년</option>
+                      <option value="4학년">4학년</option>
+                      <option value="5학년">5학년</option>
+                      <option value="6학년">6학년</option>
+                    </select>
+                  </div>
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       반 <span className="text-red-500">*</span>
@@ -1202,7 +1224,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                       value={studentClass}
                       onChange={(e) => setStudentClass(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="예: 3학년 2반"
+                      placeholder="예: 2반"
                     />
                   </div>
                   
@@ -1289,7 +1311,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
               <div className="flex justify-end">
                 <button
                   onClick={handleFinalSave}
-                  disabled={!studentName || !studentClass || !studentNumber || saving}
+                  disabled={!studentGrade || !studentClass || !studentNumber || !studentName || saving}
                   className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
                   {saving ? (
