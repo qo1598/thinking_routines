@@ -818,7 +818,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
         {/* 2단계: 이미지 업로드 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">2단계: 학생 활동 결과물 업로드</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-6">2단계: 사고루틴 활동 결과물 업로드</h2>
           
           <div className="space-y-4">
             {/* 업로드 옵션 */}
@@ -1163,22 +1163,23 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                 </div>
               </div>
 
-              {/* 추출된 텍스트 */}
+              {/* AI 분석 결과 - 모던하고 고급스러운 디자인 */}
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">📝 이미지에서 추출된 내용</h3>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <pre className="text-sm text-gray-700 whitespace-pre-wrap font-mono">
-                    {analysisResult.extractedText}
-                  </pre>
+                <div className="flex items-center mb-4">
+                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg mr-3">
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">AI 교육 전문가 분석</h3>
+                    <p className="text-sm text-gray-600">사고루틴 활동에 대한 심층 분석 및 교육적 제안</p>
+                  </div>
                 </div>
-              </div>
-
-              {/* AI 분석 결과 - StudentResponseDetail과 동일한 스타일 */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-3">🤖 AI 분석 및 피드백</h3>
-                <div className="space-y-4">
+                
+                <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-6 shadow-sm">
                   <div 
-                    className="prose prose-sm max-w-none text-gray-800 text-left"
+                    className="prose prose-sm max-w-none text-gray-800 text-left leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: formatMarkdownText(analysisResult.analysis) }}
                   />
                 </div>
@@ -1196,20 +1197,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
               {/* 학생 정보 */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">학생 정보</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      학생 이름 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={studentName}
-                      onChange={(e) => setStudentName(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="학생 이름을 입력하세요"
-                    />
-                  </div>
-                  
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       반 <span className="text-red-500">*</span>
@@ -1236,6 +1224,41 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                       min="1"
                     />
                   </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      학생 이름 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="학생 이름을 입력하세요"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      모둠명
+                    </label>
+                    <select
+                      value={teamName}
+                      onChange={(e) => setTeamName(e.target.value)}
+                      disabled={!isTeamActivity}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!isTeamActivity ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    >
+                      <option value="">선택하세요</option>
+                      <option value="1모둠">1모둠</option>
+                      <option value="2모둠">2모둠</option>
+                      <option value="3모둠">3모둠</option>
+                      <option value="4모둠">4모둠</option>
+                      <option value="5모둠">5모둠</option>
+                      <option value="6모둠">6모둠</option>
+                      <option value="7모둠">7모둠</option>
+                      <option value="8모둠">8모둠</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -1253,21 +1276,6 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                     모둠 활동
                   </label>
                 </div>
-                
-                {isTeamActivity && (
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      모둠 이름
-                    </label>
-                    <input
-                      type="text"
-                      value={teamName}
-                      onChange={(e) => setTeamName(e.target.value)}
-                      className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="모둠 이름을 입력하세요"
-                    />
-                  </div>
-                )}
               </div>
 
               {/* 교사 피드백 */}
@@ -1302,7 +1310,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
-                      <span>포트폴리오에 저장</span>
+                      <span>저장하기</span>
                     </>
                   )}
                 </button>
