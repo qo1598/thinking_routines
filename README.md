@@ -1,6 +1,6 @@
 # 사고루틴 웹앱 (Thinking Routines Web App)
 
-See-Think-Wonder 사고루틴을 활용한 교육용 웹 애플리케이션입니다.
+사고루틴을 활용한 교육용 웹 애플리케이션입니다.
 
 ## 🚀 주요 기능
 
