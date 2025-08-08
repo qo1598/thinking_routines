@@ -32,8 +32,8 @@ module.exports = async function handler(req, res) {
     console.log('Gemini API 초기화 중...');
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     
-    // Gemini 2.5 Flash Lite 모델 사용
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    // Gemini 2.5 Flash 모델 사용 (v1 API에서 지원됨)
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     console.log('AI 분석 시작...');
     
