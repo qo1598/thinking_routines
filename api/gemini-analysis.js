@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 
 module.exports = async function handler(req, res) {
   // CORS 헤더 설정
@@ -29,11 +29,8 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: 'Gemini API key not configured' });
     }
 
-    console.log('Gemini API 초기화 중...');
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    
-    // Gemini 2.5 Flash 모델 사용 (v1 API에서 지원됨)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    console.log('새로운 Gemini SDK 초기화 중...');
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     console.log('AI 분석 시작...');
     
@@ -97,11 +94,14 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    const result = await model.generateContent(parts);
+    // 새로운 SDK 방식으로 API 호출 - 가장 경제적인 모델 사용!
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-lite',  // 비용 절약을 위한 가장 경제적인 모델
+      contents: parts
+    });
 
     console.log('AI 분석 완료');
-    const response = await result.response;
-    const analysisText = response.text();
+    const analysisText = response.text;
 
     if (!analysisText) {
       console.log('AI 분석 결과가 비어있음');

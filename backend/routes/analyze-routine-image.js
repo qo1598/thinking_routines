@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 const router = express.Router();
 
 // Multer 설정 (메모리 저장)
@@ -18,8 +18,8 @@ const upload = multer({
   }
 });
 
-// Gemini API 초기화
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// 새로운 Gemini API 초기화
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // 사고루틴별 분석 프롬프트 생성
 const generateAnalysisPrompt = (routineType) => {
@@ -195,25 +195,24 @@ router.post('/', upload.single('image'), async (req, res) => {
 
     console.log(`이미지 분석 시작: ${routineType}, 파일 크기: ${imageFile.size} bytes`);
 
-    // Gemini 2.5 Flash 모델 사용 (v1 API에서 지원됨)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
     // 프롬프트 생성
     const prompt = generateAnalysisPrompt(routineType);
 
     // 이미지를 Gemini가 이해할 수 있는 형태로 변환
     const imagePart = fileToGenerativePart(imageFile.buffer, imageFile.mimetype);
 
-    console.log('Gemini API 호출 중...');
+    console.log('새로운 Gemini SDK로 API 호출 중...');
 
-    // Gemini API 호출
-    const result = await model.generateContent([
-      prompt,
-      imagePart
-    ]);
+    // 새로운 SDK 방식으로 API 호출 - 가장 경제적인 모델 사용!
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-lite',  // 비용 절약을 위한 가장 경제적인 모델
+      contents: [
+        prompt,
+        imagePart
+      ]
+    });
 
-    const response = await result.response;
-    const analysisText = response.text();
+    const analysisText = response.text;
 
     console.log('분석 완료, 응답 길이:', analysisText.length);
 
