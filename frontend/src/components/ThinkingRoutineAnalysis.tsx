@@ -34,7 +34,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
   const [studentName, setStudentName] = useState('');
   const [teamName, setTeamName] = useState('');
   const [isTeamActivity, setIsTeamActivity] = useState(false);
-  const [teacherFeedback, setTeacherFeedback] = useState('');
+
   const [saving, setSaving] = useState(false);
 
   // 단계별 분석 표시를 위한 새로운 state

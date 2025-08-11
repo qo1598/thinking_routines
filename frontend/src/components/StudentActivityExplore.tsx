@@ -59,7 +59,7 @@ const StudentActivityExplore: React.FC = () => {
     if (roomId) {
       fetchActivities();
     }
-  }, [roomId]);
+  }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchActivities = async () => {
     if (!isSupabaseConfigured() || !supabase) {
