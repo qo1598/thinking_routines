@@ -164,6 +164,9 @@ const ThinkingRoutineForm: React.FC = () => {
     fourth_step: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!isSupabaseConfigured() || !supabase || !roomId) {
@@ -474,13 +477,159 @@ const ThinkingRoutineForm: React.FC = () => {
         alert('제출이 완료되었습니다!');
       }
 
-      navigate('/student');
+      setSubmitted(true);
     } catch (err) {
       console.error('Submit error:', err);
       alert('제출에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // AI 분석 요청 함수
+  const handleAIAnalysis = async () => {
+    if (!template || !studentInfo) return;
+
+    setAnalyzing(true);
+    try {
+      // 사고루틴별 맞춤형 프롬프트 생성
+      const systemPrompt = generateAIPrompt(template.routine_type);
+      const userPrompt = generateUserPrompt();
+
+      // Google Gemini API 호출
+      const apiResponse = await fetch('/api/gemini-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          systemPrompt,
+          userPrompt,
+          imageUrl: template.content.image_url,
+          youtubeUrl: template.content.youtube_url
+        })
+      });
+
+      if (!apiResponse.ok) {
+        const errorData = await apiResponse.json();
+        throw new Error(errorData.error || 'AI 분석 요청 실패');
+      }
+
+      const analysisResult = await apiResponse.json();
+      
+      if (!analysisResult.analysis) {
+        throw new Error('AI 분석 결과가 없습니다');
+      }
+      
+      setAiAnalysisResult(analysisResult.analysis);
+      alert('AI 분석이 완료되었습니다!');
+    } catch (error) {
+      console.error('AI 분석 오류:', error);
+      alert('AI 분석 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  // 사고루틴별 AI 프롬프트 생성
+  const generateAIPrompt = (routineType: string) => {
+    const prompts = {
+      'see-think-wonder': `
+당신은 교육 전문가입니다. 학생이 작성한 See-Think-Wonder 사고루틴 활동 결과물을 분석하고 평가해주세요.
+
+**See-Think-Wonder 사고루틴 이해:**
+- See(보기): 관찰 가능한 사실과 정보를 기록
+- Think(생각하기): 관찰한 내용에 대한 해석과 추론
+- Wonder(궁금하기): 더 알고 싶은 점과 질문 생성
+
+**평가 기준:**
+1. 각 단계별 적절성 (관찰-해석-질문의 논리적 연결)
+2. 구체성과 명확성
+3. 사고의 깊이와 창의성
+4. 언어 표현의 정확성
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### See (보기)
+- [관찰 능력 평가와 구체적 피드백 2-3줄]
+### Think (생각하기)
+- [추론 능력 평가와 구체적 피드백 2-3줄]
+### Wonder (궁금하기)
+- [질문 생성 능력 평가와 구체적 피드백 2-3줄]
+
+## 2. 종합 평가
+### 강점
+- [구체적인 강점 2-3가지]
+### 개선점
+- [구체적인 개선 방안 2-3가지]
+
+## 3. 교육적 제안
+- [다음 단계 학습 방향 제시]`,
+
+      '4c': `
+당신은 교육 전문가입니다. 학생이 작성한 4C 사고루틴 활동 결과물을 분석하고 평가해주세요.
+
+**4C 사고루틴 이해:**
+- Connect(연결): 기존 지식이나 경험과의 연결점
+- Challenge(도전): 의문점이나 도전적인 아이디어
+- Concepts(개념): 핵심 개념과 아이디어
+- Changes(변화): 제안하는 변화나 행동
+
+**평가 기준:**
+1. 각 단계별 적절성과 논리적 연결
+2. 비판적 사고와 창의적 사고
+3. 개념 이해의 깊이
+4. 실행 가능한 변화 제안
+
+**출력 형식:**
+## 1. 각 단계별 분석
+### Connect (연결)
+- [연결 능력 평가와 구체적 피드백 2-3줄]
+### Challenge (도전)
+- [비판적 사고 능력 평가와 구체적 피드백 2-3줄]
+### Concepts (개념)
+- [개념 이해 능력 평가와 구체적 피드백 2-3줄]
+### Changes (변화)
+- [변화 제안 능력 평가와 구체적 피드백 2-3줄]
+
+## 2. 종합 평가
+### 강점
+- [구체적인 강점 2-3가지]
+### 개선점
+- [구체적인 개선 방안 2-3가지]
+
+## 3. 교육적 제안
+- [다음 단계 학습 방향 제시]`
+    };
+
+    return prompts[routineType as keyof typeof prompts] || prompts['see-think-wonder'];
+  };
+
+  // 사용자 응답 프롬프트 생성
+  const generateUserPrompt = () => {
+    if (!template) return '';
+
+    const routineConfig = ROUTINE_CONFIGS[template.routine_type as keyof typeof ROUTINE_CONFIGS];
+    if (!routineConfig) return '';
+
+    let prompt = `학생 정보:
+- 이름: ${studentInfo.name}
+- 학급: ${studentInfo.class}
+- 번호: ${studentInfo.number}
+${studentInfo.groupName ? `- 모둠명: ${studentInfo.groupName}` : ''}
+
+활동 내용:
+- 제목: ${template?.content?.text_content || ''}
+
+학생 응답:`;
+
+    routineConfig.steps.forEach((step: string) => {
+      const stepLabel = routineConfig.stepLabels[step as keyof typeof routineConfig.stepLabels];
+      const response = responses[step as keyof ThinkingRoutineResponse];
+      prompt += `\n\n**${stepLabel.title} (${stepLabel.subtitle}):**\n${response || '(응답 없음)'}`;
+    });
+
+    return prompt;
   };
 
   const getStepInfo = () => {
@@ -966,6 +1115,85 @@ const ThinkingRoutineForm: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* 제출 완료 후 AI 분석 섹션 */}
+        {submitted && (
+          <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              🤖 AI 분석 및 피드백
+            </h2>
+            
+            <div className="mb-4">
+              <p className="text-gray-700 mb-4">
+                제출한 사고루틴 활동을 AI가 분석하여 개인 맞춤형 피드백을 제공합니다.
+              </p>
+              
+              {!aiAnalysisResult ? (
+                <button
+                  onClick={handleAIAnalysis}
+                  disabled={analyzing}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {analyzing ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      AI 분석 중...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      AI 분석 시작하기
+                    </>
+                  )}
+                </button>
+              ) : (
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    📊 AI 분석 결과
+                  </h3>
+                  <div className="prose prose-sm max-w-none">
+                    <pre className="whitespace-pre-wrap text-gray-700 bg-white p-4 rounded border">
+                      {aiAnalysisResult}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex space-x-3 pt-4 border-t">
+              <button
+                onClick={() => navigate('/student')}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+              >
+                돌아가기
+              </button>
+              {aiAnalysisResult && (
+                <button
+                  onClick={() => {
+                    setSubmitted(false);
+                    setAiAnalysisResult(null);
+                    // 응답 초기화
+                    setResponses({
+                      see: '',
+                      think: '',
+                      wonder: '',
+                      fourth_step: ''
+                    });
+                    setCurrentStep('see');
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  새 활동 시작하기
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

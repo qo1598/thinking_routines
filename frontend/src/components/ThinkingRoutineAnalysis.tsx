@@ -43,6 +43,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     stepByStep: string;
     comprehensive: string;
     educational: string;
+    individualSteps?: {[key: string]: string}; // 개별 단계별 분석 내용
   } | null>(null);
   const [showTeacherFeedback, setShowTeacherFeedback] = useState(false);
   const [stepFeedbacks, setStepFeedbacks] = useState<{[key: string]: string}>({});
@@ -508,10 +509,37 @@ const ThinkingRoutineAnalysis: React.FC = () => {
       const comprehensiveMatch = analysis.match(/## 2\. 종합 평가([\s\S]*?)(?=## 3\.|$)/);
       const educationalMatch = analysis.match(/## 3\. 교육적 제안([\s\S]*?)$/);
 
+      // 개별 단계별 분석 추출
+      const individualSteps: {[key: string]: string} = {};
+      
+      if (stepByStepMatch) {
+        const stepByStepContent = stepByStepMatch[1].trim();
+        
+        // See-Think-Wonder 방식
+        const seeMatch = stepByStepContent.match(/### See \(보기\)([\s\S]*?)(?=### |$)/);
+        const thinkMatch = stepByStepContent.match(/### Think \(생각하기\)([\s\S]*?)(?=### |$)/);
+        const wonderMatch = stepByStepContent.match(/### Wonder \(궁금하기\)([\s\S]*?)(?=### |$)/);
+        
+        // 4C 방식
+        const connectMatch = stepByStepContent.match(/### Connect \(연결\)([\s\S]*?)(?=### |$)/);
+        const challengeMatch = stepByStepContent.match(/### Challenge \(도전\)([\s\S]*?)(?=### |$)/);
+        const conceptsMatch = stepByStepContent.match(/### Concepts \(개념\)([\s\S]*?)(?=### |$)/);
+        const changesMatch = stepByStepContent.match(/### Changes \(변화\)([\s\S]*?)(?=### |$)/);
+        
+        if (seeMatch) individualSteps['see'] = seeMatch[1].trim();
+        if (thinkMatch) individualSteps['think'] = thinkMatch[1].trim();
+        if (wonderMatch) individualSteps['wonder'] = wonderMatch[1].trim();
+        if (connectMatch) individualSteps['connect'] = connectMatch[1].trim();
+        if (challengeMatch) individualSteps['challenge'] = challengeMatch[1].trim();
+        if (conceptsMatch) individualSteps['concepts'] = conceptsMatch[1].trim();
+        if (changesMatch) individualSteps['changes'] = changesMatch[1].trim();
+      }
+
       setParsedAnalysis({
         stepByStep: stepByStepMatch ? stepByStepMatch[1].trim() : '',
         comprehensive: comprehensiveMatch ? comprehensiveMatch[1].trim() : '',
-        educational: educationalMatch ? educationalMatch[1].trim() : ''
+        educational: educationalMatch ? educationalMatch[1].trim() : '',
+        individualSteps
       });
     } catch (error) {
       console.error('Analysis parsing error:', error);
@@ -519,7 +547,8 @@ const ThinkingRoutineAnalysis: React.FC = () => {
       setParsedAnalysis({
         stepByStep: analysis,
         comprehensive: '',
-        educational: ''
+        educational: '',
+        individualSteps: {}
       });
     }
   };
@@ -754,22 +783,19 @@ const ThinkingRoutineAnalysis: React.FC = () => {
           stepByStep: parsedAnalysis?.stepByStep || '',
           comprehensive: parsedAnalysis?.comprehensive || '',
           educational: parsedAnalysis?.educational || '',
+          individualSteps: parsedAnalysis?.individualSteps || {},
           confidence: analysisResult.confidence,
           analyzedAt: new Date().toISOString()
         },
         teacherFeedback: {
-          stepByStep: {
-            feedback: stepFeedbacks['stepByStep'] || '',
-            score: stepScores['stepByStep'] || null
-          },
-          comprehensive: {
-            feedback: stepFeedbacks['comprehensive'] || '',
-            score: stepScores['comprehensive'] || null
-          },
-          educational: {
-            feedback: stepFeedbacks['educational'] || '',
-            score: stepScores['educational'] || null
-          },
+          // 개별 단계별 피드백 (새로운 방식)
+          individualSteps: Object.keys(parsedAnalysis?.individualSteps || {}).reduce((acc, stepKey) => {
+            acc[stepKey] = {
+              feedback: stepFeedbacks[stepKey] || '',
+              score: stepScores[stepKey] || null
+            };
+            return acc;
+          }, {} as {[key: string]: {feedback: string, score: number | null}}),
           feedbackAt: new Date().toISOString()
         },
         routineInfo: {
@@ -1338,161 +1364,115 @@ const ThinkingRoutineAnalysis: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
             <h2 className="text-xl font-bold text-gray-900 mb-6">5단계: 교사 피드백 및 평가</h2>
             
-            {/* AI 분석 내용 재표시 + 교사 피드백 입력 */}
-            <div className="space-y-8">
-              {/* 1. 각 단계별 분석 + 교사 피드백 */}
-              <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center">
-                  <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  1. 각 단계별 분석
-                </h3>
-                
-                {/* AI 분석 내용 */}
-                <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <svg className="w-4 h-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                    AI 분석 결과
-                  </h4>
-                  <div 
-                    className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: formatMarkdownText(parsedAnalysis.stepByStep) }}
-                  />
+            {/* 사고루틴별 개별 단계 평가 */}
+            {parsedAnalysis?.individualSteps && Object.keys(parsedAnalysis.individualSteps).length > 0 ? (
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <p className="text-gray-600">
+                    AI가 분석한 각 단계별 결과를 참고하여 개별 단계마다 피드백과 점수를 입력하세요
+                  </p>
                 </div>
 
-                {/* 교사 피드백 입력란 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">교사 피드백</label>
-                  <textarea
-                    value={stepFeedbacks['stepByStep'] || ''}
-                    onChange={(e) => setStepFeedbacks({...stepFeedbacks, stepByStep: e.target.value})}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="각 단계별 분석에 대한 추가 피드백을 입력하세요..."
-                  />
-                </div>
+                {Object.entries(parsedAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
+                  // 단계별 정보 매핑
+                  const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
+                    'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
+                    'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
+                    'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
+                    'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+                    'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
+                    'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
+                    'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' }
+                  };
 
-                {/* 점수 입력 */}
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">점수 (1-10점)</label>
-                  <input
-                    type="number"
-                    value={stepScores['stepByStep'] || ''}
-                    onChange={(e) => setStepScores({...stepScores, stepByStep: parseInt(e.target.value)})}
-                    min="1"
-                    max="10"
-                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="점수"
-                  />
-                  <span className="ml-2 text-sm text-gray-500">/ 10점</span>
-                </div>
+                  const stepInfo = stepInfoMap[stepKey];
+                  if (!stepInfo) return null;
+
+                  const gradientColors: {[key: string]: string} = {
+                    'bg-blue-500': 'from-blue-50 to-white border-blue-200',
+                    'bg-green-500': 'from-green-50 to-white border-green-200',
+                    'bg-purple-500': 'from-purple-50 to-white border-purple-200',
+                    'bg-red-500': 'from-red-50 to-white border-red-200'
+                  };
+
+                  return (
+                    <div 
+                      key={stepKey}
+                      className={`bg-gradient-to-br ${gradientColors[stepInfo.color] || 'from-gray-50 to-white border-gray-200'} border rounded-xl p-6`}
+                    >
+                      <h3 className={`text-lg font-bold mb-4 flex items-center ${
+                        stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
+                        stepInfo.color === 'bg-green-500' ? 'text-green-800' :
+                        stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
+                        stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
+                      }`}>
+                        <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
+                          {index + 1}
+                        </span>
+                        {stepInfo.title} ({stepInfo.subtitle})
+                      </h3>
+                      
+                      {/* AI 분석 내용 */}
+                      <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                          <svg className="w-4 h-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                          AI 분석 결과
+                        </h4>
+                        <div 
+                          className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: formatMarkdownText(stepContent) }}
+                        />
+                      </div>
+
+                      {/* 교사 피드백 입력란 */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">교사 피드백</label>
+                        <textarea
+                          value={stepFeedbacks[stepKey] || ''}
+                          onChange={(e) => setStepFeedbacks({...stepFeedbacks, [stepKey]: e.target.value})}
+                          rows={3}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent ${
+                            stepInfo.color === 'bg-blue-500' ? 'focus:ring-blue-500' :
+                            stepInfo.color === 'bg-green-500' ? 'focus:ring-green-500' :
+                            stepInfo.color === 'bg-purple-500' ? 'focus:ring-purple-500' :
+                            stepInfo.color === 'bg-red-500' ? 'focus:ring-red-500' : 'focus:ring-gray-500'
+                          }`}
+                          placeholder={`${stepInfo.title} (${stepInfo.subtitle}) 단계에 대한 피드백을 입력하세요...`}
+                        />
+                      </div>
+
+                      {/* 점수 입력 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">점수 (1-100점)</label>
+                        <input
+                          type="number"
+                          value={stepScores[stepKey] || ''}
+                          onChange={(e) => setStepScores({...stepScores, [stepKey]: parseInt(e.target.value)})}
+                          min="1"
+                          max="100"
+                          className={`w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent ${
+                            stepInfo.color === 'bg-blue-500' ? 'focus:ring-blue-500' :
+                            stepInfo.color === 'bg-green-500' ? 'focus:ring-green-500' :
+                            stepInfo.color === 'bg-purple-500' ? 'focus:ring-purple-500' :
+                            stepInfo.color === 'bg-red-500' ? 'focus:ring-red-500' : 'focus:ring-gray-500'
+                          }`}
+                          placeholder="점수"
+                        />
+                        <span className="ml-2 text-sm text-gray-500">/ 100점</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-
-              {/* 2. 종합 평가 + 교사 피드백 */}
-              <div className="bg-gradient-to-br from-green-50 to-white border border-green-200 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center">
-                  <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  2. 종합 평가
-                </h3>
-                
-                {/* AI 분석 내용 */}
-                <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <svg className="w-4 h-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                    AI 분석 결과
-                  </h4>
-                  <div 
-                    className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: formatMarkdownText(parsedAnalysis.comprehensive) }}
-                  />
-                </div>
-
-                {/* 교사 피드백 입력란 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">교사 피드백</label>
-                  <textarea
-                    value={stepFeedbacks['comprehensive'] || ''}
-                    onChange={(e) => setStepFeedbacks({...stepFeedbacks, comprehensive: e.target.value})}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="종합 평가에 대한 추가 피드백을 입력하세요..."
-                  />
-                </div>
-
-                {/* 점수 입력 */}
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">점수 (1-10점)</label>
-                  <input
-                    type="number"
-                    value={stepScores['comprehensive'] || ''}
-                    onChange={(e) => setStepScores({...stepScores, comprehensive: parseInt(e.target.value)})}
-                    min="1"
-                    max="10"
-                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="점수"
-                  />
-                  <span className="ml-2 text-sm text-gray-500">/ 10점</span>
-                </div>
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-yellow-800">
+                  개별 단계별 분석을 찾을 수 없습니다. AI 분석 형식을 확인해주세요.
+                </p>
               </div>
-
-              {/* 3. 교육적 권장사항 + 교사 피드백 */}
-              <div className="bg-gradient-to-br from-purple-50 to-white border border-purple-200 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center">
-                  <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                  3. 교육적 권장사항
-                </h3>
-                
-                {/* AI 분석 내용 */}
-                <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <svg className="w-4 h-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                    AI 분석 결과
-                  </h4>
-                  <div 
-                    className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: formatMarkdownText(parsedAnalysis.educational) }}
-                  />
-                </div>
-
-                {/* 교사 피드백 입력란 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">교사 피드백</label>
-                  <textarea
-                    value={stepFeedbacks['educational'] || ''}
-                    onChange={(e) => setStepFeedbacks({...stepFeedbacks, educational: e.target.value})}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="교육적 권장사항에 대한 추가 피드백을 입력하세요..."
-                  />
-                </div>
-
-                {/* 점수 입력 */}
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">점수 (1-10점)</label>
-                  <input
-                    type="number"
-                    value={stepScores['educational'] || ''}
-                    onChange={(e) => setStepScores({...stepScores, educational: parseInt(e.target.value)})}
-                    min="1"
-                    max="10"
-                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="점수"
-                  />
-                  <span className="ml-2 text-sm text-gray-500">/ 10점</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
