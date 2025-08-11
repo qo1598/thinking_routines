@@ -59,9 +59,24 @@ const StudentResponseDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  // Legacy fields - kept for backward compatibility but not used in new system
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [teacherFeedback, setTeacherFeedback] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [teacherScore, setTeacherScore] = useState<number | ''>('');
   const [savingFeedback, setSavingFeedback] = useState(false);
+
+  // 새로운 교사 피드백 시스템을 위한 state
+  const [currentAnalysisStep, setCurrentAnalysisStep] = useState(0);
+  const [parsedAnalysis, setParsedAnalysis] = useState<{
+    stepByStep: string;
+    comprehensive: string;
+    educational: string;
+    individualSteps?: {[key: string]: string};
+  } | null>(null);
+  const [showTeacherFeedback, setShowTeacherFeedback] = useState(false);
+  const [stepFeedbacks, setStepFeedbacks] = useState<{[key: string]: string}>({});
+  const [stepScores, setStepScores] = useState<{[key: string]: number}>({});
 
   const fetchData = useCallback(async () => {
     if (!isSupabaseConfigured() || !supabase || !roomId || !responseId) {
@@ -115,6 +130,41 @@ const StudentResponseDetail: React.FC = () => {
       setTeacherFeedback(responseData.teacher_feedback || '');
       setTeacherScore(responseData.teacher_score !== null && responseData.teacher_score !== undefined ? responseData.teacher_score : '');
 
+      // 기존 AI 분석 결과가 있으면 파싱
+      if (responseData.ai_analysis) {
+        try {
+          const analysisData = JSON.parse(responseData.ai_analysis);
+          if (analysisData.aiAnalysis) {
+            // 새로운 JSON 형식인 경우
+            setParsedAnalysis({
+              stepByStep: analysisData.aiAnalysis.stepByStep || '',
+              comprehensive: analysisData.aiAnalysis.comprehensive || '',
+              educational: analysisData.aiAnalysis.educational || '',
+              individualSteps: analysisData.aiAnalysis.individualSteps || {}
+            });
+            if (analysisData.teacherFeedback?.individualSteps) {
+              // 기존 교사 피드백 로드
+              const feedbacks: {[key: string]: string} = {};
+              const scores: {[key: string]: number} = {};
+              Object.entries(analysisData.teacherFeedback.individualSteps).forEach(([key, value]: [string, any]) => {
+                feedbacks[key] = value.feedback || '';
+                if (value.score) scores[key] = value.score;
+              });
+              setStepFeedbacks(feedbacks);
+              setStepScores(scores);
+            }
+            setShowTeacherFeedback(true);
+          } else {
+            // 기존 텍스트 형식인 경우
+            parseAnalysisResult(responseData.ai_analysis);
+          }
+        } catch (error) {
+          console.error('Failed to parse AI analysis:', error);
+          // 파싱 실패 시 텍스트로 처리
+          parseAnalysisResult(responseData.ai_analysis);
+        }
+      }
+
       // 활동 템플릿 조회
       const { data: templateData, error: templateError } = await supabase
         .from('routine_templates')
@@ -139,6 +189,83 @@ const StudentResponseDetail: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // AI 분석 결과를 단계별로 파싱 (ThinkingRoutineAnalysis와 동일)
+  const parseAnalysisResult = (analysis: string) => {
+    try {
+      // 정규식을 사용하여 각 섹션을 추출
+      const stepByStepMatch = analysis.match(/## 1\. 각 단계별 분석([\s\S]*?)(?=## 2\.|$)/);
+      const comprehensiveMatch = analysis.match(/## 2\. 종합 평가([\s\S]*?)(?=## 3\.|$)/);
+      const educationalMatch = analysis.match(/## 3\. 교육적 제안([\s\S]*?)$/);
+
+      // 개별 단계별 분석 추출
+      const individualSteps: {[key: string]: string} = {};
+      
+      if (stepByStepMatch) {
+        const stepByStepContent = stepByStepMatch[1].trim();
+        
+        // See-Think-Wonder 방식
+        const seeMatch = stepByStepContent.match(/### See \(보기\)([\s\S]*?)(?=### |$)/);
+        const thinkMatch = stepByStepContent.match(/### Think \(생각하기\)([\s\S]*?)(?=### |$)/);
+        const wonderMatch = stepByStepContent.match(/### Wonder \(궁금하기\)([\s\S]*?)(?=### |$)/);
+        
+        // 4C 방식
+        const connectMatch = stepByStepContent.match(/### Connect \(연결\)([\s\S]*?)(?=### |$)/);
+        const challengeMatch = stepByStepContent.match(/### Challenge \(도전\)([\s\S]*?)(?=### |$)/);
+        const conceptsMatch = stepByStepContent.match(/### Concepts \(개념\)([\s\S]*?)(?=### |$)/);
+        const changesMatch = stepByStepContent.match(/### Changes \(변화\)([\s\S]*?)(?=### |$)/);
+        
+        if (seeMatch) individualSteps['see'] = seeMatch[1].trim();
+        if (thinkMatch) individualSteps['think'] = thinkMatch[1].trim();
+        if (wonderMatch) individualSteps['wonder'] = wonderMatch[1].trim();
+        if (connectMatch) individualSteps['connect'] = connectMatch[1].trim();
+        if (challengeMatch) individualSteps['challenge'] = challengeMatch[1].trim();
+        if (conceptsMatch) individualSteps['concepts'] = conceptsMatch[1].trim();
+        if (changesMatch) individualSteps['changes'] = changesMatch[1].trim();
+      }
+
+      setParsedAnalysis({
+        stepByStep: stepByStepMatch ? stepByStepMatch[1].trim() : '',
+        comprehensive: comprehensiveMatch ? comprehensiveMatch[1].trim() : '',
+        educational: educationalMatch ? educationalMatch[1].trim() : '',
+        individualSteps
+      });
+
+      // AI 분석이 완료되면 교사 피드백 섹션 표시
+      setShowTeacherFeedback(true);
+    } catch (error) {
+      console.error('Analysis parsing error:', error);
+      // 파싱 실패 시 전체 텍스트를 첫 번째 단계로 표시
+      setParsedAnalysis({
+        stepByStep: analysis,
+        comprehensive: '',
+        educational: '',
+        individualSteps: {}
+      });
+      setShowTeacherFeedback(true);
+    }
+  };
+
+  // 다음 단계로 이동
+  const nextAnalysisStep = () => {
+    if (currentAnalysisStep < 2) {
+      setCurrentAnalysisStep(currentAnalysisStep + 1);
+    } else if (currentAnalysisStep === 2) {
+      setShowTeacherFeedback(true);
+    }
+  };
+
+  // 이전 단계로 이동
+  const prevAnalysisStep = () => {
+    if (currentAnalysisStep > 0) {
+      setCurrentAnalysisStep(currentAnalysisStep - 1);
+    } else if (showTeacherFeedback) {
+      setShowTeacherFeedback(false);
+      setCurrentAnalysisStep(2);
+    }
+  };
+
+
 
   const getYouTubeEmbedUrl = (url: string) => {
     if (!url) return null;
@@ -468,6 +595,11 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
       }
 
       setResponse(prev => prev ? { ...prev, ai_analysis: aiAnalysis } : null);
+      
+      // AI 분석 결과를 단계별로 파싱
+      parseAnalysisResult(aiAnalysis);
+      setCurrentAnalysisStep(0);
+      
       alert('AI 분석이 완료되었습니다!');
     } catch (err) {
       console.error('AI analysis error:', err);
@@ -477,31 +609,47 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
     }
   };
 
-  const handleSaveTeacherFeedback = async () => {
-    if (!response) return;
-
-    // 점수 유효성 검사 (1-100점)
-    if (teacherScore !== '' && (isNaN(Number(teacherScore)) || Number(teacherScore) < 1 || Number(teacherScore) > 100)) {
-      alert('점수는 1-100 사이의 숫자여야 합니다.');
+  // 새로운 교사 피드백 저장 함수
+  const handleFinalSave = async () => {
+    if (!response || !parsedAnalysis) {
+      alert('필수 정보가 없습니다.');
       return;
     }
 
     setSavingFeedback(true);
     try {
-      const updateData: any = {
-        teacher_feedback: teacherFeedback
+      // JSON 형식으로 분석 및 피드백 데이터 구조화
+      const structuredAnalysis = {
+        aiAnalysis: {
+          stepByStep: parsedAnalysis?.stepByStep || '',
+          comprehensive: parsedAnalysis?.comprehensive || '',
+          educational: parsedAnalysis?.educational || '',
+          individualSteps: parsedAnalysis?.individualSteps || {},
+          analyzedAt: new Date().toISOString()
+        },
+        teacherFeedback: {
+          // 개별 단계별 피드백 (새로운 방식)
+          individualSteps: Object.keys(parsedAnalysis?.individualSteps || {}).reduce((acc, stepKey) => {
+            acc[stepKey] = {
+              feedback: stepFeedbacks[stepKey] || '',
+              score: stepScores[stepKey] || null
+            };
+            return acc;
+          }, {} as {[key: string]: {feedback: string, score: number | null}}),
+          feedbackAt: new Date().toISOString()
+        },
+        routineInfo: {
+          type: template?.routine_type || '',
+          studentId: response.student_id
+        }
       };
-
-      // 점수가 입력되었을 때만 업데이트
-      if (teacherScore !== '') {
-        updateData.teacher_score = Number(teacherScore);
-      } else {
-        updateData.teacher_score = null;
-      }
 
       const { error } = await supabase!
         .from('student_responses')
-        .update(updateData)
+        .update({
+          ai_analysis: JSON.stringify(structuredAnalysis),
+          teacher_feedback: '', // 레거시 필드는 빈 값으로 유지
+        })
         .eq('id', responseId);
 
       if (error) {
@@ -513,11 +661,10 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
       // 로컬 상태 업데이트
       setResponse(prev => prev ? {
         ...prev,
-        teacher_feedback: teacherFeedback,
-        teacher_score: teacherScore === '' ? undefined : Number(teacherScore)
+        ai_analysis: JSON.stringify(structuredAnalysis)
       } : null);
 
-      alert('피드백이 저장되었습니다!');
+      alert('교사 피드백이 저장되었습니다!');
     } catch (err) {
       console.error('Save feedback error:', err);
       alert('피드백 저장 중 오류가 발생했습니다.');
@@ -891,79 +1038,271 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
           </div>
         </div>
 
-        {/* AI 분석 */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">AI 분석 및 피드백</h3>
-            <div className="flex space-x-2">
-              <button
-                onClick={handleAiAnalysis}
-                disabled={aiAnalyzing}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
-              >
-                {aiAnalyzing ? '분석 중...' : 'AI 분석 실행'}
-              </button>
+        {/* AI 분석 및 교사 피드백 시스템 */}
+        {!parsedAnalysis ? (
+          /* AI 분석 실행 섹션 */
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">AI 분석 및 피드백</h3>
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleAiAnalysis}
+                  disabled={aiAnalyzing}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+                >
+                  {aiAnalyzing ? '분석 중...' : 'AI 분석 실행'}
+                </button>
+              </div>
             </div>
+            
+            {response.ai_analysis ? (
+              <div className="space-y-4">
+                <div 
+                  className="prose prose-sm max-w-none text-gray-800 text-left"
+                  dangerouslySetInnerHTML={{ __html: formatMarkdownText(response.ai_analysis) }}
+                />
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">AI 분석이 아직 실행되지 않았습니다.</p>
+                <p className="text-sm text-gray-400 mt-2">위의 버튼을 클릭하여 AI 분석을 실행하세요.</p>
+              </div>
+            )}
           </div>
-          
-          {response.ai_analysis ? (
-            <div className="space-y-4">
-              <div 
-                className="prose prose-sm max-w-none text-gray-800 text-left"
-                dangerouslySetInnerHTML={{ __html: formatMarkdownText(response.ai_analysis) }}
-              />
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500">AI 분석이 아직 실행되지 않았습니다.</p>
-              <p className="text-sm text-gray-400 mt-2">위의 버튼을 클릭하여 AI 분석을 실행하세요.</p>
-            </div>
-          )}
-        </div>
+        ) : (
+          /* 새로운 AI 분석 결과 표시 시스템 */
+          <div className="space-y-6">
+            {/* AI 분석 단계별 표시 */}
+            {!showTeacherFeedback && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                {/* 진행 상황 표시 */}
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <h2 className="text-xl font-bold text-gray-900">분석 진행 상황</h2>
+                    <span className="text-sm text-gray-500">{currentAnalysisStep + 1} / 3</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-purple-600 h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${((currentAnalysisStep + 1) / 3) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>각 단계별 분석</span>
+                    <span>종합 평가</span>
+                    <span>교육적 권장사항</span>
+                  </div>
+                </div>
 
-        {/* 교사 피드백 */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">교사 피드백 및 평가</h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                피드백 내용
-              </label>
-              <textarea
-                value={teacherFeedback}
-                onChange={(e) => setTeacherFeedback(e.target.value)}
-                placeholder="학생에게 제공할 피드백을 입력하세요..."
-                rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+                {/* 단계별 내용 표시 */}
+                {currentAnalysisStep === 0 && (
+                  <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-xl p-6">
+                    <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center">
+                      <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      1. 각 단계별 분석
+                    </h3>
+                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                      <div dangerouslySetInnerHTML={{ __html: formatMarkdownText(parsedAnalysis.stepByStep) }} />
+                    </div>
+                  </div>
+                )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                점수 (1-100점)
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="100"
-                value={teacherScore}
-                onChange={(e) => setTeacherScore(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+                {currentAnalysisStep === 1 && (
+                  <div className="bg-gradient-to-br from-green-50 to-white border border-green-200 rounded-xl p-6">
+                    <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center">
+                      <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      2. 종합 평가
+                    </h3>
+                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                      <div dangerouslySetInnerHTML={{ __html: formatMarkdownText(parsedAnalysis.comprehensive) }} />
+                    </div>
+                  </div>
+                )}
 
-            <div className="flex justify-end">
-              <button
-                onClick={handleSaveTeacherFeedback}
-                disabled={savingFeedback}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md text-sm font-medium disabled:opacity-50"
-              >
-                {savingFeedback ? '저장 중...' : '피드백 저장'}
-              </button>
-            </div>
+                {currentAnalysisStep === 2 && (
+                  <div className="bg-gradient-to-br from-purple-50 to-white border border-purple-200 rounded-xl p-6">
+                    <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center">
+                      <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      3. 교육적 권장사항
+                    </h3>
+                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                      <div dangerouslySetInnerHTML={{ __html: formatMarkdownText(parsedAnalysis.educational) }} />
+                    </div>
+                  </div>
+                )}
+
+                {/* 네비게이션 버튼 */}
+                <div className="flex justify-between mt-6">
+                  <button
+                    onClick={prevAnalysisStep}
+                    disabled={currentAnalysisStep === 0}
+                    className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    이전 단계
+                  </button>
+                  
+                  <button
+                    onClick={nextAnalysisStep}
+                    className="flex items-center px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  >
+                    <span>
+                      {currentAnalysisStep === 2 ? '교사 피드백 작성' : '다음 단계'}
+                    </span>
+                    <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 교사 피드백 및 평가 섹션 */}
+            {showTeacherFeedback && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900">교사 피드백 및 평가</h2>
+                  <div className="text-sm text-gray-500">
+                    AI 분석 결과를 참고하여 각 단계별로 피드백과 점수를 입력하세요
+                  </div>
+                </div>
+
+                {/* 사고루틴별 개별 단계 평가 */}
+                {parsedAnalysis?.individualSteps && Object.keys(parsedAnalysis.individualSteps).length > 0 ? (
+                  <div className="space-y-6">
+                    {Object.entries(parsedAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
+                      // 단계별 정보 매핑
+                      const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
+                        'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
+                        'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
+                        'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
+                        'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+                        'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
+                        'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
+                        'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' }
+                      };
+
+                      const stepInfo = stepInfoMap[stepKey];
+                      if (!stepInfo) return null;
+
+                      const gradientColors: {[key: string]: string} = {
+                        'bg-blue-500': 'from-blue-50 to-white border-blue-200',
+                        'bg-green-500': 'from-green-50 to-white border-green-200',
+                        'bg-purple-500': 'from-purple-50 to-white border-purple-200',
+                        'bg-red-500': 'from-red-50 to-white border-red-200'
+                      };
+
+                      return (
+                        <div 
+                          key={stepKey}
+                          className={`bg-gradient-to-br ${gradientColors[stepInfo.color] || 'from-gray-50 to-white border-gray-200'} border rounded-xl p-6`}
+                        >
+                          <h3 className={`text-lg font-bold mb-4 flex items-center ${
+                            stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
+                            stepInfo.color === 'bg-green-500' ? 'text-green-800' :
+                            stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
+                            stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
+                          }`}>
+                            <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
+                              {index + 1}
+                            </span>
+                            {stepInfo.title} ({stepInfo.subtitle})
+                          </h3>
+                          
+                          {/* AI 분석 내용 */}
+                          <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                              <svg className="w-4 h-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                              </svg>
+                              AI 분석 결과
+                            </h4>
+                            <div 
+                              className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                              dangerouslySetInnerHTML={{ __html: formatMarkdownText(stepContent) }}
+                            />
+                          </div>
+
+                          {/* 교사 피드백 입력란 */}
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">교사 피드백</label>
+                            <textarea
+                              value={stepFeedbacks[stepKey] || ''}
+                              onChange={(e) => setStepFeedbacks({...stepFeedbacks, [stepKey]: e.target.value})}
+                              rows={3}
+                              className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent ${
+                                stepInfo.color === 'bg-blue-500' ? 'focus:ring-blue-500' :
+                                stepInfo.color === 'bg-green-500' ? 'focus:ring-green-500' :
+                                stepInfo.color === 'bg-purple-500' ? 'focus:ring-purple-500' :
+                                stepInfo.color === 'bg-red-500' ? 'focus:ring-red-500' : 'focus:ring-gray-500'
+                              }`}
+                              placeholder={`${stepInfo.title} (${stepInfo.subtitle}) 단계에 대한 피드백을 입력하세요...`}
+                            />
+                          </div>
+
+                          {/* 점수 입력 */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">점수 (1-100점)</label>
+                            <input
+                              type="number"
+                              value={stepScores[stepKey] || ''}
+                              onChange={(e) => setStepScores({...stepScores, [stepKey]: parseInt(e.target.value)})}
+                              min="1"
+                              max="100"
+                              className={`w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent ${
+                                stepInfo.color === 'bg-blue-500' ? 'focus:ring-blue-500' :
+                                stepInfo.color === 'bg-green-500' ? 'focus:ring-green-500' :
+                                stepInfo.color === 'bg-purple-500' ? 'focus:ring-purple-500' :
+                                stepInfo.color === 'bg-red-500' ? 'focus:ring-red-500' : 'focus:ring-gray-500'
+                              }`}
+                              placeholder="점수"
+                            />
+                            <span className="ml-2 text-sm text-gray-500">/ 100점</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-yellow-800">
+                      개별 단계별 분석을 찾을 수 없습니다. AI 분석 형식을 확인해주세요.
+                    </p>
+                  </div>
+                )}
+
+                {/* 저장 및 이전 버튼 */}
+                <div className="flex justify-between mt-8 pt-6 border-t">
+                  <button
+                    onClick={prevAnalysisStep}
+                    className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    이전으로
+                  </button>
+                  
+                  <button
+                    onClick={handleFinalSave}
+                    disabled={savingFeedback}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50"
+                  >
+                    {savingFeedback ? '저장 중...' : '교사 피드백 저장'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
