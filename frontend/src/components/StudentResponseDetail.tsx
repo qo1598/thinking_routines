@@ -143,7 +143,7 @@ const StudentResponseDetail: React.FC = () => {
               individualSteps: analysisData.aiAnalysis.individualSteps || {}
             });
             if (analysisData.teacherFeedback?.individualSteps) {
-              // 기존 교사 피드백 로드
+              // 기존 교사 피드백이 있으면 피드백 모드로, 없으면 분석 모드로
               const feedbacks: {[key: string]: string} = {};
               const scores: {[key: string]: number} = {};
               Object.entries(analysisData.teacherFeedback.individualSteps).forEach(([key, value]: [string, any]) => {
@@ -152,16 +152,24 @@ const StudentResponseDetail: React.FC = () => {
               });
               setStepFeedbacks(feedbacks);
               setStepScores(scores);
+              setShowTeacherFeedback(true);
+            } else {
+              // 교사 피드백이 없으면 분석 모드에서 시작
+              setCurrentAnalysisStep(0);
+              setShowTeacherFeedback(false);
             }
-            setShowTeacherFeedback(true);
           } else {
             // 기존 텍스트 형식인 경우
             parseAnalysisResult(responseData.ai_analysis);
+            setCurrentAnalysisStep(0);
+            setShowTeacherFeedback(false);
           }
         } catch (error) {
           console.error('Failed to parse AI analysis:', error);
           // 파싱 실패 시 텍스트로 처리
           parseAnalysisResult(responseData.ai_analysis);
+          setCurrentAnalysisStep(0);
+          setShowTeacherFeedback(false);
         }
       }
 
@@ -257,11 +265,13 @@ const StudentResponseDetail: React.FC = () => {
 
   // 이전 단계로 이동
   const prevAnalysisStep = () => {
-    if (currentAnalysisStep > 0) {
-      setCurrentAnalysisStep(currentAnalysisStep - 1);
-    } else if (showTeacherFeedback) {
+    if (showTeacherFeedback) {
+      // 교사 피드백 단계에서 이전 버튼 클릭 시 AI 분석의 마지막 단계(2단계)로 이동
       setShowTeacherFeedback(false);
       setCurrentAnalysisStep(2);
+    } else if (currentAnalysisStep > 0) {
+      // AI 분석 단계에서 이전 단계로 이동
+      setCurrentAnalysisStep(currentAnalysisStep - 1);
     }
   };
 
@@ -596,9 +606,10 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
 
       setResponse(prev => prev ? { ...prev, ai_analysis: aiAnalysis } : null);
       
-      // AI 분석 결과를 단계별로 파싱
+      // AI 분석 결과를 단계별로 파싱하고 즉시 단계별 모드로 전환
       parseAnalysisResult(aiAnalysis);
       setCurrentAnalysisStep(0);
+      // 단계별 모드로 바로 전환하지 않고 parsedAnalysis가 설정되면 자동으로 단계별 모드가 활성화됨
       
       alert('AI 분석이 완료되었습니다!');
     } catch (err) {
@@ -1078,7 +1089,7 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                 {/* 진행 상황 표시 */}
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-xl font-bold text-gray-900">분석 진행 상황</h2>
+                    <h2 className="text-xl font-bold text-gray-900">4단계: 분석 결과</h2>
                     <span className="text-sm text-gray-500">{currentAnalysisStep + 1} / 3</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -1169,7 +1180,7 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
             {showTeacherFeedback && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">교사 피드백 및 평가</h2>
+                  <h2 className="text-xl font-bold text-gray-900">5단계: 교사 피드백 및 평가</h2>
                   <div className="text-sm text-gray-500">
                     AI 분석 결과를 참고하여 각 단계별로 피드백과 점수를 입력하세요
                   </div>
