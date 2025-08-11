@@ -607,7 +607,7 @@ const ThinkingRoutineForm: React.FC = () => {
 
   // 사용자 응답 프롬프트 생성
   const generateUserPrompt = () => {
-    if (!template) return '';
+    if (!template || !studentInfo) return '';
 
     const routineConfig = ROUTINE_CONFIGS[template.routine_type as keyof typeof ROUTINE_CONFIGS];
     if (!routineConfig) return '';
