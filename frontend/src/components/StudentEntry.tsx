@@ -173,6 +173,19 @@ const StudentEntry: React.FC = () => {
             </form>
           ) : (
             <div className="space-y-6">
+              {/* 돌아가기 버튼 */}
+              <div className="flex justify-start">
+                <button
+                  onClick={() => setRoom(null)}
+                  className="flex items-center text-gray-600 hover:text-gray-900 text-sm font-medium"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  돌아가기
+                </button>
+              </div>
+
               {/* 활동방 정보 */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="text-lg font-medium text-gray-900 mb-2 text-center">
@@ -304,13 +317,52 @@ const StudentEntry: React.FC = () => {
                 )}
               </div>
 
-              <div>
+              <div className="space-y-3">
                 <button
                   onClick={handleJoinRoom}
                   disabled={!studentGrade.trim() || !studentName.trim()}
                   className="w-full bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
                 >
                   활동 시작하기
+                </button>
+                
+                <button
+                  onClick={() => {
+                    // 활동 탐구하기 기능 - 학생 정보 저장 후 탐구 페이지로 이동
+                    if (!studentGrade.trim() || !studentName.trim()) {
+                      setError('학생 정보를 먼저 입력해주세요.');
+                      return;
+                    }
+                    
+                    // 모둠 참여인 경우 모둠명 확인
+                    if (room?.participation_type === 'group' && !groupName.trim()) {
+                      setError('모둠명을 입력해주세요.');
+                      return;
+                    }
+
+                    // 학생 정보를 로컬 스토리지에 저장
+                    const studentInfo = {
+                      grade: studentGrade,
+                      name: studentName,
+                      class: studentClass,
+                      number: studentNumber,
+                      groupName: room?.participation_type === 'group' ? groupName : null,
+                      roomId: room?.id,
+                      roomCode: roomCode
+                    };
+                    
+                    localStorage.setItem('studentInfo', JSON.stringify(studentInfo));
+                    
+                    // 활동 탐구 페이지로 이동
+                    navigate(`/student/explore/${room?.id}`);
+                  }}
+                  disabled={!studentGrade.trim() || !studentName.trim()}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 flex items-center justify-center"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  활동 탐구하기
                 </button>
               </div>
             </div>

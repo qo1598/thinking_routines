@@ -7,7 +7,8 @@
     import TeacherRoomDetail from './components/TeacherRoomDetail';
     import StudentResponseDetail from './components/StudentResponseDetail';
     import StudentEntry from './components/StudentEntry';
-    import SeeThinkWonderForm from './components/SeeThinkWonderForm';
+import SeeThinkWonderForm from './components/SeeThinkWonderForm';
+import StudentActivityExplore from './components/StudentActivityExplore';
     import './App.css';
     import * as ChannelService from '@channel.io/channel-web-sdk-loader';
 
@@ -52,6 +53,7 @@
             {/* 학생 관련 경로 */}
             <Route path="/student" element={<StudentEntry />} />
             <Route path="/student/activity/:roomId" element={<SeeThinkWonderForm />} />
+            <Route path="/student/explore/:roomId" element={<StudentActivityExplore />} />
           </Routes>
         </div>
         // </Router> 태그는 더 이상 필요 없으므로 제거합니다.
