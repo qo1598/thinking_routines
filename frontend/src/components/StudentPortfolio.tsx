@@ -26,25 +26,6 @@ interface ActivityRoom {
   selected?: boolean;
 }
 
-interface ActivityItem {
-  id: string;
-  type: 'online' | 'offline';
-  student_grade?: string;
-  student_name: string;
-  student_class?: string;
-  student_number?: number;
-  team_name?: string;
-  routine_type: string;
-  image_url?: string;
-  ai_analysis?: string;
-  teacher_feedback?: string;
-  teacher_score?: number;
-  submitted_at: string;
-  room_title?: string;
-  response_data?: any;
-  selected?: boolean;
-}
-
 interface SearchForm {
   grade: string;
   class: string;
