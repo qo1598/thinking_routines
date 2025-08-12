@@ -272,15 +272,6 @@ const StudentResponseDetail: React.FC = () => {
     }
   };
 
-  // 다음 단계로 이동
-  const nextAnalysisStep = () => {
-    if (currentAnalysisStep < 2) {
-      setCurrentAnalysisStep(currentAnalysisStep + 1);
-    } else if (currentAnalysisStep === 2) {
-      setShowTeacherFeedback(true);
-    }
-  };
-
   // 이전 단계로 이동
   const prevAnalysisStep = () => {
     if (showTeacherFeedback) {
