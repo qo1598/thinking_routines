@@ -440,6 +440,10 @@ const ThinkingRoutineForm: React.FC = () => {
         const { error } = await supabase
           .from('student_responses')
           .update({
+            student_grade: studentInfo.grade,
+            student_class: studentInfo.class,
+            student_number: parseInt(studentInfo.number),
+            team_name: studentInfo.groupName || null,
             response_data: responses,
             submitted_at: new Date().toISOString(),
             // AI 분석과 교사 피드백은 초기화하지 않음 (교사가 이미 작성했을 수 있음)
@@ -459,7 +463,11 @@ const ThinkingRoutineForm: React.FC = () => {
           .from('student_responses')
           .insert([{
             room_id: roomId,
+            student_grade: studentInfo.grade,
             student_name: studentInfo.name,
+            student_class: studentInfo.class,
+            student_number: parseInt(studentInfo.number),
+            team_name: studentInfo.groupName || null,
             student_id: studentId,
             group_name: studentInfo.groupName || null,
             response_data: responses,
