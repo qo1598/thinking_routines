@@ -210,14 +210,14 @@ const StudentResponseDetail: React.FC = () => {
       setError('데이터를 불러오는 중 오류가 발생했습니다.');
       setLoading(false);
     }
-  }, [roomId, responseId, navigate]);
+  }, [roomId, responseId, navigate, parseAnalysisResult]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   // AI 분석 결과를 단계별로 파싱 (ThinkingRoutineAnalysis와 동일)
-  const parseAnalysisResult = (analysis: string) => {
+  const parseAnalysisResult = useCallback((analysis: string) => {
     try {
       console.log('🔍 AI 분석 원본 텍스트:', analysis);
       console.log('🔍 AI 분석 타입:', typeof analysis);
@@ -365,7 +365,7 @@ const StudentResponseDetail: React.FC = () => {
       setCurrentAnalysisStep(0);
       setShowTeacherFeedback(false);
     }
-  };
+  }, [template?.routine_type, room?.thinking_routine_type]);
 
 
   const getYouTubeEmbedUrl = (url: string) => {
