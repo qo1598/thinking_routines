@@ -220,6 +220,23 @@ const StudentResponseDetail: React.FC = () => {
   const parseAnalysisResult = (analysis: string) => {
     try {
       console.log('🔍 AI 분석 원본 텍스트:', analysis);
+      console.log('🔍 AI 분석 타입:', typeof analysis);
+      
+      // JSON 형태인지 확인
+      let parsedJson = null;
+      try {
+        parsedJson = typeof analysis === 'string' ? JSON.parse(analysis) : analysis;
+        console.log('📦 JSON 파싱 결과:', parsedJson);
+      } catch (e) {
+        console.log('📝 JSON이 아닌 텍스트 형태로 처리');
+      }
+      
+      // JSON 형태라면 JSON에서 추출
+      if (parsedJson && parsedJson.analysis) {
+        console.log('✅ JSON 형태의 분석 결과 감지');
+        analysis = parsedJson.analysis;
+        console.log('🔄 추출된 분석 텍스트:', analysis);
+      }
       
       // 정규식을 사용하여 각 섹션을 추출 (ThinkingRoutineAnalysis와 동일)
       const stepByStepMatch = analysis.match(/## 1\. 각 단계별 분석([\s\S]*?)(?=## 2\.|$)/);
