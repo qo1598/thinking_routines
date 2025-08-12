@@ -219,27 +219,27 @@ const StudentResponseDetail: React.FC = () => {
   // AI 분석 결과를 단계별로 파싱 (ThinkingRoutineAnalysis와 동일)
   const parseAnalysisResult = (analysis: string) => {
     try {
-      // 정규식을 사용하여 각 섹션을 추출 (콜론 제거)
+      // 정규식을 사용하여 각 섹션을 추출 (ThinkingRoutineAnalysis와 동일)
       const stepByStepMatch = analysis.match(/## 1\. 각 단계별 분석([\s\S]*?)(?=## 2\.|$)/);
       const comprehensiveMatch = analysis.match(/## 2\. 종합 평가([\s\S]*?)(?=## 3\.|$)/);
-      const educationalMatch = analysis.match(/## 3\. 교육적 (?:제안|권장사항)([\s\S]*?)$/);
+      const educationalMatch = analysis.match(/## 3\. 교육적 제안([\s\S]*?)$/);
 
-      // 개별 단계별 분석 추출
+      // 개별 단계별 분석 추출 (ThinkingRoutineAnalysis와 동일)
       const individualSteps: {[key: string]: string} = {};
       
       if (stepByStepMatch) {
         const stepByStepContent = stepByStepMatch[1].trim();
         
-        // See-Think-Wonder 방식 (콜론 선택적으로 매칭)
-        const seeMatch = stepByStepContent.match(/### See \(보기\):?([\s\S]*?)(?=### |$)/);
-        const thinkMatch = stepByStepContent.match(/### Think \(생각하기\):?([\s\S]*?)(?=### |$)/);
-        const wonderMatch = stepByStepContent.match(/### Wonder \(궁금하기\):?([\s\S]*?)(?=### |$)/);
+        // See-Think-Wonder 방식
+        const seeMatch = stepByStepContent.match(/### See \(보기\)([\s\S]*?)(?=### |$)/);
+        const thinkMatch = stepByStepContent.match(/### Think \(생각하기\)([\s\S]*?)(?=### |$)/);
+        const wonderMatch = stepByStepContent.match(/### Wonder \(궁금하기\)([\s\S]*?)(?=### |$)/);
         
-        // 4C 방식 (콜론 선택적으로 매칭)
-        const connectMatch = stepByStepContent.match(/### Connect \(연결\):?([\s\S]*?)(?=### |$)/);
-        const challengeMatch = stepByStepContent.match(/### Challenge \(도전\):?([\s\S]*?)(?=### |$)/);
-        const conceptsMatch = stepByStepContent.match(/### Concepts \(개념\):?([\s\S]*?)(?=### |$)/);
-        const changesMatch = stepByStepContent.match(/### Changes \(변화\):?([\s\S]*?)(?=### |$)/);
+        // 4C 방식
+        const connectMatch = stepByStepContent.match(/### Connect \(연결\)([\s\S]*?)(?=### |$)/);
+        const challengeMatch = stepByStepContent.match(/### Challenge \(도전\)([\s\S]*?)(?=### |$)/);
+        const conceptsMatch = stepByStepContent.match(/### Concepts \(개념\)([\s\S]*?)(?=### |$)/);
+        const changesMatch = stepByStepContent.match(/### Changes \(변화\)([\s\S]*?)(?=### |$)/);
         
         if (seeMatch) individualSteps['see'] = seeMatch[1].trim();
         if (thinkMatch) individualSteps['think'] = thinkMatch[1].trim();
@@ -250,19 +250,14 @@ const StudentResponseDetail: React.FC = () => {
         if (changesMatch) individualSteps['changes'] = changesMatch[1].trim();
       }
 
-      // 콜론 제거 함수
-      const removeColons = (text: string) => {
-        return text.replace(/(\*\*[^*]+\*\*):(?=\s)/g, '$1');
-      };
-
       setParsedAnalysis({
         stepByStep: stepByStepMatch ? stepByStepMatch[1].trim() : '',
-        comprehensive: comprehensiveMatch ? removeColons(comprehensiveMatch[1].trim()) : '',
+        comprehensive: comprehensiveMatch ? comprehensiveMatch[1].trim() : '',
         educational: educationalMatch ? educationalMatch[1].trim() : '',
         individualSteps
       });
 
-      // AI 분석이 완료되면 분석 결과 단계별 표시로 시작 (교사 피드백이 아닌)
+      // AI 분석이 완료되면 4단계 분석 결과부터 단계별로 시작
       setCurrentAnalysisStep(0);
       setShowTeacherFeedback(false);
     } catch (error) {
@@ -297,8 +292,8 @@ const StudentResponseDetail: React.FC = () => {
         .replace(/## (\d+)\. (.*?)(?=\n|$)/g, '<h3 class="text-xl font-bold text-purple-800 mb-4 pb-2 border-b-2 border-purple-200">$1. $2</h3>')
         // ### 제목 -> 중간 제목
         .replace(/### (.*?)(?=\n|$)/g, '<h4 class="text-lg font-semibold text-gray-900 mt-6 mb-3 text-purple-700">$1</h4>')
-        // **강조:** 형식 처리
-        .replace(/\*\*(.*?):\*\*/g, '<div class="mt-4 mb-2"><span class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">$1:</span></div>')
+        // **강조:** 형식 처리 (콜론 제거)
+        .replace(/\*\*(.*?):\*\*/g, '<div class="mt-4 mb-2"><span class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">$1</span></div>')
         // **일반 강조** 처리
         .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
         // - 리스트 항목 처리 (더 예쁜 불릿 포인트)
