@@ -653,7 +653,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
                     return (
                       <div key={key} className="border border-gray-200 rounded-lg p-4">
                         <h4 className="font-medium text-gray-700 mb-2">{labels[key] || key}</h4>
-                        <div className="text-gray-600 whitespace-pre-wrap">{value}</div>
+                        <div className="text-gray-600 whitespace-pre-wrap">{String(value)}</div>
                       </div>
                     );
                   })}
