@@ -259,34 +259,83 @@ const StudentResponseDetail: React.FC = () => {
       if (stepByStepMatch) {
         const stepByStepContent = stepByStepMatch[1].trim();
         console.log('🔍 1단계 상세 내용:', stepByStepContent);
+        console.log('🎯 현재 사고루틴 유형:', template?.routine_type || room?.thinking_routine_type);
         
-        // See-Think-Wonder 방식
-        const seeMatch = stepByStepContent.match(/### See \(보기\)([\s\S]*?)(?=### |$)/);
-        const thinkMatch = stepByStepContent.match(/### Think \(생각하기\)([\s\S]*?)(?=### |$)/);
-        const wonderMatch = stepByStepContent.match(/### Wonder \(궁금하기\)([\s\S]*?)(?=### |$)/);
+        // 사고루틴 유형별 단계 정의
+        const routineStepPatterns: {[key: string]: {[key: string]: RegExp[]}} = {
+          'see-think-wonder': {
+            'see': [
+              /###\s*See\s*[\(（]?보기[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*보기\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'think': [
+              /###\s*Think\s*[\(（]?생각하기[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*생각하기\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'wonder': [
+              /###\s*Wonder\s*[\(（]?궁금하기[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*궁금하기\s*([\s\S]*?)(?=###|$)/i
+            ]
+          },
+          '4c': {
+            'connect': [/###\s*Connect\s*[\(（]?연결[\)）]?([\s\S]*?)(?=###|$)/i],
+            'challenge': [/###\s*Challenge\s*[\(（]?도전[\)）]?([\s\S]*?)(?=###|$)/i],
+            'concepts': [/###\s*Concepts?\s*[\(（]?개념[\)）]?([\s\S]*?)(?=###|$)/i],
+            'changes': [/###\s*Changes?\s*[\(（]?변화[\)）]?([\s\S]*?)(?=###|$)/i]
+          },
+          'frayer-model': {
+            'definition': [
+              /###\s*Definition\s*[\(（]?정의[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*정의\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'characteristics': [
+              /###\s*Characteristics\s*[\(（]?특징[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*특징\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'examples': [
+              /###\s*Examples?\s*&?\s*Non-Examples?\s*[\(（]?예시\s*와?\s*반례[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*예시\s*와?\s*반례\s*([\s\S]*?)(?=###|$)/i
+            ]
+          },
+          'circle-of-viewpoints': {
+            'viewpoint': [/###\s*Viewpoint\s*[\(（]?관점[\)）]?([\s\S]*?)(?=###|$)/i],
+            'perspective': [/###\s*Perspective\s*[\(（]?시각[\)）]?([\s\S]*?)(?=###|$)/i]
+          },
+          'connect-extend-challenge': {
+            'connect': [/###\s*Connect\s*[\(（]?연결[\)）]?([\s\S]*?)(?=###|$)/i],
+            'extend': [/###\s*Extend\s*[\(（]?확장[\)）]?([\s\S]*?)(?=###|$)/i],
+            'challenge': [/###\s*Challenge\s*[\(（]?도전[\)）]?([\s\S]*?)(?=###|$)/i]
+          },
+          'used-to-think-now-think': {
+            'used-to-think': [/###\s*Used\s*to\s*Think\s*[\(（]?이전\s*생각[\)）]?([\s\S]*?)(?=###|$)/i],
+            'now-think': [/###\s*Now\s*Think\s*[\(（]?현재\s*생각[\)）]?([\s\S]*?)(?=###|$)/i]
+          },
+          'think-puzzle-explore': {
+            'think': [/###\s*Think\s*[\(（]?생각[\)）]?([\s\S]*?)(?=###|$)/i],
+            'puzzle': [/###\s*Puzzle\s*[\(（]?퍼즐[\)）]?([\s\S]*?)(?=###|$)/i],
+            'explore': [/###\s*Explore\s*[\(（]?탐구[\)）]?([\s\S]*?)(?=###|$)/i]
+          }
+        };
         
-        // 4C 방식
-        const connectMatch = stepByStepContent.match(/### Connect \(연결\)([\s\S]*?)(?=### |$)/);
-        const challengeMatch = stepByStepContent.match(/### Challenge \(도전\)([\s\S]*?)(?=### |$)/);
-        const conceptsMatch = stepByStepContent.match(/### Concepts \(개념\)([\s\S]*?)(?=### |$)/);
-        const changesMatch = stepByStepContent.match(/### Changes \(변화\)([\s\S]*?)(?=### |$)/);
+        // 현재 활동방의 사고루틴 유형 확인
+        const currentRoutineType = template?.routine_type || room?.thinking_routine_type || 'see-think-wonder';
+        const stepPatterns = routineStepPatterns[currentRoutineType] || routineStepPatterns['see-think-wonder'];
         
-        console.log('🎯 개별 단계 매칭 결과:');
-        console.log('- See:', !!seeMatch);
-        console.log('- Think:', !!thinkMatch);
-        console.log('- Wonder:', !!wonderMatch);
-        console.log('- Connect:', !!connectMatch);
-        console.log('- Challenge:', !!challengeMatch);
-        console.log('- Concepts:', !!conceptsMatch);
-        console.log('- Changes:', !!changesMatch);
+        console.log('🎯 사용할 단계 패턴:', Object.keys(stepPatterns));
         
-        if (seeMatch) individualSteps['see'] = seeMatch[1].trim();
-        if (thinkMatch) individualSteps['think'] = thinkMatch[1].trim();
-        if (wonderMatch) individualSteps['wonder'] = wonderMatch[1].trim();
-        if (connectMatch) individualSteps['connect'] = connectMatch[1].trim();
-        if (challengeMatch) individualSteps['challenge'] = challengeMatch[1].trim();
-        if (conceptsMatch) individualSteps['concepts'] = conceptsMatch[1].trim();
-        if (changesMatch) individualSteps['changes'] = changesMatch[1].trim();
+        // 해당 사고루틴 유형의 단계들만 파싱
+        Object.entries(stepPatterns).forEach(([stepKey, patterns]) => {
+          for (const pattern of patterns) {
+            const match = stepByStepContent.match(pattern);
+            if (match) {
+              individualSteps[stepKey] = match[1].trim();
+              console.log(`✅ ${stepKey} 단계 매칭 성공`);
+              break;
+            }
+          }
+        });
+        
+        console.log('🎯 최종 매칭된 단계들:', Object.keys(individualSteps));
       }
 
       const finalParsedData = {
@@ -1245,17 +1294,47 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                       </p>
                     </div>
 
-                    {Object.entries(parsedAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
-                      // 단계별 정보 매핑
-                      const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
-                        'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
-                        'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
-                        'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
-                        'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-                        'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
-                        'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
-                        'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' }
-                      };
+                                    {Object.entries(parsedAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
+                  // 사고루틴 유형별 단계 정보 매핑
+                  const stepInfoMaps: {[routineType: string]: {[stepKey: string]: {title: string, subtitle: string, color: string}}} = {
+                    'see-think-wonder': {
+                      'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
+                      'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
+                      'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' }
+                    },
+                    '4c': {
+                      'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+                      'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
+                      'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
+                      'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' }
+                    },
+                    'frayer-model': {
+                      'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
+                      'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
+                      'examples': { title: 'Examples & Non-Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
+                    },
+                    'circle-of-viewpoints': {
+                      'viewpoint': { title: 'Viewpoint', subtitle: '관점', color: 'bg-blue-500' },
+                      'perspective': { title: 'Perspective', subtitle: '시각', color: 'bg-green-500' }
+                    },
+                    'connect-extend-challenge': {
+                      'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+                      'extend': { title: 'Extend', subtitle: '확장하기', color: 'bg-green-500' },
+                      'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' }
+                    },
+                    'used-to-think-now-think': {
+                      'used-to-think': { title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500' },
+                      'now-think': { title: 'Now Think', subtitle: '현재 생각', color: 'bg-green-500' }
+                    },
+                    'think-puzzle-explore': {
+                      'think': { title: 'Think', subtitle: '생각', color: 'bg-blue-500' },
+                      'puzzle': { title: 'Puzzle', subtitle: '퍼즐', color: 'bg-yellow-500' },
+                      'explore': { title: 'Explore', subtitle: '탐구', color: 'bg-green-500' }
+                    }
+                  };
+                  
+                  const currentRoutineType = template?.routine_type || room?.thinking_routine_type || 'see-think-wonder';
+                  const stepInfoMap = stepInfoMaps[currentRoutineType] || stepInfoMaps['see-think-wonder'];
 
                       const stepInfo = stepInfoMap[stepKey];
                       if (!stepInfo) return null;
@@ -1264,7 +1343,8 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                         'bg-blue-500': 'from-blue-50 to-white border-blue-200',
                         'bg-green-500': 'from-green-50 to-white border-green-200',
                         'bg-purple-500': 'from-purple-50 to-white border-purple-200',
-                        'bg-red-500': 'from-red-50 to-white border-red-200'
+                        'bg-red-500': 'from-red-50 to-white border-red-200',
+                        'bg-yellow-500': 'from-yellow-50 to-white border-yellow-200'
                       };
 
                       return (
@@ -1276,7 +1356,8 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                             stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
                             stepInfo.color === 'bg-green-500' ? 'text-green-800' :
                             stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
-                            stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
+                            stepInfo.color === 'bg-red-500' ? 'text-red-800' :
+                            stepInfo.color === 'bg-yellow-500' ? 'text-yellow-800' : 'text-gray-800'
                           }`}>
                             <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
                               {index + 1}
@@ -1309,7 +1390,8 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                                 stepInfo.color === 'bg-blue-500' ? 'focus:ring-blue-500' :
                                 stepInfo.color === 'bg-green-500' ? 'focus:ring-green-500' :
                                 stepInfo.color === 'bg-purple-500' ? 'focus:ring-purple-500' :
-                                stepInfo.color === 'bg-red-500' ? 'focus:ring-red-500' : 'focus:ring-gray-500'
+                                stepInfo.color === 'bg-red-500' ? 'focus:ring-red-500' :
+                                stepInfo.color === 'bg-yellow-500' ? 'focus:ring-yellow-500' : 'focus:ring-gray-500'
                               }`}
                               placeholder={`${stepInfo.title} (${stepInfo.subtitle}) 단계에 대한 피드백을 입력하세요...`}
                             />
@@ -1328,7 +1410,8 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                                 stepInfo.color === 'bg-blue-500' ? 'focus:ring-blue-500' :
                                 stepInfo.color === 'bg-green-500' ? 'focus:ring-green-500' :
                                 stepInfo.color === 'bg-purple-500' ? 'focus:ring-purple-500' :
-                                stepInfo.color === 'bg-red-500' ? 'focus:ring-red-500' : 'focus:ring-gray-500'
+                                stepInfo.color === 'bg-red-500' ? 'focus:ring-red-500' :
+                                stepInfo.color === 'bg-yellow-500' ? 'focus:ring-yellow-500' : 'focus:ring-gray-500'
                               }`}
                               placeholder="점수"
                             />
