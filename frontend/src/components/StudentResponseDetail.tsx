@@ -96,126 +96,6 @@ const StudentResponseDetail: React.FC = () => {
     }
   };
 
-  const fetchData = useCallback(async () => {
-    if (!isSupabaseConfigured() || !supabase || !roomId || !responseId) {
-      setError('시스템 설정이 완료되지 않았습니다.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate('/teacher');
-        return;
-      }
-
-      // 활동방 정보 조회
-      const { data: roomData, error: roomError } = await supabase
-        .from('activity_rooms')
-        .select('*')
-        .eq('id', roomId)
-        .eq('teacher_id', session.user.id)
-        .single();
-
-      if (roomError) {
-        console.error('Room fetch error:', roomError);
-        setError('활동방을 찾을 수 없습니다.');
-        setLoading(false);
-        return;
-      }
-
-      setRoom(roomData);
-
-      // 학생 응답 조회
-      const { data: responseData, error: responseError } = await supabase
-        .from('student_responses')
-        .select('*')
-        .eq('id', responseId)
-        .eq('room_id', roomId)
-        .single();
-
-      if (responseError) {
-        console.error('Response fetch error:', responseError);
-        setError('학생 응답을 찾을 수 없습니다.');
-        setLoading(false);
-        return;
-      }
-
-      setResponse(responseData);
-      // 기존 피드백과 점수를 입력창에 설정
-      setTeacherFeedback(responseData.teacher_feedback || '');
-      setTeacherScore(responseData.teacher_score !== null && responseData.teacher_score !== undefined ? responseData.teacher_score : '');
-
-      // 기존 AI 분석 결과가 있으면 파싱
-      if (responseData.ai_analysis) {
-        try {
-          const analysisData = JSON.parse(responseData.ai_analysis);
-          if (analysisData.aiAnalysis) {
-            // 새로운 JSON 형식인 경우
-            setParsedAnalysis({
-              stepByStep: analysisData.aiAnalysis.stepByStep || '',
-              comprehensive: analysisData.aiAnalysis.comprehensive || '',
-              educational: analysisData.aiAnalysis.educational || '',
-              individualSteps: analysisData.aiAnalysis.individualSteps || {}
-            });
-            if (analysisData.teacherFeedback?.individualSteps) {
-              // 기존 교사 피드백이 있으면 피드백 모드로, 없으면 분석 모드로
-              const feedbacks: {[key: string]: string} = {};
-              const scores: {[key: string]: number} = {};
-              Object.entries(analysisData.teacherFeedback.individualSteps).forEach(([key, value]: [string, any]) => {
-                feedbacks[key] = value.feedback || '';
-                if (value.score) scores[key] = value.score;
-              });
-              setStepFeedbacks(feedbacks);
-              setStepScores(scores);
-              setShowTeacherFeedback(true);
-            } else {
-              // 교사 피드백이 없으면 분석 모드에서 시작
-              setCurrentAnalysisStep(0);
-              setShowTeacherFeedback(false);
-            }
-          } else {
-            // 기존 텍스트 형식인 경우
-            parseAnalysisResult(responseData.ai_analysis);
-            setCurrentAnalysisStep(0);
-            setShowTeacherFeedback(false);
-          }
-        } catch (error) {
-          console.error('Failed to parse AI analysis:', error);
-          // 파싱 실패 시 텍스트로 처리
-          parseAnalysisResult(responseData.ai_analysis);
-          setCurrentAnalysisStep(0);
-          setShowTeacherFeedback(false);
-        }
-      }
-
-      // 활동 템플릿 조회
-      const { data: templateData, error: templateError } = await supabase
-        .from('routine_templates')
-        .select('*')
-        .eq('room_id', roomId)
-        .single();
-
-      if (templateError && templateError.code !== 'PGRST116') {
-        console.error('Template fetch error:', templateError);
-      } else if (templateData) {
-        setTemplate(templateData);
-      }
-
-      setLoading(false);
-    } catch (err) {
-      console.error('Fetch data error:', err);
-      setError('데이터를 불러오는 중 오류가 발생했습니다.');
-      setLoading(false);
-    }
-  }, [roomId, responseId, navigate, parseAnalysisResult]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
   // AI 분석 결과를 단계별로 파싱 (ThinkingRoutineAnalysis와 동일)
   const parseAnalysisResult = useCallback((analysis: string) => {
     try {
@@ -366,6 +246,126 @@ const StudentResponseDetail: React.FC = () => {
       setShowTeacherFeedback(false);
     }
   }, [template?.routine_type, room?.thinking_routine_type]);
+
+  const fetchData = useCallback(async () => {
+    if (!isSupabaseConfigured() || !supabase || !roomId || !responseId) {
+      setError('시스템 설정이 완료되지 않았습니다.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/teacher');
+        return;
+      }
+
+      // 활동방 정보 조회
+      const { data: roomData, error: roomError } = await supabase
+        .from('activity_rooms')
+        .select('*')
+        .eq('id', roomId)
+        .eq('teacher_id', session.user.id)
+        .single();
+
+      if (roomError) {
+        console.error('Room fetch error:', roomError);
+        setError('활동방을 찾을 수 없습니다.');
+        setLoading(false);
+        return;
+      }
+
+      setRoom(roomData);
+
+      // 학생 응답 조회
+      const { data: responseData, error: responseError } = await supabase
+        .from('student_responses')
+        .select('*')
+        .eq('id', responseId)
+        .eq('room_id', roomId)
+        .single();
+
+      if (responseError) {
+        console.error('Response fetch error:', responseError);
+        setError('학생 응답을 찾을 수 없습니다.');
+        setLoading(false);
+        return;
+      }
+
+      setResponse(responseData);
+      // 기존 피드백과 점수를 입력창에 설정
+      setTeacherFeedback(responseData.teacher_feedback || '');
+      setTeacherScore(responseData.teacher_score !== null && responseData.teacher_score !== undefined ? responseData.teacher_score : '');
+
+      // 기존 AI 분석 결과가 있으면 파싱
+      if (responseData.ai_analysis) {
+        try {
+          const analysisData = JSON.parse(responseData.ai_analysis);
+          if (analysisData.aiAnalysis) {
+            // 새로운 JSON 형식인 경우
+            setParsedAnalysis({
+              stepByStep: analysisData.aiAnalysis.stepByStep || '',
+              comprehensive: analysisData.aiAnalysis.comprehensive || '',
+              educational: analysisData.aiAnalysis.educational || '',
+              individualSteps: analysisData.aiAnalysis.individualSteps || {}
+            });
+            if (analysisData.teacherFeedback?.individualSteps) {
+              // 기존 교사 피드백이 있으면 피드백 모드로, 없으면 분석 모드로
+              const feedbacks: {[key: string]: string} = {};
+              const scores: {[key: string]: number} = {};
+              Object.entries(analysisData.teacherFeedback.individualSteps).forEach(([key, value]: [string, any]) => {
+                feedbacks[key] = value.feedback || '';
+                if (value.score) scores[key] = value.score;
+              });
+              setStepFeedbacks(feedbacks);
+              setStepScores(scores);
+              setShowTeacherFeedback(true);
+            } else {
+              // 교사 피드백이 없으면 분석 모드에서 시작
+              setCurrentAnalysisStep(0);
+              setShowTeacherFeedback(false);
+            }
+          } else {
+            // 기존 텍스트 형식인 경우
+            parseAnalysisResult(responseData.ai_analysis);
+            setCurrentAnalysisStep(0);
+            setShowTeacherFeedback(false);
+          }
+        } catch (error) {
+          console.error('Failed to parse AI analysis:', error);
+          // 파싱 실패 시 텍스트로 처리
+          parseAnalysisResult(responseData.ai_analysis);
+          setCurrentAnalysisStep(0);
+          setShowTeacherFeedback(false);
+        }
+      }
+
+      // 활동 템플릿 조회
+      const { data: templateData, error: templateError } = await supabase
+        .from('routine_templates')
+        .select('*')
+        .eq('room_id', roomId)
+        .single();
+
+      if (templateError && templateError.code !== 'PGRST116') {
+        console.error('Template fetch error:', templateError);
+      } else if (templateData) {
+        setTemplate(templateData);
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error('Fetch data error:', err);
+      setError('데이터를 불러오는 중 오류가 발생했습니다.');
+      setLoading(false);
+    }
+  }, [roomId, responseId, navigate, parseAnalysisResult]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
 
   const getYouTubeEmbedUrl = (url: string) => {
