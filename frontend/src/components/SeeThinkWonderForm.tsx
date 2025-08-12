@@ -219,7 +219,7 @@ const ThinkingRoutineForm: React.FC = () => {
     if (!supabase || !roomId) return;
 
     try {
-      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.grade} ${studentInfo.class}반 ${studentInfo.number}번` : '';
+      const studentId = `${studentInfo.name}_${studentInfo.grade}_${studentInfo.class}_${studentInfo.number}`;
       
       // 먼저 임시저장된 응답 확인
       const { data: draftData } = await supabase
@@ -279,7 +279,7 @@ const ThinkingRoutineForm: React.FC = () => {
     if (!supabase || !studentInfo || !roomId) return;
 
     try {
-      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.grade} ${studentInfo.class}반 ${studentInfo.number}번` : '';
+      const studentId = `${studentInfo.name}_${studentInfo.grade}_${studentInfo.class}_${studentInfo.number}`;
       
       // 기존 임시저장 데이터 확인
       const { data: existingDraft } = await supabase
@@ -306,10 +306,11 @@ const ThinkingRoutineForm: React.FC = () => {
           .from('student_responses')
           .insert([{
             room_id: roomId,
+            student_id: studentId,
             student_grade: studentInfo.grade,
             student_name: studentInfo.name,
             student_class: studentInfo.class,
-            student_number: parseInt(studentInfo.number),
+            student_number: studentInfo.number ? parseInt(studentInfo.number) : null,
             team_name: studentInfo.groupName || null,
             response_data: currentResponses,
             is_draft: true,
@@ -405,7 +406,7 @@ const ThinkingRoutineForm: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const studentId = studentInfo.class && studentInfo.number ? `${studentInfo.grade} ${studentInfo.class}반 ${studentInfo.number}번` : '';
+      const studentId = `${studentInfo.name}_${studentInfo.grade}_${studentInfo.class}_${studentInfo.number}`;
       
       // 기존 임시저장 데이터 확인 및 삭제
       const { data: existingDraft } = await supabase
@@ -438,6 +439,7 @@ const ThinkingRoutineForm: React.FC = () => {
       if (existingResponse) {
         // 기존 응답이 있으면 업데이트
         const updateData = {
+          student_id: studentId,
           student_grade: studentInfo.grade,
           student_class: studentInfo.class,
           student_number: studentInfo.number ? parseInt(studentInfo.number) : null,
@@ -466,13 +468,12 @@ const ThinkingRoutineForm: React.FC = () => {
         // 기존 응답이 없으면 새로 생성
         const insertData = {
           room_id: roomId,
+          student_id: studentId,
           student_grade: studentInfo.grade,
           student_name: studentInfo.name,
           student_class: studentInfo.class,
           student_number: studentInfo.number ? parseInt(studentInfo.number) : null,
           team_name: studentInfo.groupName || null,
-          student_id: studentId,
-          group_name: studentInfo.groupName || null,
           response_data: responses,
           is_draft: false,
           submitted_at: new Date().toISOString()
