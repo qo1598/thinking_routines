@@ -78,6 +78,24 @@ const StudentResponseDetail: React.FC = () => {
   const [stepFeedbacks, setStepFeedbacks] = useState<{[key: string]: string}>({});
   const [stepScores, setStepScores] = useState<{[key: string]: number}>({});
 
+  // 단계 네비게이션 함수들
+  const nextAnalysisStep = () => {
+    if (currentAnalysisStep < 2) {
+      setCurrentAnalysisStep(currentAnalysisStep + 1);
+    } else if (currentAnalysisStep === 2) {
+      setShowTeacherFeedback(true);
+    }
+  };
+
+  const prevAnalysisStep = () => {
+    if (showTeacherFeedback) {
+      setShowTeacherFeedback(false);
+      setCurrentAnalysisStep(2);
+    } else if (currentAnalysisStep > 0) {
+      setCurrentAnalysisStep(currentAnalysisStep - 1);
+    }
+  };
+
   const fetchData = useCallback(async () => {
     if (!isSupabaseConfigured() || !supabase || !roomId || !responseId) {
       setError('시스템 설정이 완료되지 않았습니다.');
@@ -1083,95 +1101,92 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
         ) : (
           /* 새로운 AI 분석 결과 표시 시스템 */
           <div className="space-y-6">
-            {/* AI 분석 단계별 표시 */}
+            {/* 4단계: 분석 결과 - 단계별 표시 */}
             {!showTeacherFeedback && (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                {/* 진행 상황 표시 */}
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-xl font-bold text-gray-900">4단계: 분석 결과</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-6">4단계: 분석 결과</h2>
+                
+                {/* 진행 표시 바 */}
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">분석 진행 상황</span>
                     <span className="text-sm text-gray-500">{currentAnalysisStep + 1} / 3</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-purple-600 h-2 rounded-full transition-all duration-300" 
+                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${((currentAnalysisStep + 1) / 3) * 100}%` }}
                     ></div>
                   </div>
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>각 단계별 분석</span>
-                    <span>종합 평가</span>
-                    <span>교육적 권장사항</span>
+                  <div className="flex justify-between mt-2 text-xs text-gray-500">
+                    <span className={currentAnalysisStep >= 0 ? 'text-purple-600 font-medium' : ''}>각 단계별 분석</span>
+                    <span className={currentAnalysisStep >= 1 ? 'text-purple-600 font-medium' : ''}>종합 평가</span>
+                    <span className={currentAnalysisStep >= 2 ? 'text-purple-600 font-medium' : ''}>교육적 권장사항</span>
                   </div>
                 </div>
 
-                {/* 단계별 내용 표시 */}
-                {currentAnalysisStep === 0 && (
-                  <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center">
-                      <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      1. 각 단계별 분석
-                    </h3>
-                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                      <div dangerouslySetInnerHTML={{ __html: formatMarkdownText(parsedAnalysis.stepByStep) }} />
+                <div className="space-y-6">
+                  {/* AI 분석 결과 - 현재 단계에 따라 표시 */}
+                  <div>
+                    <div className="flex items-center mb-4">
+                      <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg mr-3">
+                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900">
+                          {currentAnalysisStep === 0 && '1. 각 단계별 분석'}
+                          {currentAnalysisStep === 1 && '2. 종합 평가'}
+                          {currentAnalysisStep === 2 && '3. 교육적 권장사항'}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {currentAnalysisStep === 0 && '사고루틴의 각 단계별 상세 분석 결과'}
+                          {currentAnalysisStep === 1 && '전반적인 수행 능력 종합 평가'}
+                          {currentAnalysisStep === 2 && '향후 학습을 위한 교육적 제안'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                      <div 
+                        className="prose prose-sm max-w-none text-gray-800 text-left leading-relaxed"
+                        dangerouslySetInnerHTML={{ 
+                          __html: formatMarkdownText(
+                            currentAnalysisStep === 0 ? parsedAnalysis.stepByStep :
+                            currentAnalysisStep === 1 ? parsedAnalysis.comprehensive :
+                            parsedAnalysis.educational
+                          ) 
+                        }}
+                      />
                     </div>
                   </div>
-                )}
 
-                {currentAnalysisStep === 1 && (
-                  <div className="bg-gradient-to-br from-green-50 to-white border border-green-200 rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center">
-                      <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  {/* 단계 이동 버튼 */}
+                  <div className="flex justify-between mt-8">
+                    <button
+                      onClick={prevAnalysisStep}
+                      disabled={currentAnalysisStep === 0}
+                      className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
-                      2. 종합 평가
-                    </h3>
-                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                      <div dangerouslySetInnerHTML={{ __html: formatMarkdownText(parsedAnalysis.comprehensive) }} />
-                    </div>
-                  </div>
-                )}
+                      <span>이전 단계</span>
+                    </button>
 
-                {currentAnalysisStep === 2 && (
-                  <div className="bg-gradient-to-br from-purple-50 to-white border border-purple-200 rounded-xl p-6">
-                    <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center">
-                      <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    <button
+                      onClick={nextAnalysisStep}
+                      className="flex items-center space-x-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium"
+                    >
+                      <span>
+                        {currentAnalysisStep === 2 ? '교사 피드백 작성' : '다음 단계'}
+                      </span>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                      3. 교육적 권장사항
-                    </h3>
-                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                      <div dangerouslySetInnerHTML={{ __html: formatMarkdownText(parsedAnalysis.educational) }} />
-                    </div>
+                    </button>
                   </div>
-                )}
-
-                {/* 네비게이션 버튼 */}
-                <div className="flex justify-between mt-6">
-                  <button
-                    onClick={prevAnalysisStep}
-                    disabled={currentAnalysisStep === 0}
-                    className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    이전 단계
-                  </button>
-                  
-                  <button
-                    onClick={nextAnalysisStep}
-                    className="flex items-center px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                  >
-                    <span>
-                      {currentAnalysisStep === 2 ? '교사 피드백 작성' : '다음 단계'}
-                    </span>
-                    <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
                 </div>
               </div>
             )}
@@ -1179,8 +1194,19 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
             {/* 교사 피드백 및 평가 섹션 */}
             {showTeacherFeedback && (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">5단계: 교사 피드백 및 평가</h2>
+                <div className="mb-6">
+                  <div className="flex items-center mb-2">
+                    <button
+                      onClick={prevAnalysisStep}
+                      className="flex items-center px-3 py-1 text-gray-600 hover:text-gray-900 mr-4"
+                    >
+                      <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      <span className="text-sm">이전으로</span>
+                    </button>
+                    <h2 className="text-xl font-bold text-gray-900">5단계: 교사 피드백 및 평가</h2>
+                  </div>
                   <div className="text-sm text-gray-500">
                     AI 분석 결과를 참고하여 각 단계별로 피드백과 점수를 입력하세요
                   </div>
@@ -1290,18 +1316,8 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                   </div>
                 )}
 
-                {/* 저장 및 이전 버튼 */}
-                <div className="flex justify-between mt-8 pt-6 border-t">
-                  <button
-                    onClick={prevAnalysisStep}
-                    className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    이전으로
-                  </button>
-                  
+                {/* 저장 버튼 */}
+                <div className="flex justify-end mt-8 pt-6 border-t">
                   <button
                     onClick={handleFinalSave}
                     disabled={savingFeedback}

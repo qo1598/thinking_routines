@@ -1362,7 +1362,20 @@ const ThinkingRoutineAnalysis: React.FC = () => {
         {/* 5단계: 교사 피드백 및 평가 - AI 분석 단계 완료 후에만 표시 */}
         {analysisResult && parsedAnalysis && showTeacherFeedback && (
           <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">5단계: 교사 피드백 및 평가</h2>
+            <div className="mb-6">
+              <div className="flex items-center mb-2">
+                <button
+                  onClick={prevAnalysisStep}
+                  className="flex items-center px-3 py-1 text-gray-600 hover:text-gray-900 mr-4"
+                >
+                  <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span className="text-sm">이전으로</span>
+                </button>
+                <h2 className="text-xl font-bold text-gray-900">5단계: 교사 피드백 및 평가</h2>
+              </div>
+            </div>
             
             {/* 사고루틴별 개별 단계 평가 */}
             {parsedAnalysis?.individualSteps && Object.keys(parsedAnalysis.individualSteps).length > 0 ? (
@@ -1587,18 +1600,8 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
 
 
-              {/* 저장 및 이전 버튼 */}
-              <div className="flex justify-between">
-                <button
-                  onClick={prevAnalysisStep}
-                  className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  이전으로
-                </button>
-                
+              {/* 저장 버튼 */}
+              <div className="flex justify-end">
                 <button
                   onClick={handleFinalSave}
                   disabled={!studentGrade || !studentClass || !studentNumber || !studentName || saving}
