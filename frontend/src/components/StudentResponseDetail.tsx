@@ -210,7 +210,7 @@ const StudentResponseDetail: React.FC = () => {
       setError('데이터를 불러오는 중 오류가 발생했습니다.');
       setLoading(false);
     }
-  }, [roomId, responseId, navigate]);
+  }, [roomId, responseId, navigate, parseAnalysisResult]);
 
   useEffect(() => {
     fetchData();
@@ -265,55 +265,55 @@ const StudentResponseDetail: React.FC = () => {
         const routineStepPatterns: {[key: string]: {[key: string]: RegExp[]}} = {
           'see-think-wonder': {
             'see': [
-              /###\s*See\s*[\(（]?보기[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*See\s*[(（]?보기[)）]?([\s\S]*?)(?=###|$)/i,
               /###\s*보기\s*([\s\S]*?)(?=###|$)/i
             ],
             'think': [
-              /###\s*Think\s*[\(（]?생각하기[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*Think\s*[(（]?생각하기[)）]?([\s\S]*?)(?=###|$)/i,
               /###\s*생각하기\s*([\s\S]*?)(?=###|$)/i
             ],
             'wonder': [
-              /###\s*Wonder\s*[\(（]?궁금하기[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*Wonder\s*[(（]?궁금하기[)）]?([\s\S]*?)(?=###|$)/i,
               /###\s*궁금하기\s*([\s\S]*?)(?=###|$)/i
             ]
           },
           '4c': {
-            'connect': [/###\s*Connect\s*[\(（]?연결[\)）]?([\s\S]*?)(?=###|$)/i],
-            'challenge': [/###\s*Challenge\s*[\(（]?도전[\)）]?([\s\S]*?)(?=###|$)/i],
-            'concepts': [/###\s*Concepts?\s*[\(（]?개념[\)）]?([\s\S]*?)(?=###|$)/i],
-            'changes': [/###\s*Changes?\s*[\(（]?변화[\)）]?([\s\S]*?)(?=###|$)/i]
+            'connect': [/###\s*Connect\s*[(（]?연결[)）]?([\s\S]*?)(?=###|$)/i],
+            'challenge': [/###\s*Challenge\s*[(（]?도전[)）]?([\s\S]*?)(?=###|$)/i],
+            'concepts': [/###\s*Concepts?\s*[(（]?개념[)）]?([\s\S]*?)(?=###|$)/i],
+            'changes': [/###\s*Changes?\s*[(（]?변화[)）]?([\s\S]*?)(?=###|$)/i]
           },
           'frayer-model': {
             'definition': [
-              /###\s*Definition\s*[\(（]?정의[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*Definition\s*[(（]?정의[)）]?([\s\S]*?)(?=###|$)/i,
               /###\s*정의\s*([\s\S]*?)(?=###|$)/i
             ],
             'characteristics': [
-              /###\s*Characteristics\s*[\(（]?특징[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*Characteristics\s*[(（]?특징[)）]?([\s\S]*?)(?=###|$)/i,
               /###\s*특징\s*([\s\S]*?)(?=###|$)/i
             ],
             'examples': [
-              /###\s*Examples?\s*&?\s*Non-Examples?\s*[\(（]?예시\s*와?\s*반례[\)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*Examples?\s*&?\s*Non-Examples?\s*[(（]?예시\s*와?\s*반례[)）]?([\s\S]*?)(?=###|$)/i,
               /###\s*예시\s*와?\s*반례\s*([\s\S]*?)(?=###|$)/i
             ]
           },
           'circle-of-viewpoints': {
-            'viewpoint': [/###\s*Viewpoint\s*[\(（]?관점[\)）]?([\s\S]*?)(?=###|$)/i],
-            'perspective': [/###\s*Perspective\s*[\(（]?시각[\)）]?([\s\S]*?)(?=###|$)/i]
+            'viewpoint': [/###\s*Viewpoint\s*[(（]?관점[)）]?([\s\S]*?)(?=###|$)/i],
+            'perspective': [/###\s*Perspective\s*[(（]?시각[)）]?([\s\S]*?)(?=###|$)/i]
           },
           'connect-extend-challenge': {
-            'connect': [/###\s*Connect\s*[\(（]?연결[\)）]?([\s\S]*?)(?=###|$)/i],
-            'extend': [/###\s*Extend\s*[\(（]?확장[\)）]?([\s\S]*?)(?=###|$)/i],
-            'challenge': [/###\s*Challenge\s*[\(（]?도전[\)）]?([\s\S]*?)(?=###|$)/i]
+            'connect': [/###\s*Connect\s*[(（]?연결[)）]?([\s\S]*?)(?=###|$)/i],
+            'extend': [/###\s*Extend\s*[(（]?확장[)）]?([\s\S]*?)(?=###|$)/i],
+            'challenge': [/###\s*Challenge\s*[(（]?도전[)）]?([\s\S]*?)(?=###|$)/i]
           },
           'used-to-think-now-think': {
-            'used-to-think': [/###\s*Used\s*to\s*Think\s*[\(（]?이전\s*생각[\)）]?([\s\S]*?)(?=###|$)/i],
-            'now-think': [/###\s*Now\s*Think\s*[\(（]?현재\s*생각[\)）]?([\s\S]*?)(?=###|$)/i]
+            'used-to-think': [/###\s*Used\s*to\s*Think\s*[(（]?이전\s*생각[)）]?([\s\S]*?)(?=###|$)/i],
+            'now-think': [/###\s*Now\s*Think\s*[(（]?현재\s*생각[)）]?([\s\S]*?)(?=###|$)/i]
           },
           'think-puzzle-explore': {
-            'think': [/###\s*Think\s*[\(（]?생각[\)）]?([\s\S]*?)(?=###|$)/i],
-            'puzzle': [/###\s*Puzzle\s*[\(（]?퍼즐[\)）]?([\s\S]*?)(?=###|$)/i],
-            'explore': [/###\s*Explore\s*[\(（]?탐구[\)）]?([\s\S]*?)(?=###|$)/i]
+            'think': [/###\s*Think\s*[(（]?생각[)）]?([\s\S]*?)(?=###|$)/i],
+            'puzzle': [/###\s*Puzzle\s*[(（]?퍼즐[)）]?([\s\S]*?)(?=###|$)/i],
+            'explore': [/###\s*Explore\s*[(（]?탐구[)）]?([\s\S]*?)(?=###|$)/i]
           }
         };
         
