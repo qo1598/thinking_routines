@@ -12,6 +12,20 @@ interface StudentInfo {
   student_number?: number;
 }
 
+interface ActivityRoom {
+  id: string;
+  room_id: string;
+  room_title: string;
+  routine_type: string;
+  submitted_at: string;
+  team_name?: string;
+  response_data?: any;
+  ai_analysis?: string;
+  teacher_feedback?: string;
+  teacher_score?: number;
+  selected?: boolean;
+}
+
 interface ActivityItem {
   id: string;
   type: 'online' | 'offline';
@@ -46,7 +60,8 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
     name: ''
   });
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [activities, setActivities] = useState<ActivityRoom[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<ActivityRoom | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -85,52 +100,27 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
         student_number: searchForm.number ? parseInt(searchForm.number) : undefined
       };
 
-      // 1. 오프라인 활동 (사고루틴 분석 및 평가)
-      let offlineQuery = supabase
-        .from('student_responses')
-        .select(`
-          id,
-          student_grade,
-          student_name,
-          student_class,
-          student_number,
-          team_name,
-          routine_type,
-          image_url,
-          ai_analysis,
-          teacher_feedback,
-          teacher_score,
-          submitted_at,
-          response_data
-        `)
-        .eq('student_name', searchForm.name)
-        .eq('is_draft', false);
-
-      if (searchForm.grade) offlineQuery = offlineQuery.eq('student_grade', searchForm.grade);
-      if (searchForm.class) offlineQuery = offlineQuery.eq('student_class', searchForm.class);
-      if (searchForm.number) offlineQuery = offlineQuery.eq('student_number', parseInt(searchForm.number));
-
-      const { data: offlineData, error: offlineError } = await offlineQuery;
-
-      if (offlineError) throw offlineError;
-
-      // 2. 온라인 활동 (사고루틴 생성 및 적용)
+      // 온라인 활동만 가져오기 (room_id가 있는 것만)
       let onlineQuery = supabase
         .from('student_responses')
         .select(`
           id,
+          room_id,
           student_grade,
           student_name,
           student_class,
           student_number,
           team_name,
           response_data,
+          ai_analysis,
+          teacher_feedback,
+          teacher_score,
           submitted_at,
           activity_rooms!inner(title, thinking_routine_type)
         `)
         .eq('student_name', searchForm.name)
         .eq('is_draft', false)
-        .is('routine_type', null); // routine_type이 null인 것은 온라인 활동
+        .not('room_id', 'is', null); // room_id가 있는 것만 (온라인 활동)
 
       if (searchForm.grade) onlineQuery = onlineQuery.eq('student_grade', searchForm.grade);
       if (searchForm.class) onlineQuery = onlineQuery.eq('student_class', searchForm.class);
@@ -140,45 +130,29 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
 
       if (onlineError) throw onlineError;
 
-      // 데이터 변환
-      const offlineActivities: ActivityItem[] = offlineData?.map(item => ({
-        id: `offline-${item.id}`,
-        type: 'offline' as const,
-        student_grade: item.student_grade,
-        student_name: item.student_name,
-        student_class: item.student_class,
-        student_number: item.student_number,
+      console.log('🔍 온라인 활동 데이터:', onlineData);
+
+      // 활동방별로 그룹화
+      const activityRooms: ActivityRoom[] = onlineData?.map(item => ({
+        id: item.id,
+        room_id: item.room_id,
+        room_title: (item.activity_rooms as any)?.title || '활동방',
+        routine_type: (item.activity_rooms as any)?.thinking_routine_type || 'see-think-wonder',
+        submitted_at: item.submitted_at,
         team_name: item.team_name,
-        routine_type: item.routine_type,
-        image_url: item.image_url,
+        response_data: item.response_data,
         ai_analysis: item.ai_analysis,
         teacher_feedback: item.teacher_feedback,
         teacher_score: item.teacher_score,
-        submitted_at: item.submitted_at,
-        room_title: '사고루틴 분석 및 평가',
-        response_data: item.response_data,
         selected: false
       })) || [];
 
-      const onlineActivities: ActivityItem[] = onlineData?.map(item => ({
-        id: `online-${item.id}`,
-        type: 'online' as const,
-        student_grade: item.student_grade,
-        student_name: item.student_name,
-        student_class: item.student_class,
-        student_number: item.student_number,
-        team_name: item.team_name,
-        routine_type: (item.activity_rooms as any)?.thinking_routine_type,
-        submitted_at: item.submitted_at,
-        room_title: (item.activity_rooms as any)?.title,
-        response_data: item.response_data,
-        selected: false
-      })) || [];
+      // 제출일 기준으로 정렬
+      const sortedActivities = activityRooms.sort((a, b) => 
+        new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
+      );
 
-      const allActivities = [...offlineActivities, ...onlineActivities]
-        .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime());
-
-      setActivities(allActivities);
+      setActivities(sortedActivities);
       setSelectedStudent(studentInfo);
       
     } catch (err) {
@@ -202,6 +176,16 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
   const toggleAllSelection = () => {
     const allSelected = activities.every(activity => activity.selected);
     setActivities(prev => prev.map(activity => ({ ...activity, selected: !allSelected })));
+  };
+
+  // 활동 상세보기
+  const handleActivityClick = (activity: ActivityRoom) => {
+    setSelectedActivity(activity);
+  };
+
+  // 활동 목록으로 돌아가기
+  const handleBackToList = () => {
+    setSelectedActivity(null);
   };
 
   // 인쇄하기
@@ -252,7 +236,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
   };
 
   // 인쇄용 HTML 생성
-  const generatePrintContent = (selectedActivities: ActivityItem[]) => {
+  const generatePrintContent = (selectedActivities: ActivityRoom[]) => {
     const studentInfo = selectedStudent;
     const studentInfoText = [
       studentInfo?.student_grade,
@@ -298,7 +282,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
               <div class="activity-title">
                 ${routineLabels[activity.routine_type] || activity.routine_type}
                 <span style="color: #666; font-size: 12px; margin-left: 10px;">
-                  (${activity.type === 'online' ? '온라인' : '오프라인'} 활동)
+                  (온라인 활동)
                 </span>
               </div>
               <div class="activity-meta">
@@ -491,7 +475,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
               )}
             </div>
           </div>
-        ) : (
+        ) : !selectedActivity ? (
           /* 활동 목록 화면 */
           <div>
             {/* 학생 정보 헤더 */}
@@ -505,6 +489,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
                   onClick={() => {
                     setSelectedStudent(null);
                     setActivities([]);
+                    setSelectedActivity(null);
                     setError('');
                   }}
                   className="text-gray-600 hover:text-gray-900"
@@ -571,29 +556,28 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
             ) : (
               <div className="space-y-4">
                 {activities.map((activity) => (
-                  <div key={activity.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <div key={activity.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
                     <div className="flex items-start space-x-4">
                       {/* 체크박스 */}
                       <input
                         type="checkbox"
                         checked={activity.selected}
-                        onChange={() => toggleActivitySelection(activity.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleActivitySelection(activity.id);
+                        }}
                         className="mt-1 rounded"
                       />
 
                       {/* 활동 내용 */}
-                      <div className="flex-1">
+                      <div className="flex-1" onClick={() => handleActivityClick(activity)}>
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center space-x-3">
                             <h3 className="text-lg font-semibold text-gray-900">
-                              {routineLabels[activity.routine_type] || activity.routine_type}
+                              {activity.room_title}
                             </h3>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              activity.type === 'online' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              {activity.type === 'online' ? '온라인' : '오프라인'}
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                              {routineLabels[activity.routine_type] || activity.routine_type}
                             </span>
                             {activity.team_name && (
                               <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
@@ -606,53 +590,110 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
                           </div>
                         </div>
 
-                        <p className="text-gray-600 mb-3">{activity.room_title}</p>
+                        <p className="text-gray-600 mb-3">사고루틴: {routineLabels[activity.routine_type]}</p>
 
-                        {/* 응답 미리보기 */}
-                        {activity.response_data && (
-                          <div className="bg-gray-50 rounded-lg p-4 mb-3">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">활동 응답</h4>
-                            <div className="space-y-2">
-                              {Object.entries(activity.response_data).map(([key, value]) => {
-                                if (!value) return null;
-                                const labels: any = {
-                                  see: 'See (관찰/연결)',
-                                  think: 'Think (생각/도전)',
-                                  wonder: 'Wonder (궁금증/개념)',
-                                  fourth_step: 'Changes (변화)'
-                                };
-                                return (
-                                  <div key={key} className="text-sm">
-                                    <span className="font-medium text-gray-700">{labels[key] || key}:</span>
-                                    <span className="ml-2 text-gray-600">{String(value).substring(0, 100)}...</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
+                        {/* 상태 표시 */}
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <span>온라인 활동</span>
+                          <span>•</span>
+                          <span>제출일: {formatDate(activity.submitted_at)}</span>
+                          {activity.teacher_score && (
+                            <>
+                              <span>•</span>
+                              <span className="text-blue-600 font-medium">평가완료 ({activity.teacher_score}점)</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
 
-                        {/* 교사 피드백 */}
-                        {(activity.teacher_feedback || activity.teacher_score) && (
-                          <div className="bg-blue-50 rounded-lg p-4">
-                            <h4 className="text-sm font-medium text-blue-800 mb-2">교사 평가</h4>
-                            {activity.teacher_feedback && (
-                              <p className="text-sm text-blue-700 mb-2">{activity.teacher_feedback}</p>
-                            )}
-                            {activity.teacher_score && (
-                              <div className="flex items-center text-sm text-blue-700">
-                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                                <span className="font-medium">{activity.teacher_score}점</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                      {/* 화살표 아이콘 */}
+                      <div className="flex-shrink-0">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </div>
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* 활동 상세보기 화면 */
+          <div>
+            {/* 헤더 */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{selectedActivity.room_title}</h2>
+                  <p className="text-gray-600">{routineLabels[selectedActivity.routine_type]} • {formatDate(selectedActivity.submitted_at)}</p>
+                </div>
+                <button
+                  onClick={handleBackToList}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  ← 활동 목록으로 돌아가기
+                </button>
+              </div>
+            </div>
+
+            {/* 학생 응답 */}
+            {selectedActivity.response_data && (
+              <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">학생 활동 응답</h3>
+                <div className="space-y-4">
+                  {Object.entries(selectedActivity.response_data).map(([key, value]) => {
+                    if (!value) return null;
+                    const labels: any = {
+                      see: 'See (관찰/연결)',
+                      think: 'Think (생각/도전)',
+                      wonder: 'Wonder (궁금증/개념)',
+                      fourth_step: 'Changes (변화)'
+                    };
+                    return (
+                      <div key={key} className="border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-700 mb-2">{labels[key] || key}</h4>
+                        <div className="text-gray-600 whitespace-pre-wrap">{value}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* AI 분석 결과 */}
+            {selectedActivity.ai_analysis && (
+              <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">AI 분석 결과</h3>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="text-gray-700 whitespace-pre-wrap">{selectedActivity.ai_analysis}</div>
+                </div>
+              </div>
+            )}
+
+            {/* 교사 피드백 */}
+            {(selectedActivity.teacher_feedback || selectedActivity.teacher_score) && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">교사 평가</h3>
+                <div className="bg-green-50 rounded-lg p-4">
+                  {selectedActivity.teacher_feedback && (
+                    <div className="mb-3">
+                      <h4 className="font-medium text-green-800 mb-2">피드백</h4>
+                      <div className="text-green-700 whitespace-pre-wrap">{selectedActivity.teacher_feedback}</div>
+                    </div>
+                  )}
+                  {selectedActivity.teacher_score && (
+                    <div>
+                      <h4 className="font-medium text-green-800 mb-2">점수</h4>
+                      <div className="flex items-center text-green-700">
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        <span className="text-xl font-bold">{selectedActivity.teacher_score}점</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
