@@ -219,16 +219,29 @@ const StudentResponseDetail: React.FC = () => {
   // AI 분석 결과를 단계별로 파싱 (ThinkingRoutineAnalysis와 동일)
   const parseAnalysisResult = (analysis: string) => {
     try {
+      console.log('🔍 AI 분석 원본 텍스트:', analysis);
+      
       // 정규식을 사용하여 각 섹션을 추출 (ThinkingRoutineAnalysis와 동일)
       const stepByStepMatch = analysis.match(/## 1\. 각 단계별 분석([\s\S]*?)(?=## 2\.|$)/);
       const comprehensiveMatch = analysis.match(/## 2\. 종합 평가([\s\S]*?)(?=## 3\.|$)/);
-      const educationalMatch = analysis.match(/## 3\. 교육적 제안([\s\S]*?)$/);
+      const educationalMatch = analysis.match(/## 3\. 교육적 권장사항([\s\S]*?)$/);
+      const educationalMatch2 = analysis.match(/## 3\. 교육적 제안([\s\S]*?)$/);
+      const finalEducationalMatch = educationalMatch || educationalMatch2;
+
+      console.log('📝 각 섹션 매칭 결과:');
+      console.log('- 1단계 매칭:', !!stepByStepMatch);
+      console.log('- 2단계 매칭:', !!comprehensiveMatch);
+      console.log('- 3단계 권장사항 매칭:', !!educationalMatch);
+      console.log('- 3단계 제안 매칭:', !!educationalMatch2);
+      console.log('- 최종 3단계 매칭:', !!finalEducationalMatch);
+      console.log('- 교육적 제안/권장사항 텍스트:', finalEducationalMatch ? finalEducationalMatch[0] : 'null');
 
       // 개별 단계별 분석 추출 (ThinkingRoutineAnalysis와 동일)
       const individualSteps: {[key: string]: string} = {};
       
       if (stepByStepMatch) {
         const stepByStepContent = stepByStepMatch[1].trim();
+        console.log('🔍 1단계 상세 내용:', stepByStepContent);
         
         // See-Think-Wonder 방식
         const seeMatch = stepByStepContent.match(/### See \(보기\)([\s\S]*?)(?=### |$)/);
@@ -241,6 +254,15 @@ const StudentResponseDetail: React.FC = () => {
         const conceptsMatch = stepByStepContent.match(/### Concepts \(개념\)([\s\S]*?)(?=### |$)/);
         const changesMatch = stepByStepContent.match(/### Changes \(변화\)([\s\S]*?)(?=### |$)/);
         
+        console.log('🎯 개별 단계 매칭 결과:');
+        console.log('- See:', !!seeMatch);
+        console.log('- Think:', !!thinkMatch);
+        console.log('- Wonder:', !!wonderMatch);
+        console.log('- Connect:', !!connectMatch);
+        console.log('- Challenge:', !!challengeMatch);
+        console.log('- Concepts:', !!conceptsMatch);
+        console.log('- Changes:', !!changesMatch);
+        
         if (seeMatch) individualSteps['see'] = seeMatch[1].trim();
         if (thinkMatch) individualSteps['think'] = thinkMatch[1].trim();
         if (wonderMatch) individualSteps['wonder'] = wonderMatch[1].trim();
@@ -250,12 +272,17 @@ const StudentResponseDetail: React.FC = () => {
         if (changesMatch) individualSteps['changes'] = changesMatch[1].trim();
       }
 
-      setParsedAnalysis({
+      const finalParsedData = {
         stepByStep: stepByStepMatch ? stepByStepMatch[1].trim() : '',
         comprehensive: comprehensiveMatch ? comprehensiveMatch[1].trim() : '',
-        educational: educationalMatch ? educationalMatch[1].trim() : '',
+        educational: finalEducationalMatch ? finalEducationalMatch[1].trim() : '',
         individualSteps
-      });
+      };
+
+      console.log('✅ 최종 파싱 결과:', finalParsedData);
+      console.log('🎯 개별 단계 개수:', Object.keys(individualSteps).length);
+
+      setParsedAnalysis(finalParsedData);
 
       // AI 분석이 완료되면 4단계 분석 결과부터 단계별로 시작
       setCurrentAnalysisStep(0);
