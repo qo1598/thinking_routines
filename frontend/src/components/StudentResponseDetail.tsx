@@ -96,7 +96,7 @@ const StudentResponseDetail: React.FC = () => {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!isSupabaseConfigured() || !supabase || !roomId || !responseId) {
       setError('시스템 설정이 완료되지 않았습니다.');
       setLoading(false);
@@ -210,11 +210,11 @@ const StudentResponseDetail: React.FC = () => {
       setError('데이터를 불러오는 중 오류가 발생했습니다.');
       setLoading(false);
     }
-  };
+  }, [roomId, responseId, navigate]);
 
   useEffect(() => {
     fetchData();
-  }, [roomId, responseId]);
+  }, [fetchData]);
 
   // AI 분석 결과를 단계별로 파싱 (ThinkingRoutineAnalysis와 동일)
   const parseAnalysisResult = (analysis: string) => {
