@@ -97,6 +97,16 @@ const StudentEntry: React.FC = () => {
       return;
     }
 
+    if (!studentClass.trim()) {
+      setError('반을 선택해주세요.');
+      return;
+    }
+
+    if (!studentNumber.trim()) {
+      setError('번호를 선택해주세요.');
+      return;
+    }
+
     // 모둠 참여인 경우 모둠명 확인
     if (room?.participation_type === 'group' && !groupName.trim()) {
       setError('모둠명을 입력해주세요.');
@@ -255,15 +265,16 @@ const StudentEntry: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="studentClass" className="block text-sm font-medium text-gray-700">
-                      반
+                      반 *
                     </label>
                     <select
                       id="studentClass"
+                      required
                       value={studentClass}
                       onChange={(e) => setStudentClass(e.target.value)}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary-500 focus:border-secondary-500"
                     >
-                      <option value="">선택</option>
+                      <option value="">선택하세요</option>
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
                         <option key={num} value={num}>{num}반</option>
                       ))}
@@ -271,15 +282,16 @@ const StudentEntry: React.FC = () => {
                   </div>
                   <div>
                     <label htmlFor="studentNumber" className="block text-sm font-medium text-gray-700">
-                      번호
+                      번호 *
                     </label>
                     <select
                       id="studentNumber"
+                      required
                       value={studentNumber}
                       onChange={(e) => setStudentNumber(e.target.value)}
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary-500 focus:border-secondary-500"
                     >
-                      <option value="">선택</option>
+                      <option value="">선택하세요</option>
                       {Array.from({length: 30}, (_, i) => i + 1).map(num => (
                         <option key={num} value={num}>{num}번</option>
                       ))}
