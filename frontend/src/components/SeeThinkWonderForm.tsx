@@ -437,17 +437,22 @@ const ThinkingRoutineForm: React.FC = () => {
 
       if (existingResponse) {
         // 기존 응답이 있으면 업데이트
+        const updateData = {
+          student_grade: studentInfo.grade,
+          student_class: studentInfo.class,
+          student_number: studentInfo.number ? parseInt(studentInfo.number) : null,
+          team_name: studentInfo.groupName || null,
+          response_data: responses,
+          submitted_at: new Date().toISOString(),
+          // AI 분석과 교사 피드백은 초기화하지 않음 (교사가 이미 작성했을 수 있음)
+        };
+        
+        console.log('🔍 업데이트할 학생 데이터:', updateData);
+        console.log('🔍 studentInfo:', studentInfo);
+        
         const { error } = await supabase
           .from('student_responses')
-          .update({
-            student_grade: studentInfo.grade,
-            student_class: studentInfo.class,
-            student_number: parseInt(studentInfo.number),
-            team_name: studentInfo.groupName || null,
-            response_data: responses,
-            submitted_at: new Date().toISOString(),
-            // AI 분석과 교사 피드백은 초기화하지 않음 (교사가 이미 작성했을 수 있음)
-          })
+          .update(updateData)
           .eq('id', existingResponse.id);
 
         if (error) {
@@ -459,21 +464,26 @@ const ThinkingRoutineForm: React.FC = () => {
         alert('응답이 수정되었습니다!');
       } else {
         // 기존 응답이 없으면 새로 생성
+        const insertData = {
+          room_id: roomId,
+          student_grade: studentInfo.grade,
+          student_name: studentInfo.name,
+          student_class: studentInfo.class,
+          student_number: studentInfo.number ? parseInt(studentInfo.number) : null,
+          team_name: studentInfo.groupName || null,
+          student_id: studentId,
+          group_name: studentInfo.groupName || null,
+          response_data: responses,
+          is_draft: false,
+          submitted_at: new Date().toISOString()
+        };
+        
+        console.log('🔍 제출할 학생 데이터:', insertData);
+        console.log('🔍 studentInfo:', studentInfo);
+        
         const { error } = await supabase
           .from('student_responses')
-          .insert([{
-            room_id: roomId,
-            student_grade: studentInfo.grade,
-            student_name: studentInfo.name,
-            student_class: studentInfo.class,
-            student_number: parseInt(studentInfo.number),
-            team_name: studentInfo.groupName || null,
-            student_id: studentId,
-            group_name: studentInfo.groupName || null,
-            response_data: responses,
-            is_draft: false,
-            submitted_at: new Date().toISOString()
-          }]);
+          .insert([insertData]);
 
         if (error) {
           console.error('Submit error:', error);
@@ -984,39 +994,21 @@ const ThinkingRoutineForm: React.FC = () => {
         {/* 제출 완료 후 간단한 완료 메시지 */}
         {submitted && (
           <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              ✅ 제출 완료
-            </h2>
-            
-            <div className="mb-4">
-              <p className="text-gray-700 mb-4">
-                사고루틴 활동이 성공적으로 제출되었습니다. 수고하셨습니다!
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                제출 완료
+              </h2>
+              <p className="text-gray-600 text-lg">
+                사고루틴 활동이 성공적으로 제출되었습니다.
               </p>
-            </div>
-
-            <div className="flex space-x-3 pt-4 border-t">
-              <button
-                onClick={() => navigate('/student')}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-              >
-                돌아가기
-              </button>
-              <button
-                onClick={() => {
-                  setSubmitted(false);
-                  // 응답 초기화
-                  setResponses({
-                    see: '',
-                    think: '',
-                    wonder: '',
-                    fourth_step: ''
-                  });
-                  setCurrentStep('see');
-                }}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                새 활동 시작하기
-              </button>
+              <p className="text-gray-500 mt-2">
+                수고하셨습니다!
+              </p>
             </div>
           </div>
         )}
