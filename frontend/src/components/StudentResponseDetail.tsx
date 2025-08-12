@@ -272,19 +272,6 @@ const StudentResponseDetail: React.FC = () => {
     }
   };
 
-  // 이전 단계로 이동
-  const prevAnalysisStep = () => {
-    if (showTeacherFeedback) {
-      // 교사 피드백 단계에서 이전 버튼 클릭 시 AI 분석의 마지막 단계(2단계)로 이동
-      setShowTeacherFeedback(false);
-      setCurrentAnalysisStep(2);
-    } else if (currentAnalysisStep > 0) {
-      // AI 분석 단계에서 이전 단계로 이동
-      setCurrentAnalysisStep(currentAnalysisStep - 1);
-    }
-  };
-
-
 
   const getYouTubeEmbedUrl = (url: string) => {
     if (!url) return null;
