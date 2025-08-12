@@ -219,10 +219,10 @@ const StudentResponseDetail: React.FC = () => {
   // AI 분석 결과를 단계별로 파싱 (ThinkingRoutineAnalysis와 동일)
   const parseAnalysisResult = (analysis: string) => {
     try {
-      // 정규식을 사용하여 각 섹션을 추출
+      // 정규식을 사용하여 각 섹션을 추출 (콜론 제거)
       const stepByStepMatch = analysis.match(/## 1\. 각 단계별 분석([\s\S]*?)(?=## 2\.|$)/);
       const comprehensiveMatch = analysis.match(/## 2\. 종합 평가([\s\S]*?)(?=## 3\.|$)/);
-      const educationalMatch = analysis.match(/## 3\. 교육적 제안([\s\S]*?)$/);
+      const educationalMatch = analysis.match(/## 3\. 교육적 (?:제안|권장사항)([\s\S]*?)$/);
 
       // 개별 단계별 분석 추출
       const individualSteps: {[key: string]: string} = {};
@@ -230,16 +230,16 @@ const StudentResponseDetail: React.FC = () => {
       if (stepByStepMatch) {
         const stepByStepContent = stepByStepMatch[1].trim();
         
-        // See-Think-Wonder 방식
-        const seeMatch = stepByStepContent.match(/### See \(보기\)([\s\S]*?)(?=### |$)/);
-        const thinkMatch = stepByStepContent.match(/### Think \(생각하기\)([\s\S]*?)(?=### |$)/);
-        const wonderMatch = stepByStepContent.match(/### Wonder \(궁금하기\)([\s\S]*?)(?=### |$)/);
+        // See-Think-Wonder 방식 (콜론 선택적으로 매칭)
+        const seeMatch = stepByStepContent.match(/### See \(보기\):?([\s\S]*?)(?=### |$)/);
+        const thinkMatch = stepByStepContent.match(/### Think \(생각하기\):?([\s\S]*?)(?=### |$)/);
+        const wonderMatch = stepByStepContent.match(/### Wonder \(궁금하기\):?([\s\S]*?)(?=### |$)/);
         
-        // 4C 방식
-        const connectMatch = stepByStepContent.match(/### Connect \(연결\)([\s\S]*?)(?=### |$)/);
-        const challengeMatch = stepByStepContent.match(/### Challenge \(도전\)([\s\S]*?)(?=### |$)/);
-        const conceptsMatch = stepByStepContent.match(/### Concepts \(개념\)([\s\S]*?)(?=### |$)/);
-        const changesMatch = stepByStepContent.match(/### Changes \(변화\)([\s\S]*?)(?=### |$)/);
+        // 4C 방식 (콜론 선택적으로 매칭)
+        const connectMatch = stepByStepContent.match(/### Connect \(연결\):?([\s\S]*?)(?=### |$)/);
+        const challengeMatch = stepByStepContent.match(/### Challenge \(도전\):?([\s\S]*?)(?=### |$)/);
+        const conceptsMatch = stepByStepContent.match(/### Concepts \(개념\):?([\s\S]*?)(?=### |$)/);
+        const changesMatch = stepByStepContent.match(/### Changes \(변화\):?([\s\S]*?)(?=### |$)/);
         
         if (seeMatch) individualSteps['see'] = seeMatch[1].trim();
         if (thinkMatch) individualSteps['think'] = thinkMatch[1].trim();
@@ -250,15 +250,21 @@ const StudentResponseDetail: React.FC = () => {
         if (changesMatch) individualSteps['changes'] = changesMatch[1].trim();
       }
 
+      // 콜론 제거 함수
+      const removeColons = (text: string) => {
+        return text.replace(/(\*\*[^*]+\*\*):(?=\s)/g, '$1');
+      };
+
       setParsedAnalysis({
         stepByStep: stepByStepMatch ? stepByStepMatch[1].trim() : '',
-        comprehensive: comprehensiveMatch ? comprehensiveMatch[1].trim() : '',
+        comprehensive: comprehensiveMatch ? removeColons(comprehensiveMatch[1].trim()) : '',
         educational: educationalMatch ? educationalMatch[1].trim() : '',
         individualSteps
       });
 
-      // AI 분석이 완료되면 교사 피드백 섹션 표시
-      setShowTeacherFeedback(true);
+      // AI 분석이 완료되면 분석 결과 단계별 표시로 시작 (교사 피드백이 아닌)
+      setCurrentAnalysisStep(0);
+      setShowTeacherFeedback(false);
     } catch (error) {
       console.error('Analysis parsing error:', error);
       // 파싱 실패 시 전체 텍스트를 첫 번째 단계로 표시
@@ -268,7 +274,8 @@ const StudentResponseDetail: React.FC = () => {
         educational: '',
         individualSteps: {}
       });
-      setShowTeacherFeedback(true);
+      setCurrentAnalysisStep(0);
+      setShowTeacherFeedback(false);
     }
   };
 
@@ -1193,6 +1200,12 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                 {/* 사고루틴별 개별 단계 평가 */}
                 {parsedAnalysis?.individualSteps && Object.keys(parsedAnalysis.individualSteps).length > 0 ? (
                   <div className="space-y-6">
+                    <div className="text-center mb-6">
+                      <p className="text-gray-600">
+                        AI가 분석한 각 단계별 결과를 참고하여 개별 단계마다 피드백과 점수를 입력하세요
+                      </p>
+                    </div>
+
                     {Object.entries(parsedAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
                       // 단계별 정보 매핑
                       const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
@@ -1287,10 +1300,23 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                     })}
                   </div>
                 ) : (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-yellow-800">
-                      개별 단계별 분석을 찾을 수 없습니다. AI 분석 형식을 확인해주세요.
-                    </p>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-yellow-800">
+                          개별 단계별 분석을 찾을 수 없습니다
+                        </h3>
+                        <div className="mt-2 text-sm text-yellow-700">
+                          <p>AI 분석 결과에서 개별 단계별 분석을 확인할 수 없습니다.</p>
+                          <p className="mt-1">다시 AI 분석을 실행하거나, AI 분석 형식을 확인해주세요.</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
