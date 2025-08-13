@@ -391,8 +391,106 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
-        {/* AI 분석 결과 */}
-        {activity.ai_analysis && (
+        {/* 오프라인 활동: ThinkingRoutineAnalysis 5단계 교사 피드백 형태로 표시 */}
+        {activity.activity_type === 'offline' && activity.ai_analysis && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-6">5단계: 교사 피드백 및 평가</h3>
+              <p className="text-gray-600 mb-8">AI가 분석한 각 단계별 결과를 참고하여 개별 단계별 피드백을 입력하세요.</p>
+              
+              {aiAnalysis && aiAnalysis.individualSteps ? (
+                <div className="space-y-6">
+                  {Object.entries(aiAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
+                    // 단계별 정보 매핑
+                    const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
+                      'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
+                      'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
+                      'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
+                      'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+                      'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
+                      'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
+                      'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' },
+                      'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
+                      'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
+                      'examples': { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
+                    };
+
+                    const stepInfo = stepInfoMap[stepKey];
+                    if (!stepInfo) return null;
+
+                    const gradientColors: {[key: string]: string} = {
+                      'bg-blue-500': 'from-blue-50 to-white border-blue-200',
+                      'bg-green-500': 'from-green-50 to-white border-green-200',
+                      'bg-purple-500': 'from-purple-50 to-white border-purple-200',
+                      'bg-red-500': 'from-red-50 to-white border-red-200'
+                    };
+
+                    // 저장된 교사 피드백 찾기
+                    const savedFeedback = aiAnalysis.teacherFeedback && aiAnalysis.teacherFeedback[stepKey];
+                    const feedbackData = typeof savedFeedback === 'object' ? savedFeedback as any : { feedback: savedFeedback || '', score: null };
+
+                    return (
+                      <div 
+                        key={stepKey}
+                        className={`bg-gradient-to-br ${gradientColors[stepInfo.color] || 'from-gray-50 to-white border-gray-200'} border rounded-xl p-6`}
+                      >
+                        <h3 className={`text-lg font-bold mb-4 flex items-center ${
+                          stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
+                          stepInfo.color === 'bg-green-500' ? 'text-green-800' :
+                          stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
+                          stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
+                        }`}>
+                          <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
+                            {index + 1}
+                          </span>
+                          {stepInfo.title} ({stepInfo.subtitle})
+                        </h3>
+                        
+                        {/* AI 분석 내용 */}
+                        <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <svg className="w-4 h-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            AI 분석 결과
+                          </h4>
+                          <div 
+                            className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: formatMarkdownText(stepContent as string) }}
+                          />
+                        </div>
+
+                        {/* 교사 피드백 표시 (읽기 전용) */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">교사 피드백</label>
+                          <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 min-h-[80px]">
+                            {feedbackData.feedback || '피드백이 입력되지 않았습니다.'}
+                          </div>
+                        </div>
+
+                        {/* 점수 표시 */}
+                        <div className="flex items-center">
+                          <label className="block text-sm font-medium text-gray-700 mr-4">점수 (1-100점)</label>
+                          <div className="w-24 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 text-center">
+                            {feedbackData.score || '-'}
+                          </div>
+                          <span className="ml-2 text-sm text-gray-500">/ 100점</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-600">구조화된 AI 분석 결과를 찾을 수 없습니다.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 온라인 활동: 기존 AI 분석 결과 표시 방식 유지 */}
+        {activity.activity_type === 'online' && activity.ai_analysis && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 AI 분석 결과</h3>
@@ -509,8 +607,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
-        {/* 교사 피드백 */}
-        {(activity.teacher_feedback || activity.teacher_score || (aiAnalysis && aiAnalysis.teacherFeedback)) && (
+        {/* 온라인 활동 교사 피드백 */}
+        {activity.activity_type === 'online' && (activity.teacher_feedback || activity.teacher_score || (aiAnalysis && aiAnalysis.teacherFeedback)) && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">👩‍🏫 교사 피드백 및 평가</h3>

@@ -53,6 +53,32 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // URL 파라미터에서 검색 조건을 읽어서 자동 검색 실행
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlGrade = urlParams.get('grade');
+    const urlClass = urlParams.get('class');
+    const urlNumber = urlParams.get('number');
+    const urlName = urlParams.get('name');
+
+    // URL에 검색 파라미터가 있으면 폼에 설정하고 자동 검색
+    if (urlName || urlGrade || urlClass || urlNumber) {
+      const newSearchForm = {
+        grade: urlGrade || '',
+        class: urlClass || '',
+        number: urlNumber || '',
+        name: urlName || ''
+      };
+      setSearchForm(newSearchForm);
+      
+      // 검색 실행
+      if (urlName) {
+        performSearch(newSearchForm);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 컴포넌트 마운트 시에만 실행
+
   // URL 파라미터에서 활동 ID가 있으면 해당 활동 로드
   useEffect(() => {
     if (activityId && activities.length > 0) {
@@ -91,8 +117,9 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
   };
 
   // 학생 검색 및 활동 내역 가져오기
-  const searchStudentActivities = async () => {
-    if (!searchForm.name.trim()) {
+  const performSearch = async (formData?: SearchForm) => {
+    const targetForm = formData || searchForm;
+    if (!targetForm.name.trim()) {
       setError('학생 이름을 입력해주세요.');
       return;
     }
@@ -108,10 +135,10 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
     try {
       // 학생 정보 설정
       const studentInfo: StudentInfo = {
-        student_grade: searchForm.grade,
-        student_name: searchForm.name,
-        student_class: searchForm.class,
-        student_number: searchForm.number ? parseInt(searchForm.number) : undefined
+        student_grade: targetForm.grade,
+        student_name: targetForm.name,
+        student_class: targetForm.class,
+        student_number: targetForm.number ? parseInt(targetForm.number) : undefined
       };
 
       // 1. 온라인 활동 가져오기 (room_id가 있는 것)
@@ -132,7 +159,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
           submitted_at,
           activity_rooms!inner(title, thinking_routine_type)
         `)
-        .eq('student_name', searchForm.name)
+        .eq('student_name', targetForm.name)
         .eq('is_draft', false)
         .not('room_id', 'is', null); // room_id가 있는 것만 (온라인 활동)
         
@@ -156,19 +183,19 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
           confidence_score,
           submitted_at
         `)
-        .eq('student_name', searchForm.name)
+        .eq('student_name', targetForm.name)
         .eq('is_draft', false)
         .is('room_id', null); // room_id가 null인 것만 (오프라인 활동)
 
       // 필터 적용 - 온라인
-      if (searchForm.grade) onlineQuery = onlineQuery.eq('student_grade', searchForm.grade);
-      if (searchForm.class) onlineQuery = onlineQuery.eq('student_class', searchForm.class);
-      if (searchForm.number) onlineQuery = onlineQuery.eq('student_number', parseInt(searchForm.number));
+      if (targetForm.grade) onlineQuery = onlineQuery.eq('student_grade', targetForm.grade);
+      if (targetForm.class) onlineQuery = onlineQuery.eq('student_class', targetForm.class);
+      if (targetForm.number) onlineQuery = onlineQuery.eq('student_number', parseInt(targetForm.number));
       
       // 필터 적용 - 오프라인
-      if (searchForm.grade) offlineQuery = offlineQuery.eq('student_grade', searchForm.grade);
-      if (searchForm.class) offlineQuery = offlineQuery.eq('student_class', searchForm.class);
-      if (searchForm.number) offlineQuery = offlineQuery.eq('student_number', parseInt(searchForm.number));
+      if (targetForm.grade) offlineQuery = offlineQuery.eq('student_grade', targetForm.grade);
+      if (targetForm.class) offlineQuery = offlineQuery.eq('student_class', targetForm.class);
+      if (targetForm.number) offlineQuery = offlineQuery.eq('student_number', parseInt(targetForm.number));
 
       // 두 쿼리 병렬 실행
       const [onlineResult, offlineResult] = await Promise.all([
@@ -549,7 +576,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
                 </div>
 
                 <button
-                  onClick={searchStudentActivities}
+                  onClick={() => performSearch()}
                   disabled={loading || !searchForm.name.trim()}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
