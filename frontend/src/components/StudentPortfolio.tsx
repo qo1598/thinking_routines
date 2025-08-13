@@ -295,7 +295,17 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
       ? `/teacher/portfolio/${activity.id}?${searchParamsString}`
       : `/teacher/portfolio/${activity.id}`;
     
-    // 현재 검색 페이지를 히스토리에서 교체하지 않고 새로 추가
+    // 브라우저 히스토리에 현재 검색 결과 페이지를 명시적으로 추가
+    const currentUrl = searchParamsString 
+      ? `/teacher/portfolio?${searchParamsString}`
+      : '/teacher/portfolio';
+    
+    // 현재 URL이 이미 올바른 검색 상태가 아니라면 히스토리를 수정
+    if (window.location.pathname + window.location.search !== currentUrl) {
+      window.history.replaceState(null, '', currentUrl);
+    }
+    
+    // 상세 페이지로 이동 (새로운 히스토리 엔트리 생성)
     navigate(url);
   };
 

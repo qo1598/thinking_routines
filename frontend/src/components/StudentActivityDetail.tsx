@@ -184,10 +184,10 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
     
     if (hasSearchParams) {
       // 검색 파라미터가 있으면 그대로 유지하여 검색 결과 상태로 돌아가기
-      navigate(`/teacher/portfolio?${hasSearchParams}`, { replace: true });
+      navigate(`/teacher/portfolio?${hasSearchParams}`);
     } else {
       // 검색 파라미터가 없으면 포트폴리오 첫 페이지로
-      navigate('/teacher/portfolio', { replace: true });
+      navigate('/teacher/portfolio');
     }
   };
 
@@ -419,7 +419,6 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-6">5단계: 교사 피드백 및 평가</h3>
-              <p className="text-gray-600 mb-8">AI가 분석한 각 단계별 결과를 참고하여 개별 단계별 피드백을 입력하세요.</p>
               
               {aiAnalysis && aiAnalysis.individualSteps && Object.keys(aiAnalysis.individualSteps).length > 0 ? (
                 <div className="space-y-6">
