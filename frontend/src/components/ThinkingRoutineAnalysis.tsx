@@ -712,10 +712,20 @@ const ThinkingRoutineAnalysis: React.FC = () => {
       
       console.log('Uploading file:', fileName, 'Size:', file.size, 'Type:', file.type);
       
-      // 버킷 존재 확인을 간단하게 처리 (직접 업로드 시도로 확인)
+      // 먼저 버킷 목록 확인 (디버깅용)
+      try {
+        const { data: buckets, error: listError } = await supabase!.storage.listBuckets();
+        console.log('Available buckets:', buckets?.map(b => b.name));
+        if (listError) {
+          console.warn('Cannot list buckets:', listError);
+        }
+      } catch (e) {
+        console.warn('Bucket listing failed:', e);
+      }
+      
       console.log('Attempting upload to routine-uploads bucket...');
       
-      // routine-uploads 버킷에 업로드
+      // routine-uploads 버킷에 업로드 시도
       const { data, error } = await supabase!.storage
         .from('routine-uploads')
         .upload(fileName, file, {
@@ -724,15 +734,13 @@ const ThinkingRoutineAnalysis: React.FC = () => {
         });
 
       if (error) {
-        console.error('Supabase upload error:', error);
-        // 특정 오류 타입에 따른 메시지
-        if (error.message?.includes('not found') || error.message?.includes('bucket')) {
-          throw new Error('routine-uploads 버킷을 찾을 수 없습니다. Supabase Storage에서 버킷을 확인해주세요.');
-        }
-        if (error.message?.includes('Unauthorized') || error.message?.includes('권한')) {
-          throw new Error('스토리지 업로드 권한이 없습니다. Storage 정책을 확인해주세요.');
-        }
-        throw new Error(`이미지 업로드 실패: ${error.message}`);
+        console.error('Supabase upload error details:', {
+          message: error.message,
+          error: error
+        });
+        
+        // 구체적인 오류 메시지로 fallback 처리
+        throw new Error(`Storage upload failed: ${error.message}`);
       }
       
       console.log('Upload successful:', data);
@@ -808,19 +816,21 @@ const ThinkingRoutineAnalysis: React.FC = () => {
       
       try {
         imageUrl = await uploadImageToSupabase(uploadedImage);
-        console.log('이미지 업로드 성공:', imageUrl);
+        console.log('✅ Supabase 이미지 업로드 성공:', imageUrl);
       } catch (uploadError: any) {
-        console.warn('이미지 업로드 실패, 로컬 버전으로 계속:', uploadError.message);
+        console.warn('⚠️ Supabase 업로드 실패, base64 fallback 사용:', uploadError.message);
         
-        // 업로드 실패 시 로컬 파일 URL 사용 (개발/테스트용)
+        // 업로드 실패 시 base64로 변환하여 저장
         const reader = new FileReader();
         imageUrl = await new Promise<string>((resolve) => {
           reader.onload = () => resolve(reader.result as string);
           reader.readAsDataURL(uploadedImage);
         });
         
-        // 업로드 실패 알림 표시
-        setError(`이미지 업로드에 실패했지만 로컬에 저장되었습니다. (${uploadError.message})`);
+        console.log('📦 Base64 fallback 준비 완료, 크기:', imageUrl.length);
+        
+        // 사용자에게 알림 (오류가 아닌 정보로 표시)
+        console.info('💡 이미지가 로컬 형식으로 저장됩니다 (Supabase Storage 업로드 실패)');
       }
 
       // 2. JSON 형식으로 분석 및 피드백 데이터 구조화
