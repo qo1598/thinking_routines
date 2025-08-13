@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface StudentPortfolioProps {
@@ -37,6 +38,9 @@ interface SearchForm {
 }
 
 const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
+  const navigate = useNavigate();
+  const { activityId } = useParams<{ activityId?: string }>();
+  
   const [searchForm, setSearchForm] = useState<SearchForm>({
     grade: '',
     class: '',
@@ -48,6 +52,18 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
   const [selectedActivity, setSelectedActivity] = useState<ActivityRoom | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // URL 파라미터에서 활동 ID가 있으면 해당 활동 로드
+  useEffect(() => {
+    if (activityId && activities.length > 0) {
+      const activity = activities.find(a => a.id === activityId);
+      if (activity) {
+        setSelectedActivity(activity);
+      }
+    } else if (!activityId) {
+      setSelectedActivity(null);
+    }
+  }, [activityId, activities]);
 
   // 사고루틴 타입 라벨 함수
   const getRoutineTypeLabel = (routineType: string): string => {
@@ -189,7 +205,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
       const offlineActivities: ActivityRoom[] = offlineData?.map(item => ({
         id: item.id,
         room_id: null,
-        room_title: `오프라인 ${getRoutineTypeLabel(item.routine_type)} 분석`,
+        room_title: `${getRoutineTypeLabel(item.routine_type)} 분석`,
         routine_type: item.routine_type || 'see-think-wonder',
         submitted_at: item.submitted_at,
         team_name: item.team_name,
@@ -240,12 +256,14 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
 
   // 활동 상세보기
   const handleActivityClick = (activity: ActivityRoom) => {
-    setSelectedActivity(activity);
+    // URL에 activityId 추가하여 라우팅
+    navigate(`/teacher/portfolio/${activity.id}`);
   };
 
   // 활동 목록으로 돌아가기
   const handleBackToList = () => {
     setSelectedActivity(null);
+    navigate('/teacher/portfolio');
   };
 
   // 인쇄하기
@@ -343,7 +361,6 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
                 ${getRoutineTypeLabel(activity.routine_type)}
                 <span style="color: #666; font-size: 12px; margin-left: 10px;">
                   (${activity.activity_type === 'online' ? '온라인' : '오프라인'} 활동)
-                  ${activity.confidence_score ? ` | AI 신뢰도: ${activity.confidence_score}%` : ''}
                 </span>
               </div>
               <div class="activity-meta">
@@ -655,12 +672,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
                           </div>
                         </div>
 
-                        {/* 옵션 정보 */}
-                        {activity.activity_type === 'offline' && activity.confidence_score && (
-                          <p className="text-gray-600 mb-2 text-sm">
-                            AI 분석 신뢰도: {activity.confidence_score}%
-                          </p>
-                        )}
+                        {/* 옵션 정보 - AI 분석 신뢰도 표시 제거 */}
 
                         {/* 상태 표시 */}
                         <div className="flex items-center space-x-4 text-sm text-gray-500">
@@ -671,8 +683,6 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
                           }`}>
                             {activity.activity_type === 'online' ? '온라인 활동' : '오프라인 활동'}
                           </span>
-                          <span>•</span>
-                          <span>제출일: {formatDate(activity.submitted_at)}</span>
                           {activity.teacher_score && (
                             <>
                               <span>•</span>
