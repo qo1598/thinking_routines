@@ -712,22 +712,8 @@ const ThinkingRoutineAnalysis: React.FC = () => {
       
       console.log('Uploading file:', fileName, 'Size:', file.size, 'Type:', file.type);
       
-      // 먼저 버킷이 존재하는지 확인
-      const { data: buckets, error: bucketError } = await supabase!.storage.listBuckets();
-      
-      if (bucketError) {
-        console.error('Error listing buckets:', bucketError);
-        throw new Error('스토리지 버킷에 접근할 수 없습니다.');
-      }
-      
-      const routineUploadsBucket = buckets?.find(bucket => bucket.name === 'routine-uploads');
-      
-      if (!routineUploadsBucket) {
-        console.error('routine-uploads bucket not found. Available buckets:', buckets?.map(b => b.name));
-        throw new Error('routine-uploads 버킷이 없습니다. Supabase 대시보드에서 버킷을 생성해주세요.');
-      }
-      
-      console.log('Bucket found, uploading to:', routineUploadsBucket.name);
+      // 버킷 존재 확인을 간단하게 처리 (직접 업로드 시도로 확인)
+      console.log('Attempting upload to routine-uploads bucket...');
       
       // routine-uploads 버킷에 업로드
       const { data, error } = await supabase!.storage
@@ -739,6 +725,13 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
       if (error) {
         console.error('Supabase upload error:', error);
+        // 특정 오류 타입에 따른 메시지
+        if (error.message?.includes('not found') || error.message?.includes('bucket')) {
+          throw new Error('routine-uploads 버킷을 찾을 수 없습니다. Supabase Storage에서 버킷을 확인해주세요.');
+        }
+        if (error.message?.includes('Unauthorized') || error.message?.includes('권한')) {
+          throw new Error('스토리지 업로드 권한이 없습니다. Storage 정책을 확인해주세요.');
+        }
         throw new Error(`이미지 업로드 실패: ${error.message}`);
       }
       
