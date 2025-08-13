@@ -952,7 +952,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                                 {stepInfo.title} ({stepInfo.subtitle})
                               </h5>
                               
-                              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                              {/* AI 분석 결과 */}
+                              <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
                                 <h6 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
                                   <svg className="w-4 h-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -964,6 +965,39 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                                   dangerouslySetInnerHTML={{ __html: formatMarkdownText(stepContent as string) }}
                                 />
                               </div>
+
+                              {/* 교사 피드백 및 점수 */}
+                              {(() => {
+                                // teacherFeedback.individualSteps에서 해당 단계의 피드백 찾기
+                                const teacherFeedbackSteps = aiAnalysis.teacherFeedback?.individualSteps;
+                                const stepFeedback = teacherFeedbackSteps?.[stepKey];
+                                
+                                if (stepFeedback) {
+                                  return (
+                                    <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                                      <h6 className="text-sm font-medium text-gray-700 mb-3 flex items-center justify-between">
+                                        <span className="flex items-center">
+                                          <svg className="w-4 h-4 mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                          </svg>
+                                          교사 피드백
+                                        </span>
+                                        {stepFeedback.score && (
+                                          <span className="text-sm font-medium text-green-600">
+                                            {stepFeedback.score}점 / 100점
+                                          </span>
+                                        )}
+                                      </h6>
+                                      <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                        <p className="text-gray-700 text-sm whitespace-pre-wrap">
+                                          {stepFeedback.feedback || '교사 피드백이 아직 작성되지 않았습니다.'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                           );
                         })}
