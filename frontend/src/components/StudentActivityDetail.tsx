@@ -178,7 +178,17 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
 
   // 뒤로 가기
   const handleBack = () => {
-    navigate('/teacher/portfolio');
+    // URL에서 검색 파라미터가 있는지 확인하고, 있으면 그 상태로 돌아가기
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasSearchParams = urlParams.toString();
+    
+    if (hasSearchParams) {
+      // 검색 파라미터가 있으면 그대로 유지하여 검색 결과 상태로 돌아가기
+      navigate(`/teacher/portfolio?${hasSearchParams}`);
+    } else {
+      // 검색 파라미터가 없으면 포트폴리오 첫 페이지로
+      navigate('/teacher/portfolio');
+    }
   };
 
   // 날짜 포맷팅
@@ -199,6 +209,30 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
     } catch {
       return null;
     }
+  };
+
+  // 마크다운 텍스트 포맷팅 (ThinkingRoutineAnalysis와 동일)
+  const formatMarkdownText = (text: string) => {
+    const formatSection = (section: string) => {
+      return section
+        // 불필요한 기호들 제거
+        .replace(/^\*\s*/gm, '') // 줄 시작의 * 제거
+        .replace(/^---\s*/gm, '') // --- 제거
+        .replace(/^\s*\*\s*$/gm, '') // * 만 있는 줄 제거
+        // 제목 포맷팅
+        .replace(/## (\d+)\. (.*?)(?=\n|$)/g, '<h3 class="text-xl font-bold text-purple-800 mb-4 pb-2 border-b-2 border-purple-200">$1. $2</h3>')
+        .replace(/### (.*?)(?=\n|$)/g, '<h4 class="text-lg font-semibold text-gray-900 mt-6 mb-3 text-purple-700">$1</h4>')
+        // 연보라색 태그에서 콜론 제거
+        .replace(/\*\*(.*?):\*\*/g, '<div class="mt-4 mb-2"><span class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">$1</span></div>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+        .replace(/^- (.*?)$/gm, '<div class="flex items-start mb-2"><span class="text-purple-500 mr-2 mt-1">•</span><span class="text-gray-700">$1</span></div>')
+        // 빈 줄 정리
+        .replace(/\n\s*\n\s*\n/g, '\n\n') // 3개 이상의 연속 줄바꿈을 2개로
+        .replace(/\n\n/g, '<br><br>') // 줄바꿈을 HTML로
+        .replace(/\n/g, '<br>'); // 단일 줄바꿈도 처리
+    };
+
+    return formatSection(text);
   };
 
   // 로딩 상태
@@ -363,44 +397,180 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 AI 분석 결과</h3>
               {activity.confidence_score && (
-                <div className="mb-4">
+                <div className="mb-6">
                   <span className="text-sm text-gray-600">신뢰도: </span>
                   <span className="font-medium text-blue-600">{activity.confidence_score}%</span>
                 </div>
               )}
-              <div className="bg-green-50 rounded-lg p-4">
-                {aiAnalysis ? (
-                  <div className="space-y-4">
-                    {/* AI 분석 구조화된 데이터 표시 */}
-                    <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                      {JSON.stringify(aiAnalysis, null, 2)}
-                    </pre>
-                  </div>
-                ) : (
-                  <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                    {activity.ai_analysis}
-                  </pre>
-                )}
-              </div>
+              
+              {aiAnalysis ? (
+                <div className="space-y-6">
+                  {/* 단계별 분석 표시 (ThinkingRoutineAnalysis 스타일) */}
+                  {aiAnalysis.individualSteps && (
+                    <div>
+                      <h4 className="text-base font-semibold text-gray-800 mb-4">각 단계별 분석</h4>
+                      <div className="space-y-4">
+                        {Object.entries(aiAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
+                          // 단계별 정보 매핑
+                          const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
+                            'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
+                            'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
+                            'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
+                            'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+                            'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
+                            'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
+                            'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' },
+                            'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
+                            'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
+                            'examples': { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
+                          };
+
+                          const stepInfo = stepInfoMap[stepKey];
+                          if (!stepInfo || !stepContent) return null;
+
+                          const gradientColors: {[key: string]: string} = {
+                            'bg-blue-500': 'from-blue-50 to-white border-blue-200',
+                            'bg-green-500': 'from-green-50 to-white border-green-200',
+                            'bg-purple-500': 'from-purple-50 to-white border-purple-200',
+                            'bg-red-500': 'from-red-50 to-white border-red-200'
+                          };
+
+                          return (
+                            <div 
+                              key={stepKey}
+                              className={`bg-gradient-to-br ${gradientColors[stepInfo.color] || 'from-gray-50 to-white border-gray-200'} border rounded-xl p-6`}
+                            >
+                              <h5 className={`text-lg font-bold mb-4 flex items-center ${
+                                stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
+                                stepInfo.color === 'bg-green-500' ? 'text-green-800' :
+                                stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
+                                stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
+                              }`}>
+                                <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
+                                  {index + 1}
+                                </span>
+                                {stepInfo.title} ({stepInfo.subtitle})
+                              </h5>
+                              
+                              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                <h6 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                                  <svg className="w-4 h-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                  </svg>
+                                  AI 분석 결과
+                                </h6>
+                                <div 
+                                  className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                                  dangerouslySetInnerHTML={{ __html: formatMarkdownText(stepContent as string) }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 종합 평가 */}
+                  {aiAnalysis.comprehensive && (
+                    <div className="bg-gradient-to-br from-yellow-50 to-white border border-yellow-200 rounded-xl p-6">
+                      <h4 className="text-lg font-bold text-yellow-800 mb-4">종합 평가</h4>
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div 
+                          className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: formatMarkdownText(aiAnalysis.comprehensive) }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 교육적 권장사항 */}
+                  {aiAnalysis.educational && (
+                    <div className="bg-gradient-to-br from-orange-50 to-white border border-orange-200 rounded-xl p-6">
+                      <h4 className="text-lg font-bold text-orange-800 mb-4">교육적 권장사항</h4>
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div 
+                          className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: formatMarkdownText(aiAnalysis.educational) }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div 
+                    className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: formatMarkdownText(activity.ai_analysis) }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* 교사 피드백 */}
-        {(activity.teacher_feedback || activity.teacher_score) && (
+        {(activity.teacher_feedback || activity.teacher_score || (aiAnalysis && aiAnalysis.teacherFeedback)) && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">👩‍🏫 교사 피드백 및 평가</h3>
               
+              {/* 전체 점수 표시 */}
               {activity.teacher_score && (
-                <div className="mb-4">
-                  <span className="text-sm text-gray-600">평가 점수: </span>
+                <div className="mb-6">
+                  <span className="text-sm text-gray-600">전체 평가 점수: </span>
                   <span className="text-xl font-bold text-green-600">{activity.teacher_score}점</span>
                   <span className="text-sm text-gray-500"> / 100점</span>
                 </div>
               )}
               
-              {activity.teacher_feedback && (
+              {/* 구조화된 교사 피드백 표시 (AI 분석과 함께 저장된 경우) */}
+              {aiAnalysis && aiAnalysis.teacherFeedback && (
+                <div className="space-y-4 mb-6">
+                  <h4 className="text-base font-semibold text-gray-800">단계별 교사 피드백</h4>
+                  {Object.entries(aiAnalysis.teacherFeedback).map(([stepKey, feedback], index) => {
+                    const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
+                      'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
+                      'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
+                      'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
+                      'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+                      'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
+                      'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
+                      'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' },
+                      'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
+                      'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
+                      'examples': { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
+                    };
+
+                    const stepInfo = stepInfoMap[stepKey];
+                    if (!stepInfo || !feedback) return null;
+
+                    const feedbackData = typeof feedback === 'object' ? feedback as any : { feedback: feedback, score: null };
+
+                    return (
+                      <div key={stepKey} className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                        <h5 className="font-medium text-gray-800 mb-2 flex items-center">
+                          <span className={`w-6 h-6 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-xs font-bold mr-2`}>
+                            {index + 1}
+                          </span>
+                          {stepInfo.title} ({stepInfo.subtitle})
+                          {feedbackData.score && (
+                            <span className="ml-auto text-sm font-medium text-green-600">
+                              {feedbackData.score}점
+                            </span>
+                          )}
+                        </h5>
+                        <p className="text-gray-700 text-sm whitespace-pre-wrap ml-8">
+                          {feedbackData.feedback || feedbackData}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              
+              {/* 일반 교사 피드백 (기존 방식) */}
+              {activity.teacher_feedback && !(aiAnalysis && aiAnalysis.teacherFeedback) && (
                 <div className="bg-yellow-50 rounded-lg p-4">
                   <h4 className="font-medium text-gray-700 mb-2">피드백 내용</h4>
                   <p className="text-gray-700 whitespace-pre-wrap">{activity.teacher_feedback}</p>

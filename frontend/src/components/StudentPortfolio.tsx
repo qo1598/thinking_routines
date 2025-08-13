@@ -256,8 +256,19 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
 
   // 활동 상세보기
   const handleActivityClick = (activity: ActivityRoom) => {
-    // URL에 activityId 추가하여 라우팅
-    navigate(`/teacher/portfolio/${activity.id}`);
+    // 현재 검색 상태를 URL 파라미터로 전달
+    const currentSearchParams = new URLSearchParams();
+    if (searchForm.grade) currentSearchParams.set('grade', searchForm.grade);
+    if (searchForm.class) currentSearchParams.set('class', searchForm.class);
+    if (searchForm.number) currentSearchParams.set('number', searchForm.number);
+    if (searchForm.name) currentSearchParams.set('name', searchForm.name);
+    
+    const searchParamsString = currentSearchParams.toString();
+    const url = searchParamsString 
+      ? `/teacher/portfolio/${activity.id}?${searchParamsString}`
+      : `/teacher/portfolio/${activity.id}`;
+    
+    navigate(url);
   };
 
   // 활동 목록으로 돌아가기
