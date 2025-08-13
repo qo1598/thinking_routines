@@ -704,36 +704,67 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     }
 
     try {
+      console.log('Starting image upload to Supabase...');
+      
       // 파일명에서 특수문자 제거 및 안전한 파일명 생성
       const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const fileName = `routine-images/${Date.now()}-${sanitizedFileName}`;
       
-      console.log('Uploading file:', fileName);
+      console.log('Uploading file:', fileName, 'Size:', file.size, 'Type:', file.type);
       
-      // routine-uploads 버킷에 업로드 (templates가 아님)
-      const { error } = await supabase!.storage
+      // 먼저 버킷이 존재하는지 확인
+      const { data: buckets, error: bucketError } = await supabase!.storage.listBuckets();
+      
+      if (bucketError) {
+        console.error('Error listing buckets:', bucketError);
+        throw new Error('스토리지 버킷에 접근할 수 없습니다.');
+      }
+      
+      const routineUploadsBucket = buckets?.find(bucket => bucket.name === 'routine-uploads');
+      
+      if (!routineUploadsBucket) {
+        console.error('routine-uploads bucket not found. Available buckets:', buckets?.map(b => b.name));
+        throw new Error('routine-uploads 버킷이 없습니다. Supabase 대시보드에서 버킷을 생성해주세요.');
+      }
+      
+      console.log('Bucket found, uploading to:', routineUploadsBucket.name);
+      
+      // routine-uploads 버킷에 업로드
+      const { data, error } = await supabase!.storage
         .from('routine-uploads')
         .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true // 동일 파일명이 있으면 덮어쓰기
         });
 
       if (error) {
         console.error('Supabase upload error:', error);
-        throw error;
+        throw new Error(`이미지 업로드 실패: ${error.message}`);
       }
+      
+      console.log('Upload successful:', data);
 
       // 업로드된 파일의 공개 URL 가져오기
       const { data: { publicUrl } } = supabase!.storage
         .from('routine-uploads')
         .getPublicUrl(fileName);
 
-      console.log('Image uploaded to Supabase:', publicUrl);
+      console.log('Image uploaded to Supabase successfully:', publicUrl);
       return publicUrl;
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error('Error uploading to Supabase:', error);
-      // Supabase 업로드가 실패해도 로컬에서는 계속 작업할 수 있도록 함
-      return null;
+      
+      // 구체적인 오류 메시지 반환
+      if (error.message?.includes('Unauthorized')) {
+        throw new Error('스토리지 업로드 권한이 없습니다. Supabase 설정을 확인해주세요.');
+      }
+      
+      if (error.message?.includes('not found')) {
+        throw new Error('routine-uploads 버킷이 존재하지 않습니다.');
+      }
+      
+      throw error;
     }
   };
 
@@ -779,11 +810,24 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     setError('');
 
     try {
-      // 1. Supabase에 이미지 업로드
-      const imageUrl = await uploadImageToSupabase(uploadedImage);
+      // 1. Supabase에 이미지 업로드 (선택사항)
+      let imageUrl = null;
       
-      if (!imageUrl) {
-        throw new Error('이미지 업로드에 실패했습니다.');
+      try {
+        imageUrl = await uploadImageToSupabase(uploadedImage);
+        console.log('이미지 업로드 성공:', imageUrl);
+      } catch (uploadError: any) {
+        console.warn('이미지 업로드 실패, 로컬 버전으로 계속:', uploadError.message);
+        
+        // 업로드 실패 시 로컬 파일 URL 사용 (개발/테스트용)
+        const reader = new FileReader();
+        imageUrl = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(uploadedImage);
+        });
+        
+        // 업로드 실패 알림 표시
+        setError(`이미지 업로드에 실패했지만 로컬에 저장되었습니다. (${uploadError.message})`);
       }
 
       // 2. JSON 형식으로 분석 및 피드백 데이터 구조화
@@ -824,6 +868,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
         team_name: isTeamActivity ? teamName : null,
         routine_type: selectedRoutine,
         image_url: imageUrl,
+        image_data: imageUrl?.startsWith('data:') ? imageUrl : null, // base64 데이터도 저장
         ai_analysis: JSON.stringify(structuredAnalysis), // JSON 형식으로 저장
         teacher_feedback: '', // 레거시 필드는 빈 값으로 유지
         confidence_score: analysisResult.confidence,
