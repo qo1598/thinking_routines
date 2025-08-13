@@ -770,17 +770,14 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
-        {/* 온라인 활동: AI 분석 결과 표시 제거됨 */}
-        {false && (
+        {/* 온라인 활동: AI 분석 결과 표시 완전 제거됨 */}
+
+        {/* 오프라인 활동: ThinkingRoutineAnalysis 5단계 교사 피드백 형태로 표시 */}
+        {activity.activity_type === 'offline' && activity.ai_analysis && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 AI 분석 결과</h3>
-              {activity.confidence_score && (
-                <div className="mb-6">
-                  <span className="text-sm text-gray-600">신뢰도: </span>
-                  <span className="font-medium text-blue-600">{activity.confidence_score}%</span>
-                </div>
-              )}
+              
+              {aiAnalysis && aiAnalysis.individualSteps && Object.keys(aiAnalysis.individualSteps).length > 0 ? (
               
               {aiAnalysis ? (
                 <div className="space-y-6">
