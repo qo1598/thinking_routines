@@ -732,7 +732,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                   {/* 단계별 교사 피드백 */}
                   {aiAnalysis.teacherFeedback && (
                     <div className="space-y-4">
-                      <h4 className="text-base font-semibold text-gray-800">5단계: 교사 피드백 및 평가</h4>
+                      <h4 className="text-base font-semibold text-gray-800">단계별 교사 피드백</h4>
                       {Object.entries(aiAnalysis.teacherFeedback).map(([stepKey, feedback], index) => {
                         const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
                           'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
@@ -765,31 +765,9 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                                 </span>
                               )}
                             </h5>
-                            <div className="ml-8">
-                              <div className="bg-white rounded-lg p-3 border border-gray-200">
-                                <h6 className="text-xs font-medium text-gray-600 mb-1">교사 피드백</h6>
-                                <textarea 
-                                  className="w-full p-2 border border-gray-300 rounded text-sm resize-none"
-                                  rows={3}
-                                  defaultValue={feedbackData.feedback || feedbackData}
-                                  readOnly
-                                />
-                              </div>
-                              <div className="flex items-center justify-between mt-2">
-                                <span className="text-xs text-gray-600">점수 (1-100점)</span>
-                                <div className="flex items-center space-x-2">
-                                  <input 
-                                    type="number"
-                                    min="1"
-                                    max="100"
-                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center"
-                                    defaultValue={feedbackData.score || ''}
-                                    readOnly
-                                  />
-                                  <span className="text-xs text-gray-500">/ 100점</span>
-                                </div>
-                              </div>
-                            </div>
+                            <p className="text-gray-700 text-sm whitespace-pre-wrap ml-8">
+                              {feedbackData.feedback || feedbackData}
+                            </p>
                           </div>
                         );
                       })}
