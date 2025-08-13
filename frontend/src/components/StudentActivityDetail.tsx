@@ -786,8 +786,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
-        {/* 오프라인 활동: ThinkingRoutineAnalysis 5단계 교사 피드백 형태로 표시 */}
-        {activity.activity_type === 'offline' && activity.ai_analysis && (
+        {/* 첫 번째 오프라인 섹션 제거됨 */}
+        {false && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               
@@ -899,7 +899,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
 
         {/* 온라인 활동: AI 분석 결과 표시 완전 제거됨 */}
 
-        {/* 오프라인 활동: ThinkingRoutineAnalysis 5단계 교사 피드백 형태로 표시 */}
+        {/* 오프라인 활동: 5단계 교사 피드백 및 평가 (개선된 버전) */}
         {activity.activity_type === 'offline' && activity.ai_analysis && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
@@ -971,31 +971,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                     </div>
                   )}
 
-                  {/* 종합 평가 */}
-                  {aiAnalysis.comprehensive && (
-                    <div className="bg-gradient-to-br from-yellow-50 to-white border border-yellow-200 rounded-xl p-6">
-                      <h4 className="text-lg font-bold text-yellow-800 mb-4">종합 평가</h4>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div 
-                          className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: formatMarkdownText(aiAnalysis.comprehensive) }}
-                        />
-                      </div>
-                    </div>
-                  )}
 
-                  {/* 교육적 권장사항 */}
-                  {aiAnalysis.educational && (
-                    <div className="bg-gradient-to-br from-orange-50 to-white border border-orange-200 rounded-xl p-6">
-                      <h4 className="text-lg font-bold text-orange-800 mb-4">교육적 권장사항</h4>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <div 
-                          className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: formatMarkdownText(aiAnalysis.educational) }}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-lg p-4">
