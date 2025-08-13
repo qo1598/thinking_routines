@@ -184,10 +184,10 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
     
     if (hasSearchParams) {
       // 검색 파라미터가 있으면 그대로 유지하여 검색 결과 상태로 돌아가기
-      navigate(`/teacher/portfolio?${hasSearchParams}`);
+      navigate(`/teacher/portfolio?${hasSearchParams}`, { replace: true });
     } else {
       // 검색 파라미터가 없으면 포트폴리오 첫 페이지로
-      navigate('/teacher/portfolio');
+      navigate('/teacher/portfolio', { replace: true });
     }
   };
 
@@ -205,8 +205,31 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
   // AI 분석 결과 파싱
   const parseAIAnalysis = (aiAnalysis: string) => {
     try {
-      return JSON.parse(aiAnalysis);
-    } catch {
+      const parsed = JSON.parse(aiAnalysis);
+      console.log('🔍 AI 분석 원본 데이터:', parsed);
+      
+      // ThinkingRoutineAnalysis에서 저장한 구조화된 형태 처리
+      if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
+        console.log('✅ 구조화된 AI 분석 데이터 발견');
+        return {
+          individualSteps: parsed.aiAnalysis.individualSteps,
+          comprehensive: parsed.aiAnalysis.comprehensive,
+          educational: parsed.aiAnalysis.educational,
+          stepByStep: parsed.aiAnalysis.stepByStep,
+          teacherFeedback: parsed.teacherFeedback?.individualSteps || {}
+        };
+      }
+      
+      // 기존 형태 처리 (직접 individualSteps가 있는 경우)
+      if (parsed.individualSteps) {
+        console.log('✅ 기존 형태 AI 분석 데이터 발견');
+        return parsed;
+      }
+      
+      console.log('⚠️ 알 수 없는 AI 분석 데이터 구조:', parsed);
+      return parsed;
+    } catch (error) {
+      console.error('❌ AI 분석 데이터 파싱 오류:', error);
       return null;
     }
   };
@@ -398,7 +421,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
               <h3 className="text-xl font-bold text-gray-900 mb-6">5단계: 교사 피드백 및 평가</h3>
               <p className="text-gray-600 mb-8">AI가 분석한 각 단계별 결과를 참고하여 개별 단계별 피드백을 입력하세요.</p>
               
-              {aiAnalysis && aiAnalysis.individualSteps ? (
+              {aiAnalysis && aiAnalysis.individualSteps && Object.keys(aiAnalysis.individualSteps).length > 0 ? (
                 <div className="space-y-6">
                   {Object.entries(aiAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
                     // 단계별 정보 매핑
@@ -428,6 +451,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                     // 저장된 교사 피드백 찾기
                     const savedFeedback = aiAnalysis.teacherFeedback && aiAnalysis.teacherFeedback[stepKey];
                     const feedbackData = typeof savedFeedback === 'object' ? savedFeedback as any : { feedback: savedFeedback || '', score: null };
+                    
+                    console.log(`🔍 ${stepKey} 단계 피드백:`, savedFeedback);
 
                     return (
                       <div 
@@ -482,7 +507,20 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-gray-600">구조화된 AI 분석 결과를 찾을 수 없습니다.</p>
+                  <h4 className="font-medium text-gray-700 mb-2">AI 분석 데이터 확인</h4>
+                  <p className="text-gray-600 mb-4">구조화된 AI 분석 결과를 찾을 수 없습니다.</p>
+                  
+                  {/* 디버깅 정보 표시 */}
+                  {aiAnalysis ? (
+                    <div className="text-xs text-gray-500 bg-white p-3 rounded border">
+                      <p className="font-medium mb-1">저장된 데이터 구조:</p>
+                      <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(aiAnalysis, null, 2)}
+                      </pre>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">AI 분석 데이터가 없습니다.</p>
+                  )}
                 </div>
               )}
             </div>

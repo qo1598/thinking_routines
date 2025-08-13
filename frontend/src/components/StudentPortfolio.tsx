@@ -295,6 +295,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
       ? `/teacher/portfolio/${activity.id}?${searchParamsString}`
       : `/teacher/portfolio/${activity.id}`;
     
+    // 현재 검색 페이지를 히스토리에서 교체하지 않고 새로 추가
     navigate(url);
   };
 
