@@ -770,8 +770,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
-        {/* 온라인 활동: 기존 AI 분석 결과 표시 방식 유지 */}
-        {activity.activity_type === 'online' && activity.ai_analysis && (
+        {/* 온라인 활동: AI 분석 결과 표시 제거됨 */}
+        {false && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 AI 분석 결과</h3>
@@ -888,8 +888,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
-        {/* 온라인 활동 교사 피드백 */}
-        {activity.activity_type === 'online' && (activity.teacher_feedback || activity.teacher_score || (aiAnalysis && aiAnalysis.teacherFeedback)) && (
+        {/* 온라인 활동 교사 피드백 제거됨 */}
+        {false && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">👩‍🏫 교사 피드백 및 평가</h3>
