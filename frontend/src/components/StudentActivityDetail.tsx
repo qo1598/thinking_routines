@@ -400,16 +400,246 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
-        {/* 학생 응답 (온라인 활동만) */}
+        {/* 온라인 활동 - 학생 응답 (StudentResponseDetail 스타일) */}
         {activity.activity_type === 'online' && activity.response_data && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">✏️ 학생 응답</h3>
-              <div className="bg-blue-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">✏️ 학생 응답</h3>
+              
+              <div className="space-y-6">
+                {(() => {
+                  const routineType = activity.routine_type;
+                  const responseData = activity.response_data;
+                  
+                  // See-Think-Wonder
+                  if (routineType === 'see-think-wonder') {
+                    return (
+                      <>
+                        <div>
+                          <div className="flex items-center space-x-3 mb-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                              <span className="text-white font-bold text-sm">S</span>
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-medium text-gray-900">See</h4>
+                              <p className="text-sm text-gray-600">보기</p>
+                            </div>
+                          </div>
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-gray-900 whitespace-pre-wrap">
+                              {responseData.see || '응답 없음'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center space-x-3 mb-3">
+                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                              <span className="text-white font-bold text-sm">T</span>
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-medium text-gray-900">Think</h4>
+                              <p className="text-sm text-gray-600">생각하기</p>
+                            </div>
+                          </div>
+                          <div className="bg-green-50 p-4 rounded-lg">
+                            <p className="text-gray-900 whitespace-pre-wrap">
+                              {responseData.think || '응답 없음'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center space-x-3 mb-3">
+                            <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
+                              <span className="text-white font-bold text-sm">W</span>
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-medium text-gray-900">Wonder</h4>
+                              <p className="text-sm text-gray-600">궁금하기</p>
+                            </div>
+                          </div>
+                          <div className="bg-purple-50 p-4 rounded-lg">
+                            <p className="text-gray-900 whitespace-pre-wrap">
+                              {responseData.wonder || '응답 없음'}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  }
+                  
+                  // Frayer Model
+                  if (routineType === 'frayer-model') {
+                    return (
+                      <>
+                        <div>
+                          <div className="flex items-center space-x-3 mb-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                              <span className="text-white font-bold text-sm">D</span>
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-medium text-gray-900">Definition</h4>
+                              <p className="text-sm text-gray-600">정의</p>
+                            </div>
+                          </div>
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-gray-900 whitespace-pre-wrap">
+                              {responseData.see || '응답 없음'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center space-x-3 mb-3">
+                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                              <span className="text-white font-bold text-sm">C</span>
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-medium text-gray-900">Characteristics</h4>
+                              <p className="text-sm text-gray-600">특징</p>
+                            </div>
+                          </div>
+                          <div className="bg-green-50 p-4 rounded-lg">
+                            <p className="text-gray-900 whitespace-pre-wrap">
+                              {responseData.think || '응답 없음'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center space-x-3 mb-3">
+                            <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
+                              <span className="text-white font-bold text-sm">E</span>
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-medium text-gray-900">Examples & Non-Examples</h4>
+                              <p className="text-sm text-gray-600">예시와 반례</p>
+                            </div>
+                          </div>
+                          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <span className="text-green-600 font-bold">✓</span>
+                                  <span className="font-medium text-gray-900">예시 (Examples)</span>
+                                </div>
+                                <div className="bg-white p-3 rounded border">
+                                  <p className="text-gray-900 whitespace-pre-wrap">
+                                    {(() => {
+                                      const wonderResponse = responseData.wonder || '';
+                                      const parts = wonderResponse.split('||');
+                                      return parts[0] || '응답 없음';
+                                    })()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div>
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <span className="text-red-600 font-bold">✗</span>
+                                  <span className="font-medium text-gray-900">반례 (Non-Examples)</span>
+                                </div>
+                                <div className="bg-white p-3 rounded border">
+                                  <p className="text-gray-900 whitespace-pre-wrap">
+                                    {(() => {
+                                      const wonderResponse = responseData.wonder || '';
+                                      const parts = wonderResponse.split('||');
+                                      return parts[1] || '응답 없음';
+                                    })()}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  }
+                  
+                  // 기타 사고루틴들 (4C, Connect-Extend-Challenge 등)
+                  const stepConfigs: {[key: string]: {title: string, subtitle: string, color: string, bgColor: string, icon: string}} = {
+                    see: { title: 'See', subtitle: '보기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'S' },
+                    connect: { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'C' },
+                    think: { title: 'Think', subtitle: '생각하기', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'T' },
+                    challenge: { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500', bgColor: 'bg-red-50', icon: 'C' },
+                    wonder: { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'W' },
+                    concepts: { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'C' },
+                    changes: { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'C' },
+                    fourth_step: { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'C' }
+                  };
+                  
+                  return Object.entries(responseData).map(([key, value]) => {
+                    if (!value && key === 'fourth_step') return null;
+                    const config = stepConfigs[key];
+                    if (!config) return null;
+                    
+                    return (
+                      <div key={key}>
+                        <div className="flex items-center space-x-3 mb-3">
+                          <div className={`w-8 h-8 rounded-full ${config.color} flex items-center justify-center`}>
+                            <span className="text-white font-bold text-sm">{config.icon}</span>
+                          </div>
+                          <div>
+                            <h4 className="text-lg font-medium text-gray-900">{config.title}</h4>
+                            <p className="text-sm text-gray-600">{config.subtitle}</p>
+                          </div>
+                        </div>
+                        <div className={`${config.bgColor} p-4 rounded-lg`}>
+                          <p className="text-gray-900 whitespace-pre-wrap">
+                            {String(value) || '응답 없음'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }).filter(Boolean);
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 온라인 활동 - AI 분석 및 교사 피드백 */}
+        {activity.activity_type === 'online' && activity.ai_analysis && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 AI 분석 결과</h3>
+              <div className="bg-gray-50 rounded-lg p-4">
                 <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                  {JSON.stringify(activity.response_data, null, 2)}
+                  {activity.ai_analysis}
                 </pre>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 온라인 활동 - 교사 피드백 */}
+        {activity.activity_type === 'online' && (activity.teacher_feedback || activity.teacher_score) && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">👨‍🏫 교사 피드백 및 평가</h3>
+              
+              {activity.teacher_feedback && (
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-700 mb-2">교사 피드백</h4>
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <p className="text-gray-900 whitespace-pre-wrap">
+                      {activity.teacher_feedback}
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {activity.teacher_score && (
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-2">평가 점수</h4>
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl font-bold text-green-600">{activity.teacher_score}</span>
+                      <span className="text-gray-600">/ 100점</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -418,7 +648,6 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
         {activity.activity_type === 'offline' && activity.ai_analysis && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">5단계: 교사 피드백 및 평가</h3>
               
               {aiAnalysis && aiAnalysis.individualSteps && Object.keys(aiAnalysis.individualSteps).length > 0 ? (
                 <div className="space-y-6">
