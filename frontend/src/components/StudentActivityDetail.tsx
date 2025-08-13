@@ -70,8 +70,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
       setLoading(true);
       setError('');
 
-      // 학생 응답 데이터 가져오기
-      let query = supabase
+      // 먼저 기본 학생 응답 데이터 가져오기
+      const { data: basicData, error: basicError } = await supabase
         .from('student_responses')
         .select(`
           id,
@@ -89,28 +89,52 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           teacher_feedback,
           teacher_score,
           confidence_score,
-          submitted_at,
-          activity_rooms (
-            title,
-            description,
-            thinking_routine_type
-          ),
-          routine_templates (
-            content
-          )
+          submitted_at
         `)
         .eq('id', activityId)
         .single();
 
-      const { data, error: fetchError } = await query;
-
-      if (fetchError) {
-        throw new Error(`활동 데이터를 불러올 수 없습니다: ${fetchError.message}`);
+      if (basicError) {
+        throw new Error(`활동 데이터를 불러올 수 없습니다: ${basicError.message}`);
       }
 
-      if (!data) {
+      if (!basicData) {
         throw new Error('해당 활동을 찾을 수 없습니다.');
       }
+
+      // 온라인 활동인 경우에만 활동방과 템플릿 정보 추가로 가져오기
+      let roomData = null;
+      let templateData = null;
+
+      if (basicData.room_id) {
+        // 활동방 정보 가져오기
+        const { data: roomInfo, error: roomError } = await supabase
+          .from('activity_rooms')
+          .select('title, description, thinking_routine_type')
+          .eq('id', basicData.room_id)
+          .single();
+
+        if (!roomError && roomInfo) {
+          roomData = roomInfo;
+
+          // 템플릿 정보 가져오기
+          const { data: templateInfo, error: templateError } = await supabase
+            .from('routine_templates')
+            .select('content')
+            .eq('room_id', basicData.room_id)
+            .single();
+
+          if (!templateError && templateInfo) {
+            templateData = templateInfo;
+          }
+        }
+      }
+
+      const data = {
+        ...basicData,
+        activity_rooms: roomData,
+        routine_templates: templateData
+      };
 
       // 활동 타입 결정 (온라인/오프라인)
       const activityType = data.room_id ? 'online' : 'offline';
