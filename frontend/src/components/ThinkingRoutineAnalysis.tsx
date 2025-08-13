@@ -704,10 +704,19 @@ const ThinkingRoutineAnalysis: React.FC = () => {
     }
 
     try {
-      const fileName = `routine-images/${Date.now()}-${file.name}`;
+      // 파일명에서 특수문자 제거 및 안전한 파일명 생성
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = `routine-images/${Date.now()}-${sanitizedFileName}`;
+      
+      console.log('Uploading file:', fileName);
+      
+      // routine-uploads 버킷에 업로드 (templates가 아님)
       const { error } = await supabase!.storage
-        .from('templates')
-        .upload(fileName, file);
+        .from('routine-uploads')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (error) {
         console.error('Supabase upload error:', error);
@@ -716,7 +725,7 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
       // 업로드된 파일의 공개 URL 가져오기
       const { data: { publicUrl } } = supabase!.storage
-        .from('templates')
+        .from('routine-uploads')
         .getPublicUrl(fileName);
 
       console.log('Image uploaded to Supabase:', publicUrl);
@@ -806,16 +815,25 @@ const ThinkingRoutineAnalysis: React.FC = () => {
 
       // 3. 데이터베이스에 학생 응답 저장
       const studentResponseData = {
+        room_id: null, // 오프라인 활동이므로 null
         student_grade: studentGrade,
         student_name: studentName,
         student_class: studentClass,
         student_number: parseInt(studentNumber),
+        student_id: null, // legacy field
         team_name: isTeamActivity ? teamName : null,
         routine_type: selectedRoutine,
         image_url: imageUrl,
         ai_analysis: JSON.stringify(structuredAnalysis), // JSON 형식으로 저장
         teacher_feedback: '', // 레거시 필드는 빈 값으로 유지
         confidence_score: analysisResult.confidence,
+        response_data: { // 기본 response_data 구조
+          type: 'offline_analysis',
+          analysisDate: new Date().toISOString(),
+          originalFileName: uploadedImage.name
+        },
+        is_draft: false,
+        submitted_at: new Date().toISOString(),
         created_at: new Date().toISOString()
       };
 

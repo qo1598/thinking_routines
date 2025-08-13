@@ -14,7 +14,7 @@ interface StudentInfo {
 
 interface ActivityRoom {
   id: string;
-  room_id: string;
+  room_id: string | null;
   room_title: string;
   routine_type: string;
   submitted_at: string;
@@ -23,6 +23,9 @@ interface ActivityRoom {
   ai_analysis?: string;
   teacher_feedback?: string;
   teacher_score?: number;
+  activity_type?: 'online' | 'offline';
+  image_url?: string;
+  confidence_score?: number;
   selected?: boolean;
 }
 
@@ -46,6 +49,20 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // 사고루틴 타입 라벨 함수
+  const getRoutineTypeLabel = (routineType: string): string => {
+    const labels: { [key: string]: string } = {
+      'see-think-wonder': 'See-Think-Wonder',
+      '4c': '4C',
+      'circle-of-viewpoints': '관점의 원',
+      'connect-extend-challenge': 'Connect-Extend-Challenge',
+      'frayer-model': '프레이어 모델',
+      'used-to-think-now-think': '이전-현재 생각',
+      'think-puzzle-explore': 'Think-Puzzle-Explore'
+    };
+    return labels[routineType] || routineType;
+  };
+  
   // 사고루틴 타입 라벨
   const routineLabels: { [key: string]: string } = {
     'see-think-wonder': 'See-Think-Wonder',
@@ -81,7 +98,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
         student_number: searchForm.number ? parseInt(searchForm.number) : undefined
       };
 
-      // 온라인 활동만 가져오기 (room_id가 있는 것만)
+      // 1. 온라인 활동 가져오기 (room_id가 있는 것)
       let onlineQuery = supabase
         .from('student_responses')
         .select(`
@@ -102,19 +119,58 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
         .eq('student_name', searchForm.name)
         .eq('is_draft', false)
         .not('room_id', 'is', null); // room_id가 있는 것만 (온라인 활동)
+        
+      // 2. 오프라인 활동 가져오기 (room_id가 null인 것)
+      let offlineQuery = supabase
+        .from('student_responses')
+        .select(`
+          id,
+          room_id,
+          student_grade,
+          student_name,
+          student_class,
+          student_number,
+          team_name,
+          routine_type,
+          image_url,
+          response_data,
+          ai_analysis,
+          teacher_feedback,
+          teacher_score,
+          confidence_score,
+          submitted_at
+        `)
+        .eq('student_name', searchForm.name)
+        .eq('is_draft', false)
+        .is('room_id', null); // room_id가 null인 것만 (오프라인 활동)
 
+      // 필터 적용 - 온라인
       if (searchForm.grade) onlineQuery = onlineQuery.eq('student_grade', searchForm.grade);
       if (searchForm.class) onlineQuery = onlineQuery.eq('student_class', searchForm.class);
       if (searchForm.number) onlineQuery = onlineQuery.eq('student_number', parseInt(searchForm.number));
+      
+      // 필터 적용 - 오프라인
+      if (searchForm.grade) offlineQuery = offlineQuery.eq('student_grade', searchForm.grade);
+      if (searchForm.class) offlineQuery = offlineQuery.eq('student_class', searchForm.class);
+      if (searchForm.number) offlineQuery = offlineQuery.eq('student_number', parseInt(searchForm.number));
 
-      const { data: onlineData, error: onlineError } = await onlineQuery;
+      // 두 쿼리 병렬 실행
+      const [onlineResult, offlineResult] = await Promise.all([
+        onlineQuery,
+        offlineQuery
+      ]);
+      
+      const { data: onlineData, error: onlineError } = onlineResult;
+      const { data: offlineData, error: offlineError } = offlineResult;
 
       if (onlineError) throw onlineError;
+      if (offlineError) throw offlineError;
 
       console.log('🔍 온라인 활동 데이터:', onlineData);
+      console.log('🔍 오프라인 활동 데이터:', offlineData);
 
-      // 활동방별로 그룹화
-      const activityRooms: ActivityRoom[] = onlineData?.map(item => ({
+      // 온라인 활동 처리
+      const onlineActivities: ActivityRoom[] = onlineData?.map(item => ({
         id: item.id,
         room_id: item.room_id,
         room_title: (item.activity_rooms as any)?.title || '활동방',
@@ -125,8 +181,31 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
         ai_analysis: item.ai_analysis,
         teacher_feedback: item.teacher_feedback,
         teacher_score: item.teacher_score,
+        activity_type: 'online',
         selected: false
       })) || [];
+      
+      // 오프라인 활동 처리
+      const offlineActivities: ActivityRoom[] = offlineData?.map(item => ({
+        id: item.id,
+        room_id: null,
+        room_title: `오프라인 ${getRoutineTypeLabel(item.routine_type)} 분석`,
+        routine_type: item.routine_type || 'see-think-wonder',
+        submitted_at: item.submitted_at,
+        team_name: item.team_name,
+        response_data: item.response_data,
+        ai_analysis: item.ai_analysis,
+        teacher_feedback: item.teacher_feedback,
+        teacher_score: item.teacher_score,
+        activity_type: 'offline',
+        image_url: item.image_url,
+        confidence_score: item.confidence_score,
+        selected: false
+      })) || [];
+      
+      // 두 활동을 합쳐서 시간순 정렬
+      const activityRooms = [...onlineActivities, ...offlineActivities]
+        .sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime());
 
       // 제출일 기준으로 정렬
       const sortedActivities = activityRooms.sort((a, b) => 
@@ -261,9 +340,10 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
           <div class="activity">
             <div class="activity-header">
               <div class="activity-title">
-                ${routineLabels[activity.routine_type] || activity.routine_type}
+                ${getRoutineTypeLabel(activity.routine_type)}
                 <span style="color: #666; font-size: 12px; margin-left: 10px;">
-                  (온라인 활동)
+                  (${activity.activity_type === 'online' ? '온라인' : '오프라인'} 활동)
+                  ${activity.confidence_score ? ` | AI 신뢰도: ${activity.confidence_score}%` : ''}
                 </span>
               </div>
               <div class="activity-meta">
@@ -557,8 +637,12 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
                             <h3 className="text-lg font-semibold text-gray-900">
                               {activity.room_title}
                             </h3>
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                              {routineLabels[activity.routine_type] || activity.routine_type}
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              activity.activity_type === 'online' 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : 'bg-purple-100 text-purple-800'
+                            }`}>
+                              {getRoutineTypeLabel(activity.routine_type)}
                             </span>
                             {activity.team_name && (
                               <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
@@ -571,17 +655,28 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
                           </div>
                         </div>
 
-                        <p className="text-gray-600 mb-3">사고루틴: {routineLabels[activity.routine_type]}</p>
+                        {/* 옵션 정보 */}
+                        {activity.activity_type === 'offline' && activity.confidence_score && (
+                          <p className="text-gray-600 mb-2 text-sm">
+                            AI 분석 신뢰도: {activity.confidence_score}%
+                          </p>
+                        )}
 
                         {/* 상태 표시 */}
                         <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span>온라인 활동</span>
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            activity.activity_type === 'online'
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'bg-purple-50 text-purple-700'
+                          }`}>
+                            {activity.activity_type === 'online' ? '온라인 활동' : '오프라인 활동'}
+                          </span>
                           <span>•</span>
                           <span>제출일: {formatDate(activity.submitted_at)}</span>
                           {activity.teacher_score && (
                             <>
                               <span>•</span>
-                              <span className="text-blue-600 font-medium">평가완료 ({activity.teacher_score}점)</span>
+                              <span className="text-green-600 font-medium">평가완료 ({activity.teacher_score}점)</span>
                             </>
                           )}
                         </div>
