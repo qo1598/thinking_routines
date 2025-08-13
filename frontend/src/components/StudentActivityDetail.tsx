@@ -776,9 +776,6 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
         {activity.activity_type === 'offline' && activity.ai_analysis && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
-              
-              {aiAnalysis && aiAnalysis.individualSteps && Object.keys(aiAnalysis.individualSteps).length > 0 ? (
-              
               {aiAnalysis ? (
                 <div className="space-y-6">
                   {/* 단계별 분석 표시 (ThinkingRoutineAnalysis 스타일) */}
@@ -892,10 +889,10 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">👩‍🏫 교사 피드백 및 평가</h3>
               
               {/* 전체 점수 표시 */}
-              {activity.teacher_score && (
+              {activity?.teacher_score && (
                 <div className="mb-6">
                   <span className="text-sm text-gray-600">전체 평가 점수: </span>
-                  <span className="text-xl font-bold text-green-600">{activity.teacher_score}점</span>
+                  <span className="text-xl font-bold text-green-600">{activity?.teacher_score}점</span>
                   <span className="text-sm text-gray-500"> / 100점</span>
                 </div>
               )}
@@ -946,10 +943,10 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
               )}
               
               {/* 일반 교사 피드백 (기존 방식) */}
-              {activity.teacher_feedback && !(aiAnalysis && aiAnalysis.teacherFeedback) && (
+              {activity?.teacher_feedback && !(aiAnalysis && aiAnalysis.teacherFeedback) && (
                 <div className="bg-yellow-50 rounded-lg p-4">
                   <h4 className="font-medium text-gray-700 mb-2">피드백 내용</h4>
-                  <p className="text-gray-700 whitespace-pre-wrap">{activity.teacher_feedback}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap">{activity?.teacher_feedback}</p>
                 </div>
               )}
             </div>
