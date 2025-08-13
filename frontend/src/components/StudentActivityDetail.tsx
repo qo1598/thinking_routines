@@ -657,7 +657,89 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
+        {/* 온라인 활동: AI 분석 결과 표시 */}
+        {activity.activity_type === 'online' && activity.ai_analysis && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div className="p-6">
+              {aiAnalysis ? (
+                <div className="space-y-6">
+                  {/* 단계별 분석 표시 (ThinkingRoutineAnalysis 스타일) */}
+                  {aiAnalysis.individualSteps && (
+                    <div>
+                      <h4 className="text-base font-semibold text-gray-800 mb-4">각 단계별 분석</h4>
+                      <div className="space-y-4">
+                        {Object.entries(aiAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
+                          // 단계별 정보 매핑
+                          const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
+                            'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
+                            'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
+                            'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
+                            'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+                            'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
+                            'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
+                            'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' },
+                            'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
+                            'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
+                            'examples': { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
+                          };
 
+                          const stepInfo = stepInfoMap[stepKey];
+                          if (!stepInfo || !stepContent) return null;
+
+                          const gradientColors: {[key: string]: string} = {
+                            'bg-blue-500': 'from-blue-50 to-white border-blue-200',
+                            'bg-green-500': 'from-green-50 to-white border-green-200',
+                            'bg-purple-500': 'from-purple-50 to-white border-purple-200',
+                            'bg-red-500': 'from-red-50 to-white border-red-200'
+                          };
+
+                          return (
+                            <div 
+                              key={stepKey}
+                              className={`bg-gradient-to-br ${gradientColors[stepInfo.color] || 'from-gray-50 to-white border-gray-200'} border rounded-xl p-6`}
+                            >
+                              <h5 className={`text-lg font-bold mb-4 flex items-center ${
+                                stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
+                                stepInfo.color === 'bg-green-500' ? 'text-green-800' :
+                                stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
+                                stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
+                              }`}>
+                                <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
+                                  {index + 1}
+                                </span>
+                                {stepInfo.title} ({stepInfo.subtitle})
+                              </h5>
+                              
+                              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                <h6 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                                  <svg className="w-4 h-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                  </svg>
+                                  AI 분석 결과
+                                </h6>
+                                <div 
+                                  className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                                  dangerouslySetInnerHTML={{ __html: formatMarkdownText(stepContent as string) }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div 
+                    className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: formatMarkdownText(activity.ai_analysis) }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 오프라인 활동: ThinkingRoutineAnalysis 5단계 교사 피드백 형태로 표시 */}
         {activity.activity_type === 'offline' && activity.ai_analysis && (
