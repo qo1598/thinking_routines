@@ -356,26 +356,85 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         </div>
 
-        {/* 온라인 활동 - 활동방 내용 */}
+        {/* 온라인 활동 - 교사 제공 자료 */}
         {activity.activity_type === 'online' && activity.template_content && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">📝 활동방 내용</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">교사 제공 자료</h3>
+              
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6">
+                <div className="flex items-center mb-3">
+                  <span className="text-blue-600 font-medium">📝 텍스트 내용</span>
+                </div>
+                <p className="text-gray-900 mb-4">우리가 오늘 배워볼 개념은 충실하겠습니다.</p>
+                
+                <div className="space-y-3">
+                  {(() => {
+                    const template = activity.template_content;
+                    const routineType = activity.routine_type;
+                    
+                    if (routineType === 'see-think-wonder') {
+                      return (
+                        <>
+                          <div className="bg-white p-3 rounded border">
+                            <div className="font-medium text-blue-600 mb-1">See 질문</div>
+                            <p className="text-gray-700 text-sm">{template?.see_question || '이 개념을 어떻게 정의하겠나요?'}</p>
+                          </div>
+                          <div className="bg-white p-3 rounded border">
+                            <div className="font-medium text-green-600 mb-1">Think 질문</div>
+                            <p className="text-gray-700 text-sm">{template?.think_question || '이 개념의 주요 특징은 무엇인가요?'}</p>
+                          </div>
+                          <div className="bg-white p-3 rounded border">
+                            <div className="font-medium text-purple-600 mb-1">Wonder 질문</div>
+                            <p className="text-gray-700 text-sm">{template?.wonder_question || '이 개념에 대해 궁금한 것은 무엇인가요?'}</p>
+                          </div>
+                        </>
+                      );
+                    }
+                    
+                    if (routineType === 'frayer-model') {
+                      return (
+                        <>
+                          <div className="bg-white p-3 rounded border">
+                            <div className="font-medium text-blue-600 mb-1">Definition 질문</div>
+                            <p className="text-gray-700 text-sm">{template?.see_question || '이 개념을 어떻게 정의하겠나요?'}</p>
+                          </div>
+                          <div className="bg-white p-3 rounded border">
+                            <div className="font-medium text-green-600 mb-1">Characteristics 질문</div>
+                            <p className="text-gray-700 text-sm">{template?.think_question || '이 개념의 주요 특징은 무엇인가요?'}</p>
+                          </div>
+                          <div className="bg-white p-3 rounded border">
+                            <div className="font-medium text-purple-600 mb-1">Examples 질문</div>
+                            <p className="text-gray-700 text-sm">{template?.wonder_question || '이 개념의 예시와 반례는 무엇인가요?'}</p>
+                          </div>
+                        </>
+                      );
+                    }
+                    
+                    // 기타 사고루틴들
+                    return (
+                      <div className="bg-white p-3 rounded border">
+                        <div className="font-medium text-gray-700 mb-2">사고루틴 질문들</div>
+                        {Object.entries(template || {}).map(([key, value]) => (
+                          <div key={key} className="mb-2 last:mb-0">
+                            <span className="text-sm font-medium text-gray-600">{key}: </span>
+                            <span className="text-sm text-gray-700">{String(value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+              
               {activity.room_description && (
-                <div className="mb-4">
+                <div>
                   <h4 className="font-medium text-gray-700 mb-2">활동 설명</h4>
-                  <p className="text-gray-600">{activity.room_description}</p>
+                  <div className="bg-gray-50 p-3 rounded">
+                    <p className="text-gray-700">{activity.room_description}</p>
+                  </div>
                 </div>
               )}
-              
-              {/* 템플릿 내용 표시 */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-700 mb-3">사고루틴 템플릿</h4>
-                {/* 템플릿 내용을 여기에 렌더링 */}
-                <pre className="whitespace-pre-wrap text-sm text-gray-600">
-                  {JSON.stringify(activity.template_content, null, 2)}
-                </pre>
-              </div>
             </div>
           </div>
         )}
@@ -598,48 +657,144 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
-        {/* 온라인 활동 - AI 분석 및 교사 피드백 */}
+        {/* 온라인 활동 - 5단계: 교사 피드백 및 평가 */}
         {activity.activity_type === 'online' && activity.ai_analysis && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 AI 분석 결과</h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <pre className="whitespace-pre-wrap text-sm text-gray-700">
-                  {activity.ai_analysis}
-                </pre>
-              </div>
-            </div>
-          </div>
-        )}
+              {(() => {
+                // AI 분석 데이터 파싱 시도
+                let aiAnalysisData: {individualSteps: any, teacherFeedback: any} | null = null;
+                try {
+                  const parsed = JSON.parse(activity.ai_analysis);
+                  // 구조화된 데이터 형태 확인
+                  if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
+                    aiAnalysisData = {
+                      individualSteps: parsed.aiAnalysis.individualSteps,
+                      teacherFeedback: parsed.teacherFeedback?.individualSteps || {}
+                    };
+                  } else if (parsed.individualSteps) {
+                    aiAnalysisData = {
+                      individualSteps: parsed.individualSteps,
+                      teacherFeedback: parsed.teacherFeedback || {}
+                    };
+                  }
+                } catch (error) {
+                  console.log('AI 분석 데이터 파싱 실패, 단순 텍스트로 표시');
+                }
 
-        {/* 온라인 활동 - 교사 피드백 */}
-        {activity.activity_type === 'online' && (activity.teacher_feedback || activity.teacher_score) && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">👨‍🏫 교사 피드백 및 평가</h3>
-              
-              {activity.teacher_feedback && (
-                <div className="mb-4">
-                  <h4 className="font-medium text-gray-700 mb-2">교사 피드백</h4>
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="text-gray-900 whitespace-pre-wrap">
-                      {activity.teacher_feedback}
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              {activity.teacher_score && (
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">평가 점수</h4>
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-2xl font-bold text-green-600">{activity.teacher_score}</span>
-                      <span className="text-gray-600">/ 100점</span>
+                if (aiAnalysisData && aiAnalysisData.individualSteps && Object.keys(aiAnalysisData.individualSteps).length > 0) {
+                  // 구조화된 AI 분석 데이터가 있는 경우 - 5단계 형태로 표시
+                  const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
+                    see: { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
+                    think: { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
+                    wonder: { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
+                    definition: { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
+                    characteristics: { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
+                    examples: { title: 'Examples & Non-Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
+                  };
+
+                  const gradientColors: {[key: string]: string} = {
+                    'bg-blue-500': 'from-blue-50 to-blue-100 border-blue-200',
+                    'bg-green-500': 'from-green-50 to-green-100 border-green-200',
+                    'bg-purple-500': 'from-purple-50 to-purple-100 border-purple-200'
+                  };
+
+                  return (
+                    <div className="space-y-6">
+                      {Object.entries(aiAnalysisData.individualSteps).map(([stepKey, stepContent], index) => {
+                        const stepInfo = stepInfoMap[stepKey] || { title: stepKey, subtitle: stepKey, color: 'bg-gray-500' };
+                        const savedFeedback = aiAnalysisData?.teacherFeedback && aiAnalysisData.teacherFeedback[stepKey];
+                        const feedbackData = typeof savedFeedback === 'object' ? savedFeedback as any : { feedback: savedFeedback || '', score: null };
+
+                        return (
+                          <div
+                            key={stepKey}
+                            className={`bg-gradient-to-br ${gradientColors[stepInfo.color] || 'from-gray-50 to-white border-gray-200'} border rounded-xl p-6`}
+                          >
+                            <h3 className={`text-lg font-bold mb-4 flex items-center text-gray-800`}>
+                              <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
+                                {index + 1}
+                              </span>
+                              {stepInfo.title} ({stepInfo.subtitle})
+                            </h3>
+
+                            {/* AI 분석 내용 */}
+                            <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+                              <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                                <svg className="w-4 h-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                                AI 분석 결과
+                              </h4>
+                              <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                                <div dangerouslySetInnerHTML={{ __html: String(stepContent).replace(/\n/g, '<br/>') }} />
+                              </div>
+                            </div>
+
+                            {/* 교사 피드백 표시 (읽기 전용) */}
+                            <div className="mb-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">교사 피드백</label>
+                              <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 min-h-[80px]">
+                                {feedbackData.feedback || '피드백이 입력되지 않았습니다.'}
+                              </div>
+                            </div>
+
+                            {/* 점수 표시 */}
+                            <div className="flex items-center">
+                              <label className="block text-sm font-medium text-gray-700 mr-4">점수 (1-100점)</label>
+                              <div className="w-24 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 text-center">
+                                {feedbackData.score || '-'}
+                              </div>
+                              <span className="ml-2 text-sm text-gray-500">/ 100점</span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                </div>
-              )}
+                  );
+                } else {
+                  // 구조화되지 않은 AI 분석 데이터인 경우 - 단순 표시
+                  return (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 AI 분석 결과</h3>
+                      <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                        <pre className="whitespace-pre-wrap text-sm text-gray-700">
+                          {activity.ai_analysis}
+                        </pre>
+                      </div>
+                      
+                      {(activity.teacher_feedback || activity.teacher_score) && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">👨‍🏫 교사 피드백 및 평가</h3>
+                          
+                          {activity.teacher_feedback && (
+                            <div className="mb-4">
+                              <h4 className="font-medium text-gray-700 mb-2">교사 피드백</h4>
+                              <div className="bg-blue-50 rounded-lg p-4">
+                                <p className="text-gray-900 whitespace-pre-wrap">
+                                  {activity.teacher_feedback}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {activity.teacher_score && (
+                            <div>
+                              <h4 className="font-medium text-gray-700 mb-2">평가 점수</h4>
+                              <div className="bg-green-50 rounded-lg p-4">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-2xl font-bold text-green-600">{activity.teacher_score}</span>
+                                  <span className="text-gray-600">/ 100점</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              })()}
             </div>
           </div>
         )}
