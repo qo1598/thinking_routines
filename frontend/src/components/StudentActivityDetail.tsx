@@ -728,6 +728,73 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* 단계별 교사 피드백 */}
+                  {aiAnalysis.teacherFeedback && (
+                    <div className="space-y-4">
+                      <h4 className="text-base font-semibold text-gray-800">5단계: 교사 피드백 및 평가</h4>
+                      {Object.entries(aiAnalysis.teacherFeedback).map(([stepKey, feedback], index) => {
+                        const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
+                          'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
+                          'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
+                          'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
+                          'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+                          'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
+                          'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
+                          'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' },
+                          'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
+                          'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
+                          'examples': { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
+                        };
+
+                        const stepInfo = stepInfoMap[stepKey];
+                        if (!stepInfo || !feedback) return null;
+
+                        const feedbackData = typeof feedback === 'object' ? feedback as any : { feedback: feedback, score: null };
+
+                        return (
+                          <div key={stepKey} className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                            <h5 className="font-medium text-gray-800 mb-2 flex items-center">
+                              <span className={`w-6 h-6 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-xs font-bold mr-2`}>
+                                {index + 1}
+                              </span>
+                              {stepInfo.title} ({stepInfo.subtitle})
+                              {feedbackData.score && (
+                                <span className="ml-auto text-sm font-medium text-green-600">
+                                  {feedbackData.score}점
+                                </span>
+                              )}
+                            </h5>
+                            <div className="ml-8">
+                              <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                <h6 className="text-xs font-medium text-gray-600 mb-1">교사 피드백</h6>
+                                <textarea 
+                                  className="w-full p-2 border border-gray-300 rounded text-sm resize-none"
+                                  rows={3}
+                                  defaultValue={feedbackData.feedback || feedbackData}
+                                  readOnly
+                                />
+                              </div>
+                              <div className="flex items-center justify-between mt-2">
+                                <span className="text-xs text-gray-600">점수 (1-100점)</span>
+                                <div className="flex items-center space-x-2">
+                                  <input 
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center"
+                                    defaultValue={feedbackData.score || ''}
+                                    readOnly
+                                  />
+                                  <span className="text-xs text-gray-500">/ 100점</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-lg p-4">
