@@ -875,24 +875,41 @@ const ThinkingRoutineAnalysis: React.FC = () => {
         ai_analysis: JSON.stringify(structuredAnalysis), // JSON 형식으로 저장
         teacher_feedback: '', // 레거시 필드는 빈 값으로 유지
         confidence_score: analysisResult.confidence,
-        response_data: { // 기본 response_data 구조
+        response_data: { // 기본 response_data 구조 (JSONB 필수)
           type: 'offline_analysis',
           analysisDate: new Date().toISOString(),
-          originalFileName: uploadedImage.name
+          originalFileName: uploadedImage.name,
+          routineType: selectedRoutine,
+          analysisComplete: true
         },
         is_draft: false,
         submitted_at: new Date().toISOString(),
         created_at: new Date().toISOString()
       };
 
+      console.log('💾 데이터베이스 저장 시도:', studentResponseData);
+      
       const { error: dbError } = await supabase!
         .from('student_responses')
         .insert(studentResponseData);
 
       if (dbError) {
-        console.error('Database save error:', dbError);
-        throw dbError;
+        console.error('❌ Database save error:', dbError);
+        
+        // RLS 정책 오류인 경우 구체적인 안내
+        if (dbError.message?.includes('row-level security') || dbError.message?.includes('policy')) {
+          throw new Error('데이터베이스 보안 정책 오류입니다. 관리자에게 문의하세요.');
+        }
+        
+        // 컬럼 누락 오류인 경우
+        if (dbError.message?.includes('column') && dbError.message?.includes('does not exist')) {
+          throw new Error('데이터베이스 스키마가 업데이트되지 않았습니다. image_data 컬럼을 추가해주세요.');
+        }
+        
+        throw new Error(`데이터베이스 저장 실패: ${dbError.message}`);
       }
+      
+      console.log('✅ 데이터베이스 저장 성공!');
 
       // 성공 메시지 및 초기화
       alert('학생 결과물이 성공적으로 저장되었습니다!');
