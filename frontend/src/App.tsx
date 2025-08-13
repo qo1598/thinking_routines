@@ -7,6 +7,7 @@
     import TeacherRoomDetail from './components/TeacherRoomDetail';
     import StudentResponseDetail from './components/StudentResponseDetail';
     import StudentEntry from './components/StudentEntry';
+    import StudentActivityDetail from './components/StudentActivityDetail';
 import SeeThinkWonderForm from './components/SeeThinkWonderForm';
 import StudentActivityExplore from './components/StudentActivityExplore';
     import './App.css';
@@ -47,7 +48,7 @@ import StudentActivityExplore from './components/StudentActivityExplore';
             <Route path="/teacher/activate" element={<TeacherDashboard />} />
             <Route path="/teacher/analysis" element={<TeacherDashboard />} />
             <Route path="/teacher/portfolio" element={<TeacherDashboard />} />
-            <Route path="/teacher/portfolio/:activityId" element={<TeacherDashboard />} />
+            <Route path="/teacher/portfolio/:activityId" element={<StudentActivityDetail />} />
             <Route path="/teacher/thinking-routines" element={<TeacherDashboard />} />
             <Route path="/teacher/room/:roomId" element={<TeacherRoomDetail />} />
             <Route path="/teacher/room/:roomId/response/:responseId" element={<StudentResponseDetail />} />
