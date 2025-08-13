@@ -968,9 +968,17 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
 
                               {/* 교사 피드백 및 점수 */}
                               {(() => {
-                                // teacherFeedback.individualSteps에서 해당 단계의 피드백 찾기
-                                const teacherFeedbackSteps = aiAnalysis.teacherFeedback?.individualSteps;
+                                // 전체 분석 데이터에서 teacherFeedback 찾기
+                                const fullAnalysis = typeof activity.ai_analysis === 'string' ? 
+                                  JSON.parse(activity.ai_analysis) : activity.ai_analysis;
+                                const teacherFeedbackSteps = fullAnalysis?.teacherFeedback?.individualSteps;
                                 const stepFeedback = teacherFeedbackSteps?.[stepKey];
+                                
+                                // 디버깅용 로그
+                                console.log('🔍 Step:', stepKey);
+                                console.log('📊 Full Analysis:', fullAnalysis);
+                                console.log('👨‍🏫 Teacher Feedback Steps:', teacherFeedbackSteps);
+                                console.log('📝 Step Feedback:', stepFeedback);
                                 
                                 if (stepFeedback) {
                                   return (
