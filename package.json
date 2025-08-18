@@ -7,7 +7,7 @@
     "start": "node backend/server.js",
     "dev": "npm run dev --prefix backend",
     "build": "npm run build --prefix frontend",
-    "vercel-build": "npm ci --prefix frontend --production=false && npm run build --prefix frontend",
+    "vercel-build": "npm run build --prefix frontend",
     "install-deps": "npm install --prefix backend && npm install --prefix frontend"
   },
   "keywords": ["education", "thinking-routines", "see-think-wonder"],
