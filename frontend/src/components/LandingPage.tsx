@@ -14,12 +14,10 @@ const LandingPage: React.FC = () => {
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const buttonsRef = useRef<HTMLDivElement>(null);
   const guideRef = useRef<HTMLDivElement>(null);
-  const routinesRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement[]>([]);
   const featuresRef = useRef<HTMLDivElement[]>([]);
   const ctaRef = useRef<HTMLDivElement>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isLoaded, setIsLoaded] = useState(false);
 
   // 마우스 트래킹 (Apple스러운 마그네틱 효과)
   useEffect(() => {
@@ -34,9 +32,7 @@ const LandingPage: React.FC = () => {
   useEffect(() => {
     const ctx = gsap.context(() => {
       // 페이지 로딩 애니메이션 - Apple 스타일
-      const loadingTimeline = gsap.timeline({
-        onComplete: () => setIsLoaded(true)
-      });
+      const loadingTimeline = gsap.timeline();
 
       // 히어로 섹션 극적인 입장
       loadingTimeline
