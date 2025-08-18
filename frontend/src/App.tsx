@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import TeacherLogin from './components/TeacherLogin';
 import TeacherDashboard from './components/TeacherDashboard';
@@ -10,27 +10,8 @@ import StudentActivityDetail from './components/StudentActivityDetail';
 import ThinkingRoutinesForm from './components/ThinkingRoutinesForm';
 import StudentActivityExplore from './components/StudentActivityExplore';
 import './App.css';
-import * as ChannelService from '@channel.io/channel-web-sdk-loader';
 
 function App() {
-  const location = useLocation();
-
-  useEffect(() => {
-    const isStudentPath = location.pathname.startsWith('/student');
-
-    if (isStudentPath) {
-      ChannelService.shutdown();
-    } else {
-      ChannelService.loadScript();
-      ChannelService.boot({
-        pluginKey: '31d0c99e-1966-4296-b7bd-208b69dba1e0',
-      });
-    }
-
-    return () => {
-      ChannelService.shutdown();
-    };
-  }, [location.pathname]);
 
   return (
     <div className="App">
