@@ -94,14 +94,15 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // 새로운 SDK 방식으로 API 호출 - 가장 경제적인 모델 사용!
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-lite',  // 비용 절약을 위한 가장 경제적인 모델
-      contents: parts
+    // Gemini API 호출 - 가장 경제적인 모델 사용
+    const model = ai.getGenerativeModel({ 
+      model: 'gemini-1.5-flash'  // 안정적이고 경제적인 모델
     });
+    
+    const response = await model.generateContent(parts);
 
     console.log('AI 분석 완료');
-    const analysisText = response.text;
+    const analysisText = response.response.text();
 
     if (!analysisText) {
       console.log('AI 분석 결과가 비어있음');
