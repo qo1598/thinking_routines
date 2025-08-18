@@ -60,7 +60,7 @@ const StudentResponseDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
-  const [parsedAnalysis, setParsedAnalysis] = useState<any>(null);
+  const [parsedAnalysis, setParsedAnalysis] = useState<{individualSteps?: {[key: string]: string | string[]}, summary?: string, suggestions?: string} | null>(null);
   const [currentAnalysisStep, setCurrentAnalysisStep] = useState(0);
   const [showTeacherFeedback, setShowTeacherFeedback] = useState(false);
   const [analyzingAI, setAnalyzingAI] = useState(false);
