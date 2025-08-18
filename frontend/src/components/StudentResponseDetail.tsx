@@ -1385,12 +1385,7 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                     }
                   };
 
-                  // 기본값 처리 - 설정되지 않은 루틴의 경우
-                  const defaultStepInfo = {
-                    'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
-                    'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
-                    'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' }
-                  };
+
 
                   const currentRoutineType = template?.routine_type || room?.thinking_routine_type || 'see-think-wonder';
                   const stepInfoMap = stepInfoMaps[currentRoutineType] || stepInfoMaps['see-think-wonder'];
