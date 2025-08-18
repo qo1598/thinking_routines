@@ -1,4 +1,10 @@
 {
+  "build": {
+    "env": {
+      "GENERATE_SOURCEMAP": "false",
+      "INLINE_RUNTIME_CHUNK": "false"
+    }
+  },
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/build",
   "installCommand": "npm install && npm install --prefix backend && npm install --prefix frontend",
