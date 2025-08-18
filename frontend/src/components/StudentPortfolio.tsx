@@ -37,6 +37,12 @@ interface SearchForm {
   name: string;
 }
 
+interface FilterForm {
+  routineType: string;
+  startDate: string;
+  endDate: string;
+}
+
 const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
   const navigate = useNavigate();
   const { activityId } = useParams<{ activityId?: string }>();
@@ -47,6 +53,13 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
     number: '',
     name: ''
   });
+  const [filterForm, setFilterForm] = useState<FilterForm>({
+    routineType: '',
+    startDate: '',
+    endDate: ''
+  });
+  const [allActivities, setAllActivities] = useState<ActivityRoom[]>([]);
+  const [filteredActivities, setFilteredActivities] = useState<ActivityRoom[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
   const [activities, setActivities] = useState<ActivityRoom[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<ActivityRoom | null>(null);
@@ -90,6 +103,30 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
       setSelectedActivity(null);
     }
   }, [activityId, activities]);
+
+  // 필터 적용 로직
+  useEffect(() => {
+    let filtered = [...allActivities];
+
+    // 사고루틴 타입 필터
+    if (filterForm.routineType) {
+      filtered = filtered.filter(activity => activity.routine_type === filterForm.routineType);
+    }
+
+    // 기간 필터
+    if (filterForm.startDate) {
+      const startDate = new Date(filterForm.startDate);
+      filtered = filtered.filter(activity => new Date(activity.submitted_at) >= startDate);
+    }
+    if (filterForm.endDate) {
+      const endDate = new Date(filterForm.endDate);
+      endDate.setHours(23, 59, 59, 999); // 해당 날짜의 끝까지 포함
+      filtered = filtered.filter(activity => new Date(activity.submitted_at) <= endDate);
+    }
+
+    setFilteredActivities(filtered);
+    setActivities(filtered);
+  }, [allActivities, filterForm]);
 
   // 사고루틴 타입 라벨 함수
   const getRoutineTypeLabel = (routineType: string): string => {
@@ -255,6 +292,7 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
         new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
       );
 
+      setAllActivities(sortedActivities);
       setActivities(sortedActivities);
       setSelectedStudent(studentInfo);
       
@@ -531,7 +569,8 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
               </div>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                {/* 학년, 반, 번호를 한 줄로 배치 */}
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">학년</label>
                     <select
@@ -551,39 +590,44 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">반</label>
-                    <input
-                      type="text"
+                    <select
                       value={searchForm.class}
                       onChange={(e) => setSearchForm({...searchForm, class: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="예: 1"
-                    />
+                    >
+                      <option value="">전체</option>
+                      {Array.from({length: 15}, (_, i) => i + 1).map(num => (
+                        <option key={num} value={num.toString()}>{num}반</option>
+                      ))}
+                    </select>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">번호</label>
-                    <input
-                      type="text"
+                    <select
                       value={searchForm.number}
                       onChange={(e) => setSearchForm({...searchForm, number: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="예: 15"
-                    />
+                    >
+                      <option value="">전체</option>
+                      {Array.from({length: 35}, (_, i) => i + 1).map(num => (
+                        <option key={num} value={num.toString()}>{num}번</option>
+                      ))}
+                    </select>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">학생 이름 *</label>
-                    <input
-                      type="text"
-                      value={searchForm.name}
-                      onChange={(e) => setSearchForm({...searchForm, name: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="이름 검색"
-                      required
-                    />
-                  </div>
+                {/* 학생 이름을 전체 너비로 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">학생 이름 *</label>
+                  <input
+                    type="text"
+                    value={searchForm.name}
+                    onChange={(e) => setSearchForm({...searchForm, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="이름 검색"
+                    required
+                  />
                 </div>
 
                 <button
@@ -627,10 +671,11 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
             </div>
 
             {/* 필터 */}
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-600">필터</span>
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="flex flex-col space-y-4">
+                {/* 필터 제목과 전체 선택 */}
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-900">필터 및 선택</h3>
                   {activities.length > 0 && (
                     <label className="flex items-center space-x-2">
                       <input
@@ -643,19 +688,74 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
                     </label>
                   )}
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <span>총 {activities.length}개의 활동 기록</span>
-                  <span>•</span>
-                  <span>선택됨: {activities.filter(a => a.selected).length}개</span>
-                  <button
-                    onClick={() => {
-                      // 필터 초기화 시 전체 선택 해제
-                      setActivities(prev => prev.map(activity => ({ ...activity, selected: false })));
-                    }}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    선택 초기화
-                  </button>
+
+                {/* 필터 옵션들 */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">사고루틴 유형</label>
+                    <select
+                      value={filterForm.routineType}
+                      onChange={(e) => setFilterForm({...filterForm, routineType: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      <option value="">전체 유형</option>
+                      <option value="see-think-wonder">See-Think-Wonder</option>
+                      <option value="4c">4C</option>
+                      <option value="circle-of-viewpoints">관점의 원</option>
+                      <option value="connect-extend-challenge">Connect-Extend-Challenge</option>
+                      <option value="frayer-model">프레이어 모델</option>
+                      <option value="used-to-think-now-think">이전-현재 생각</option>
+                      <option value="think-puzzle-explore">Think-Puzzle-Explore</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">시작 날짜</label>
+                    <input
+                      type="date"
+                      value={filterForm.startDate}
+                      onChange={(e) => setFilterForm({...filterForm, startDate: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">종료 날짜</label>
+                    <input
+                      type="date"
+                      value={filterForm.endDate}
+                      onChange={(e) => setFilterForm({...filterForm, endDate: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* 필터 결과 및 초기화 */}
+                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <span>총 {allActivities.length}개 중 {activities.length}개 표시</span>
+                    <span>•</span>
+                    <span>선택됨: {activities.filter(a => a.selected).length}개</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        setFilterForm({ routineType: '', startDate: '', endDate: '' });
+                      }}
+                      className="text-gray-600 hover:text-gray-800 text-sm"
+                    >
+                      필터 초기화
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button
+                      onClick={() => {
+                        setActivities(prev => prev.map(activity => ({ ...activity, selected: false })));
+                      }}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      선택 초기화
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
