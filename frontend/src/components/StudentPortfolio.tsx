@@ -59,7 +59,6 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
     endDate: ''
   });
   const [allActivities, setAllActivities] = useState<ActivityRoom[]>([]);
-  const [filteredActivities, setFilteredActivities] = useState<ActivityRoom[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
   const [activities, setActivities] = useState<ActivityRoom[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<ActivityRoom | null>(null);
@@ -124,7 +123,6 @@ const StudentPortfolio: React.FC<StudentPortfolioProps> = ({ onBack }) => {
       filtered = filtered.filter(activity => new Date(activity.submitted_at) <= endDate);
     }
 
-    setFilteredActivities(filtered);
     setActivities(filtered);
   }, [allActivities, filterForm]);
 
