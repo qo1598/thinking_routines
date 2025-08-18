@@ -671,41 +671,41 @@ const LandingPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">1</div>
-                  <div>
-                    <p className="text-white font-medium">접속</p>
-                    <p className="text-gray-400 text-sm">thinking-routines.vercel.app → 교사용 클릭</p>
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-left">접속</p>
+                    <p className="text-gray-400 text-sm text-left">thinking-routines.vercel.app → 교사용 클릭</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">2</div>
-                  <div>
-                    <p className="text-white font-medium">회원가입/로그인</p>
-                    <p className="text-gray-400 text-sm">이메일과 비밀번호로 간편 가입</p>
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-left">회원가입/로그인</p>
+                    <p className="text-gray-400 text-sm text-left">이메일과 비밀번호로 간편 가입</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">3</div>
-                  <div>
-                    <p className="text-white font-medium">활동방 생성</p>
-                    <p className="text-gray-400 text-sm">"새 활동방 만들기" → 사고루틴 선택 → 6자리 코드 생성</p>
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-left">활동방 생성</p>
+                    <p className="text-gray-400 text-sm text-left">"새 활동방 만들기" → 사고루틴 선택 → 6자리 코드 생성</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">4</div>
-                  <div>
-                    <p className="text-white font-medium">학생 참여</p>
-                    <p className="text-gray-400 text-sm">생성된 코드를 학생들에게 공유</p>
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-left">학생 참여</p>
+                    <p className="text-gray-400 text-sm text-left">생성된 코드를 학생들에게 공유</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">5</div>
-                  <div>
-                    <p className="text-white font-medium">실시간 모니터링</p>
-                    <p className="text-gray-400 text-sm">학생 응답을 실시간으로 확인하고 AI 피드백 받기</p>
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-left">실시간 모니터링</p>
+                    <p className="text-gray-400 text-sm text-left">학생 응답을 실시간으로 확인하고 AI 피드백 받기</p>
                   </div>
                 </div>
               </div>
@@ -723,41 +723,41 @@ const LandingPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">1</div>
-                  <div>
-                    <p className="text-white font-medium">접속</p>
-                    <p className="text-gray-400 text-sm">thinking-routines.vercel.app → 학생용 클릭</p>
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-left">접속</p>
+                    <p className="text-gray-400 text-sm text-left">thinking-routines.vercel.app → 학생용 클릭</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">2</div>
-                  <div>
-                    <p className="text-white font-medium">코드 입력</p>
-                    <p className="text-gray-400 text-sm">교사가 제공한 6자리 코드 입력</p>
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-left">코드 입력</p>
+                    <p className="text-gray-400 text-sm text-left">교사가 제공한 6자리 코드 입력</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">3</div>
-                  <div>
-                    <p className="text-white font-medium">이름 입력</p>
-                    <p className="text-gray-400 text-sm">본인 이름 입력 후 활동 시작</p>
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-left">이름 입력</p>
+                    <p className="text-gray-400 text-sm text-left">본인 이름 입력 후 활동 시작</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">4</div>
-                  <div>
-                    <p className="text-white font-medium">사고루틴 수행</p>
-                    <p className="text-gray-400 text-sm">3단계를 순서대로 진행 (🎤 음성 입력 지원!)</p>
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-left">사고루틴 수행</p>
+                    <p className="text-gray-400 text-sm text-left">3단계를 순서대로 진행 (🎤 음성 입력 지원!)</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">5</div>
-                  <div>
-                    <p className="text-white font-medium">제출 완료</p>
-                    <p className="text-gray-400 text-sm">모든 단계 완료 후 제출하면 포트폴리오에 자동 저장</p>
+                  <div className="flex-1">
+                    <p className="text-white font-medium text-left">제출 완료</p>
+                    <p className="text-gray-400 text-sm text-left">모든 단계 완료 후 제출하면 포트폴리오에 자동 저장</p>
                   </div>
                 </div>
               </div>
