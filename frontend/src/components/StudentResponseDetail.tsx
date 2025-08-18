@@ -213,6 +213,7 @@ const StudentResponseDetail: React.FC = () => {
               /###\s*특징\s*([\s\S]*?)(?=###|$)/i
             ],
             'wonder': [
+              /###\s*Examples?\s*&?\s*Non-Examples?\s*[(（]?예시[와반례]?[)）]?([\s\S]*?)(?=###|$)/i,
               /###\s*Examples?\s*[(（]?예시[와반례]?[)）]?([\s\S]*?)(?=###|$)/i,
               /###\s*예시[와반례]?\s*([\s\S]*?)(?=###|$)/i
             ]

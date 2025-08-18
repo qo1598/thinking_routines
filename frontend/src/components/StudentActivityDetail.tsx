@@ -659,7 +659,9 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                   const currentRoutineType = activity.routine_type || 'see-think-wonder';
                   const stepConfigs = routineStepConfigs[currentRoutineType] || routineStepConfigs['see-think-wonder'];
                   
-                  return Object.entries(responseData).map(([key, value]) => {
+                  return Object.entries(responseData)
+                    .filter(([key]) => key !== 'fourth_step' || currentRoutineType === '4c') // 4C가 아닌 경우 fourth_step 제외
+                    .map(([key, value]) => {
                     if (!value && key === 'fourth_step') return null;
                     const config = stepConfigs[key];
                     if (!config) return null;
@@ -1058,8 +1060,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
-        {/* 온라인 활동 교사 피드백 제거됨 */}
-        {false && (
+        {/* 교사 피드백 및 평가 섹션 */}
+        {(activity?.teacher_feedback || activity?.teacher_score || (aiAnalysis && aiAnalysis.teacherFeedback)) && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">👩‍🏫 교사 피드백 및 평가</h3>
