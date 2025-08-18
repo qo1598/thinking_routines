@@ -3,8 +3,8 @@
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/build",
   "functions": {
-    "api/*.js": {
-      "runtime": "nodejs18.x"
+    "api/gemini-analysis.js": {
+      "runtime": "@vercel/node@3.0.5"
     }
   },
   "rewrites": [
