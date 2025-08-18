@@ -147,7 +147,7 @@ const ROUTINE_CONFIGS = {
   }
 };
 
-const ThinkingRoutineForm: React.FC = () => {
+const ThinkingRoutinesForm: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   
@@ -1018,4 +1018,4 @@ const ThinkingRoutineForm: React.FC = () => {
   );
 };
 
-export default ThinkingRoutineForm; 
+export default ThinkingRoutinesForm; 

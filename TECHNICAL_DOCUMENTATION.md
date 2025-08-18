@@ -316,7 +316,7 @@ src/
 │   ├── TeacherRoomManagement.tsx    # 활동방 관리
 │   ├── StudentEntry.tsx             # 학생 입장
 │   ├── StudentPortfolio.tsx         # 학생 포트폴리오
-│   ├── SeeThinkWonderForm.tsx       # 사고루틴 폼
+│   ├── ThinkingRoutinesForm.tsx     # 사고루틴 폼
 │   ├── StudentActivityDetail.tsx    # 활동 상세
 │   ├── StudentResponseDetail.tsx    # 응답 상세
 │   ├── StudentActivityExplore.tsx   # 활동 탐색
@@ -342,7 +342,7 @@ src/
   
   {/* 학생용 */}
   <Route path="/student" element={<StudentEntry />} />
-  <Route path="/student/activity/:roomId" element={<SeeThinkWonderForm />} />
+  <Route path="/student/activity/:roomId" element={<ThinkingRoutinesForm />} />
   <Route path="/student/explore/:roomId" element={<StudentActivityExplore />} />
 </Routes>
 ```

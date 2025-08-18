@@ -615,17 +615,49 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                     );
                   }
                   
-                  // 기타 사고루틴들 (4C, Connect-Extend-Challenge 등)
-                  const stepConfigs: {[key: string]: {title: string, subtitle: string, color: string, bgColor: string, icon: string}} = {
-                    see: { title: 'See', subtitle: '보기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'S' },
-                    connect: { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'C' },
-                    think: { title: 'Think', subtitle: '생각하기', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'T' },
-                    challenge: { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500', bgColor: 'bg-red-50', icon: 'C' },
-                    wonder: { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'W' },
-                    concepts: { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'C' },
-                    changes: { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'C' },
-                    fourth_step: { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'C' }
+                  // 모든 사고루틴 유형별 단계 설정
+                  const routineStepConfigs: {[routineType: string]: {[key: string]: {title: string, subtitle: string, color: string, bgColor: string, icon: string}}} = {
+                    'see-think-wonder': {
+                      see: { title: 'See', subtitle: '보기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'S' },
+                      think: { title: 'Think', subtitle: '생각하기', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'T' },
+                      wonder: { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'W' }
+                    },
+                    '4c': {
+                      see: { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'C' },
+                      think: { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500', bgColor: 'bg-red-50', icon: 'C' },
+                      wonder: { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'C' },
+                      fourth_step: { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'C' }
+                    },
+                    'circle-of-viewpoints': {
+                      see: { title: 'Viewpoints', subtitle: '관점 탐색', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'V' },
+                      think: { title: 'Perspective', subtitle: '관점 선택', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'P' },
+                      wonder: { title: 'Questions', subtitle: '관점별 질문', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'Q' }
+                    },
+                    'connect-extend-challenge': {
+                      see: { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'C' },
+                      think: { title: 'Extend', subtitle: '확장하기', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'E' },
+                      wonder: { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500', bgColor: 'bg-red-50', icon: 'C' }
+                    },
+                    'frayer-model': {
+                      see: { title: 'Definition', subtitle: '정의', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'D' },
+                      think: { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'C' },
+                      wonder: { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'E' }
+                    },
+                    'used-to-think-now-think': {
+                      see: { title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'U' },
+                      think: { title: 'Now Think', subtitle: '현재 생각', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'N' },
+                      wonder: { title: 'Why Changed', subtitle: '변화 이유', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'W' }
+                    },
+                    'think-puzzle-explore': {
+                      see: { title: 'Think', subtitle: '생각하기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'T' },
+                      think: { title: 'Puzzle', subtitle: '퍼즐', color: 'bg-yellow-500', bgColor: 'bg-yellow-50', icon: 'P' },
+                      wonder: { title: 'Explore', subtitle: '탐구하기', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'E' }
+                    }
                   };
+
+                  // 현재 루틴 타입에 따른 설정 가져오기
+                  const currentRoutineType = activity.routine_type || 'see-think-wonder';
+                  const stepConfigs = routineStepConfigs[currentRoutineType] || routineStepConfigs['see-think-wonder'];
                   
                   return Object.entries(responseData).map(([key, value]) => {
                     if (!value && key === 'fourth_step') return null;

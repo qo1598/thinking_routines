@@ -8,7 +8,7 @@
     import StudentResponseDetail from './components/StudentResponseDetail';
     import StudentEntry from './components/StudentEntry';
     import StudentActivityDetail from './components/StudentActivityDetail';
-import SeeThinkWonderForm from './components/SeeThinkWonderForm';
+import ThinkingRoutinesForm from './components/ThinkingRoutinesForm';
 import StudentActivityExplore from './components/StudentActivityExplore';
     import './App.css';
     import * as ChannelService from '@channel.io/channel-web-sdk-loader';
@@ -54,7 +54,7 @@ import StudentActivityExplore from './components/StudentActivityExplore';
             <Route path="/teacher/room/:roomId/response/:responseId" element={<StudentResponseDetail />} />
             {/* 학생 관련 경로 */}
             <Route path="/student" element={<StudentEntry />} />
-            <Route path="/student/activity/:roomId" element={<SeeThinkWonderForm />} />
+            <Route path="/student/activity/:roomId" element={<ThinkingRoutinesForm />} />
             <Route path="/student/explore/:roomId" element={<StudentActivityExplore />} />
           </Routes>
         </div>

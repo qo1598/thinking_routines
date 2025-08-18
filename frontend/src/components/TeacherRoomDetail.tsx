@@ -44,6 +44,7 @@ interface StudentResponse {
 const ROUTINE_CONFIGS = {
   'see-think-wonder': {
     name: 'See-Think-Wonder',
+    steps: ['see', 'think', 'wonder'],
     stepLabels: {
       see: { title: 'See', subtitle: '보기' },
       think: { title: 'Think', subtitle: '생각하기' },
@@ -57,6 +58,7 @@ const ROUTINE_CONFIGS = {
   },
   '4c': {
     name: '4C',
+    steps: ['see', 'think', 'wonder', 'fourth_step'],
     stepLabels: {
       see: { title: 'Connect', subtitle: '연결하기' },
       think: { title: 'Challenge', subtitle: '도전하기' },
@@ -72,6 +74,7 @@ const ROUTINE_CONFIGS = {
   },
   'circle-of-viewpoints': {
     name: 'Circle of Viewpoints',
+    steps: ['see', 'think', 'wonder'],
     stepLabels: {
       see: { title: 'Viewpoints', subtitle: '관점 탐색' },
       think: { title: 'Perspective', subtitle: '관점 선택' },
@@ -85,6 +88,7 @@ const ROUTINE_CONFIGS = {
   },
   'connect-extend-challenge': {
     name: 'Connect-Extend-Challenge',
+    steps: ['see', 'think', 'wonder'],
     stepLabels: {
       see: { title: 'Connect', subtitle: '연결하기' },
       think: { title: 'Extend', subtitle: '확장하기' },
@@ -98,6 +102,7 @@ const ROUTINE_CONFIGS = {
   },
   'frayer-model': {
     name: 'Frayer Model',
+    steps: ['see', 'think', 'wonder'],
     stepLabels: {
       see: { title: 'Definition', subtitle: '정의' },
       think: { title: 'Characteristics', subtitle: '특징' },
@@ -111,6 +116,7 @@ const ROUTINE_CONFIGS = {
   },
   'used-to-think-now-think': {
     name: 'I Used to Think... Now I Think...',
+    steps: ['see', 'think', 'wonder'],
     stepLabels: {
       see: { title: 'Used to Think', subtitle: '이전 생각' },
       think: { title: 'Now Think', subtitle: '현재 생각' },
@@ -124,6 +130,7 @@ const ROUTINE_CONFIGS = {
   },
   'think-puzzle-explore': {
     name: 'Think-Puzzle-Explore',
+    steps: ['see', 'think', 'wonder'],
     stepLabels: {
       see: { title: 'Think', subtitle: '생각하기' },
       think: { title: 'Puzzle', subtitle: '퍼즐' },

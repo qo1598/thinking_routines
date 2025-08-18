@@ -158,42 +158,92 @@ const StudentResponseDetail: React.FC = () => {
             ]
           },
           '4c': {
-            'connect': [/###\s*Connect\s*[(（]?연결[)）]?([\s\S]*?)(?=###|$)/i],
-            'challenge': [/###\s*Challenge\s*[(（]?도전[)）]?([\s\S]*?)(?=###|$)/i],
-            'concepts': [/###\s*Concepts?\s*[(（]?개념[)）]?([\s\S]*?)(?=###|$)/i],
-            'changes': [/###\s*Changes?\s*[(（]?변화[)）]?([\s\S]*?)(?=###|$)/i]
-          },
-          'frayer-model': {
-            'definition': [
-              /###\s*Definition\s*[(（]?정의[)）]?([\s\S]*?)(?=###|$)/i,
-              /###\s*정의\s*([\s\S]*?)(?=###|$)/i
+            'see': [
+              /###\s*Connect\s*[(（]?연결[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*연결[하기]?\s*([\s\S]*?)(?=###|$)/i
             ],
-            'characteristics': [
-              /###\s*Characteristics\s*[(（]?특징[)）]?([\s\S]*?)(?=###|$)/i,
-              /###\s*특징\s*([\s\S]*?)(?=###|$)/i
+            'think': [
+              /###\s*Challenge\s*[(（]?도전[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*도전[하기]?\s*([\s\S]*?)(?=###|$)/i
             ],
-            'examples': [
-              /###\s*Examples?\s*&?\s*Non-Examples?\s*[(（]?예시\s*와?\s*반례[)）]?([\s\S]*?)(?=###|$)/i,
-              /###\s*예시\s*와?\s*반례\s*([\s\S]*?)(?=###|$)/i
+            'wonder': [
+              /###\s*Concepts?\s*[(（]?개념[파악]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*개념[파악]?\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'fourth_step': [
+              /###\s*Changes?\s*[(（]?변화[제안]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*변화[제안]?\s*([\s\S]*?)(?=###|$)/i
             ]
           },
           'circle-of-viewpoints': {
-            'viewpoint': [/###\s*Viewpoint\s*[(（]?관점[)）]?([\s\S]*?)(?=###|$)/i],
-            'perspective': [/###\s*Perspective\s*[(（]?시각[)）]?([\s\S]*?)(?=###|$)/i]
+            'see': [
+              /###\s*Viewpoints?\s*[(（]?관점[탐색]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*관점[탐색]?\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'think': [
+              /###\s*Perspective\s*[(（]?관점[선택]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*관점[선택]?\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'wonder': [
+              /###\s*Questions?\s*[(（]?관점별[질문]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*관점별[질문]?\s*([\s\S]*?)(?=###|$)/i
+            ]
           },
           'connect-extend-challenge': {
-            'connect': [/###\s*Connect\s*[(（]?연결[)）]?([\s\S]*?)(?=###|$)/i],
-            'extend': [/###\s*Extend\s*[(（]?확장[)）]?([\s\S]*?)(?=###|$)/i],
-            'challenge': [/###\s*Challenge\s*[(（]?도전[)）]?([\s\S]*?)(?=###|$)/i]
+            'see': [
+              /###\s*Connect\s*[(（]?연결[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*연결[하기]?\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'think': [
+              /###\s*Extend\s*[(（]?확장[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*확장[하기]?\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'wonder': [
+              /###\s*Challenge\s*[(（]?도전[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*도전[하기]?\s*([\s\S]*?)(?=###|$)/i
+            ]
+          },
+          'frayer-model': {
+            'see': [
+              /###\s*Definition\s*[(（]?정의[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*정의\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'think': [
+              /###\s*Characteristics?\s*[(（]?특징[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*특징\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'wonder': [
+              /###\s*Examples?\s*[(（]?예시[와반례]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*예시[와반례]?\s*([\s\S]*?)(?=###|$)/i
+            ]
           },
           'used-to-think-now-think': {
-            'used-to-think': [/###\s*Used\s*to\s*Think\s*[(（]?이전\s*생각[)）]?([\s\S]*?)(?=###|$)/i],
-            'now-think': [/###\s*Now\s*Think\s*[(（]?현재\s*생각[)）]?([\s\S]*?)(?=###|$)/i]
+            'see': [
+              /###\s*Used\s*to\s*Think\s*[(（]?이전[생각]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*이전[생각]?\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'think': [
+              /###\s*Now\s*Think\s*[(（]?현재[생각]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*현재[생각]?\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'wonder': [
+              /###\s*Why\s*Changed\s*[(（]?변화[이유]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*변화[이유]?\s*([\s\S]*?)(?=###|$)/i
+            ]
           },
           'think-puzzle-explore': {
-            'think': [/###\s*Think\s*[(（]?생각[)）]?([\s\S]*?)(?=###|$)/i],
-            'puzzle': [/###\s*Puzzle\s*[(（]?퍼즐[)）]?([\s\S]*?)(?=###|$)/i],
-            'explore': [/###\s*Explore\s*[(（]?탐구[)）]?([\s\S]*?)(?=###|$)/i]
+            'see': [
+              /###\s*Think\s*[(（]?생각[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*생각[하기]?\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'think': [
+              /###\s*Puzzle\s*[(（]?퍼즐[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*퍼즐\s*([\s\S]*?)(?=###|$)/i
+            ],
+            'wonder': [
+              /###\s*Explore\s*[(（]?탐구[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
+              /###\s*탐구[하기]?\s*([\s\S]*?)(?=###|$)/i
+            ]
           }
         };
         
@@ -1303,36 +1353,45 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
                       'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' }
                     },
                     '4c': {
-                      'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-                      'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
-                      'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
-                      'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' }
+                      'see': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+                      'think': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
+                      'wonder': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
+                      'fourth_step': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' }
                     },
                     'frayer-model': {
-                      'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
-                      'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
-                      'examples': { title: 'Examples & Non-Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
+                      'see': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
+                      'think': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
+                      'wonder': { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
                     },
                     'circle-of-viewpoints': {
-                      'viewpoint': { title: 'Viewpoint', subtitle: '관점', color: 'bg-blue-500' },
-                      'perspective': { title: 'Perspective', subtitle: '시각', color: 'bg-green-500' }
+                      'see': { title: 'Viewpoints', subtitle: '관점 탐색', color: 'bg-blue-500' },
+                      'think': { title: 'Perspective', subtitle: '관점 선택', color: 'bg-green-500' },
+                      'wonder': { title: 'Questions', subtitle: '관점별 질문', color: 'bg-purple-500' }
                     },
                     'connect-extend-challenge': {
-                      'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-                      'extend': { title: 'Extend', subtitle: '확장하기', color: 'bg-green-500' },
-                      'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' }
+                      'see': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+                      'think': { title: 'Extend', subtitle: '확장하기', color: 'bg-green-500' },
+                      'wonder': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' }
                     },
                     'used-to-think-now-think': {
-                      'used-to-think': { title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500' },
-                      'now-think': { title: 'Now Think', subtitle: '현재 생각', color: 'bg-green-500' }
+                      'see': { title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500' },
+                      'think': { title: 'Now Think', subtitle: '현재 생각', color: 'bg-green-500' },
+                      'wonder': { title: 'Why Changed', subtitle: '변화 이유', color: 'bg-purple-500' }
                     },
                     'think-puzzle-explore': {
-                      'think': { title: 'Think', subtitle: '생각', color: 'bg-blue-500' },
-                      'puzzle': { title: 'Puzzle', subtitle: '퍼즐', color: 'bg-yellow-500' },
-                      'explore': { title: 'Explore', subtitle: '탐구', color: 'bg-green-500' }
+                      'see': { title: 'Think', subtitle: '생각하기', color: 'bg-blue-500' },
+                      'think': { title: 'Puzzle', subtitle: '퍼즐', color: 'bg-yellow-500' },
+                      'wonder': { title: 'Explore', subtitle: '탐구하기', color: 'bg-green-500' }
                     }
                   };
-                  
+
+                  // 기본값 처리 - 설정되지 않은 루틴의 경우
+                  const defaultStepInfo = {
+                    'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
+                    'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
+                    'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' }
+                  };
+
                   const currentRoutineType = template?.routine_type || room?.thinking_routine_type || 'see-think-wonder';
                   const stepInfoMap = stepInfoMaps[currentRoutineType] || stepInfoMaps['see-think-wonder'];
 
