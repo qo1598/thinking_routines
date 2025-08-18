@@ -2,7 +2,9 @@
   "build": {
     "env": {
       "GENERATE_SOURCEMAP": "false",
-      "INLINE_RUNTIME_CHUNK": "false"
+      "INLINE_RUNTIME_CHUNK": "false",
+      "NODE_OPTIONS": "--max_old_space_size=4096",
+      "SKIP_PREFLIGHT_CHECK": "true"
     }
   },
   "buildCommand": "npm run build --prefix frontend",
