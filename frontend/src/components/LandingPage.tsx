@@ -18,6 +18,8 @@ const LandingPage: React.FC = () => {
   const featuresRef = useRef<HTMLDivElement[]>([]);
   const ctaRef = useRef<HTMLDivElement>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [selectedRoutine, setSelectedRoutine] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 마우스 트래킹 (Apple스러운 마그네틱 효과)
   useEffect(() => {
@@ -28,6 +30,18 @@ const LandingPage: React.FC = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  // ESC 키로 모달 닫기
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isModalOpen) {
+        setIsModalOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isModalOpen]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -407,25 +421,25 @@ const LandingPage: React.FC = () => {
 
   const features = [
     {
-      title: "음성 입력 지원",
-      description: "STT 기술로 편리하게 답변을 입력할 수 있습니다",
-      emoji: "🎤",
+      title: "활동방 생성 및 관리",
+      description: "다양한 사고루틴으로 활동방을 쉽게 만들고 관리할 수 있습니다",
+      emoji: "🏠",
       color: "from-blue-500 to-indigo-600",
-      details: "브라우저 마이크 권한으로 음성을 텍스트로 자동 변환"
+      details: "6자리 코드 생성으로 학생들의 간편한 참여 유도"
     },
     {
-      title: "AI 피드백",
-      description: "Google Gemini API로 지능형 학습 분석을 제공합니다",
-      emoji: "🤖",
+      title: "실시간 학생 응답 확인",
+      description: "학생들의 사고루틴 진행 상황을 실시간으로 모니터링합니다",
+      emoji: "👀",
       color: "from-purple-500 to-pink-600",
-      details: "사고 깊이와 창의성을 분석하여 개선점 제안"
+      details: "각 단계별 응답 내용과 진행률을 즉시 확인"
     },
     {
-      title: "실시간 학습",
-      description: "교사와 학생이 실시간으로 상호작용할 수 있습니다",
-      emoji: "📱",
+      title: "AI 기반 분석 및 피드백",
+      description: "Google Gemini API로 학생 응답을 자동 분석하고 피드백을 제공합니다",
+      emoji: "🤖",
       color: "from-green-500 to-teal-600",
-      details: "6자리 코드로 즉시 참여하여 협력적 학습 경험"
+      details: "사고 깊이와 창의성을 분석하여 맞춤형 개선점 제안"
     }
   ];
 
@@ -454,11 +468,11 @@ const LandingPage: React.FC = () => {
             style={{ fontFamily: 'SF Pro Display, -apple-system, sans-serif' }}
           >
             <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
-              Think
+              사고루틴
             </span>
             <br />
             <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Routines
+              학습 플랫폼
             </span>
           </h1>
 
@@ -467,11 +481,9 @@ const LandingPage: React.FC = () => {
             ref={subtitleRef}
             className="text-xl md:text-2xl text-gray-300 mb-16 max-w-3xl mx-auto leading-relaxed"
           >
-            하버드 대학교 Project Zero에서 개발한 사고루틴으로<br />
-            <span className="text-blue-400 font-medium">비판적 사고력</span>, 
-            <span className="text-purple-400 font-medium"> 창의적 문제해결능력</span>, 
-            <span className="text-pink-400 font-medium"> 메타인지 능력</span>을<br />
-            체계적으로 기를 수 있습니다.
+            사고루틴은 다양한 교육 상황에서<br />
+            학생들의 <span className="text-blue-400">깊이 있는 사고</span>와 
+            <span className="text-purple-400"> 창의적 표현</span>을 이끌어냅니다.
           </p>
 
           {/* Apple 스타일 버튼들 */}
@@ -481,20 +493,16 @@ const LandingPage: React.FC = () => {
               className="group relative px-12 py-6 bg-white text-black rounded-full text-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-2xl overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative z-10 group-hover:text-white transition-colors duration-300 flex items-center gap-3">
-                <span className="text-2xl">👨‍🏫</span>
+              <div className="relative z-10 group-hover:text-white transition-colors duration-300">
                 교사로 시작하기
               </div>
             </button>
             
             <button
               onClick={() => navigate('/student')}
-              className="group relative px-12 py-6 border-2 border-white/30 rounded-full text-xl font-medium text-white transition-all duration-300 hover:scale-105 hover:border-white/60 hover:bg-white/10 backdrop-blur-sm"
+              className="group relative px-12 py-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full text-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-2xl"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">👨‍🎓</span>
-                학생으로 참여하기
-              </div>
+              학생으로 참여하기
             </button>
           </div>
 
@@ -515,12 +523,14 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
             <h2 className="animate-text text-5xl md:text-6xl font-thin mb-8 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              7가지 사고루틴
+              사고루틴이란?
             </h2>
             <p className="animate-text text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
-              각각의 사고루틴은 다양한 교육 상황에서<br />
-              학생들의 <span className="text-blue-400">깊이 있는 사고</span>와 
-              <span className="text-purple-400"> 창의적 표현</span>을 이끌어냅니다.
+              하버드 대학교 Project Zero에서 개발한 사고루틴으로<br />
+              <span className="text-blue-400 font-medium">비판적 사고력</span>, 
+              <span className="text-purple-400 font-medium"> 창의적 문제해결능력</span>, 
+              <span className="text-pink-400 font-medium"> 메타인지 능력</span>을<br />
+              체계적으로 기를 수 있습니다.
             </p>
           </div>
 
@@ -531,6 +541,10 @@ const LandingPage: React.FC = () => {
                 ref={addToRefs}
                 className="group relative bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-xl rounded-3xl border border-gray-700/50 overflow-hidden cursor-pointer transition-all duration-500 hover:border-gray-600/70"
                 style={{ perspective: '1000px' }}
+                onClick={() => {
+                  setSelectedRoutine(routine);
+                  setIsModalOpen(true);
+                }}
               >
                 {/* 카드 그라데이션 배경 */}
                 <div className={`card-gradient absolute inset-0 bg-gradient-to-br ${routine.color} opacity-0 transition-all duration-500`}></div>
@@ -540,14 +554,8 @@ const LandingPage: React.FC = () => {
                 
                 {/* 카드 내용 */}
                 <div className="relative p-8 h-full flex flex-col">
-                  {/* 카드 번호 */}
-                  <div className="absolute top-6 right-6 w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20">
-                    <span className="text-sm font-bold text-white/80">{routine.id}</span>
-                  </div>
-
-                  {/* 이모지와 헤더 */}
+                  {/* 헤더 */}
                   <div className="text-center mb-6">
-                    <div className="text-5xl mb-4 filter drop-shadow-lg">{routine.emoji}</div>
                     <h3 className="text-2xl font-semibold text-white mb-2 leading-tight">
                       {routine.title}
                     </h3>
@@ -561,18 +569,6 @@ const LandingPage: React.FC = () => {
                     {routine.longDescription}
                   </p>
 
-                  {/* 적용 분야 태그들 */}
-                  <div className="flex flex-wrap gap-2 mb-6 justify-center">
-                    {routine.subjects.slice(0, 3).map((subject, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-xs text-white/80 border border-white/20"
-                      >
-                        {subject}
-                      </span>
-                    ))}
-                  </div>
-
                   {/* 단계들 */}
                   <div className="space-y-3">
                     {routine.steps.map((step, stepIndex) => (
@@ -580,7 +576,6 @@ const LandingPage: React.FC = () => {
                         key={stepIndex}
                         className="flex items-center p-3 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10"
                       >
-                        <div className="text-lg mr-3">{step.color}</div>
                         <div className="flex-1">
                           <div className="text-white font-medium text-sm">{step.name}</div>
                           <div className="text-gray-400 text-xs">{step.description}</div>
@@ -611,11 +606,11 @@ const LandingPage: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-20">
             <h2 className="animate-text text-4xl md:text-5xl font-thin mb-8 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              혁신적인 학습 경험
+              주요 기능
             </h2>
             <p className="animate-text text-xl text-gray-400 max-w-2xl mx-auto">
-              최신 기술과 교육학적 통찰이 만나 만들어낸<br />
-              차세대 학습 플랫폼입니다.
+              교사와 학생 모두를 위한<br />
+              강력하고 직관적인 기능들입니다.
             </p>
           </div>
 
@@ -654,77 +649,319 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* CTA 섹션 */}
+      {/* 빠른 시작 가이드 섹션 */}
       <section className="relative py-32 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div 
-            ref={ctaRef}
-            className="relative bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl rounded-[3rem] border border-gray-700/50 p-12 text-center overflow-hidden"
-          >
-            {/* 배경 그라데이션 효과 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
-            
-            {/* 내용 */}
-            <div className="relative z-10">
-              <h3 className="text-4xl md:text-5xl font-thin mb-6 bg-gradient-to-r from-white via-blue-400 to-purple-400 bg-clip-text text-transparent">
-                지금 바로 시작하세요
-              </h3>
-              <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed">
-                체계적 사고력 향상과 창의적 학습 경험을<br />
-                <span className="text-blue-400">thinking-routines.vercel.app</span>에서 만나보세요
-              </p>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="animate-text text-4xl md:text-5xl font-thin mb-8 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              빠른 시작 가이드
+            </h2>
+          </div>
 
-              <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                <button
-                  onClick={() => navigate('/teacher')}
-                  className="group relative px-10 py-4 bg-white text-black rounded-full text-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-2xl overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative z-10 group-hover:text-white transition-colors duration-300 flex items-center gap-3">
-                    <span className="text-xl">👨‍🏫</span>
-                    교사로 시작하기
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => navigate('/student')}
-                  className="group relative px-10 py-4 border-2 border-white/30 rounded-full text-lg font-medium text-white transition-all duration-300 hover:scale-105 hover:border-white/60 hover:bg-white/10 backdrop-blur-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">👨‍🎓</span>
-                    학생으로 참여하기
-                  </div>
-                </button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* 교사용 가이드 */}
+            <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl rounded-3xl border border-gray-700/50 p-8">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl text-white font-bold">교</span>
+                </div>
+                <h3 className="text-2xl font-semibold text-white mb-2">교사는 이렇게!</h3>
               </div>
-
-              {/* 추가 정보 */}
-              <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                <div className="text-gray-400">
-                  <div className="text-2xl font-bold text-blue-400 mb-2">7가지</div>
-                  <div className="text-sm">사고루틴</div>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">1</div>
+                  <div>
+                    <p className="text-white font-medium">접속</p>
+                    <p className="text-gray-400 text-sm">thinking-routines.vercel.app → 교사용 클릭</p>
+                  </div>
                 </div>
-                <div className="text-gray-400">
-                  <div className="text-2xl font-bold text-purple-400 mb-2">실시간</div>
-                  <div className="text-sm">AI 피드백</div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">2</div>
+                  <div>
+                    <p className="text-white font-medium">회원가입/로그인</p>
+                    <p className="text-gray-400 text-sm">이메일과 비밀번호로 간편 가입</p>
+                  </div>
                 </div>
-                <div className="text-gray-400">
-                  <div className="text-2xl font-bold text-pink-400 mb-2">6자리</div>
-                  <div className="text-sm">간편 참여</div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">3</div>
+                  <div>
+                    <p className="text-white font-medium">활동방 생성</p>
+                    <p className="text-gray-400 text-sm">"새 활동방 만들기" → 사고루틴 선택 → 6자리 코드 생성</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">4</div>
+                  <div>
+                    <p className="text-white font-medium">학생 참여</p>
+                    <p className="text-gray-400 text-sm">생성된 코드를 학생들에게 공유</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">5</div>
+                  <div>
+                    <p className="text-white font-medium">실시간 모니터링</p>
+                    <p className="text-gray-400 text-sm">학생 응답을 실시간으로 확인하고 AI 피드백 받기</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* 테두리 효과 */}
-            <div className="absolute inset-0 rounded-[3rem] border-2 border-transparent bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 bg-clip-border"></div>
+            {/* 학생용 가이드 */}
+            <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-xl rounded-3xl border border-gray-700/50 p-8">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl text-white font-bold">학</span>
+                </div>
+                <h3 className="text-2xl font-semibold text-white mb-2">학생은 이렇게!</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">1</div>
+                  <div>
+                    <p className="text-white font-medium">접속</p>
+                    <p className="text-gray-400 text-sm">thinking-routines.vercel.app → 학생용 클릭</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">2</div>
+                  <div>
+                    <p className="text-white font-medium">코드 입력</p>
+                    <p className="text-gray-400 text-sm">교사가 제공한 6자리 코드 입력</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">3</div>
+                  <div>
+                    <p className="text-white font-medium">이름 입력</p>
+                    <p className="text-gray-400 text-sm">본인 이름 입력 후 활동 시작</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">4</div>
+                  <div>
+                    <p className="text-white font-medium">사고루틴 수행</p>
+                    <p className="text-gray-400 text-sm">3단계를 순서대로 진행 (🎤 음성 입력 지원!)</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">5</div>
+                  <div>
+                    <p className="text-white font-medium">제출 완료</p>
+                    <p className="text-gray-400 text-sm">모든 단계 완료 후 제출하면 포트폴리오에 자동 저장</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 시작 버튼들 */}
+          <div className="text-center mt-16">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+              <button
+                onClick={() => navigate('/teacher')}
+                className="group relative px-12 py-6 bg-white text-black rounded-full text-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-2xl overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative z-10 group-hover:text-white transition-colors duration-300">
+                  교사로 시작하기
+                </div>
+              </button>
+              
+              <button
+                onClick={() => navigate('/student')}
+                className="group relative px-12 py-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full text-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+              >
+                학생으로 참여하기
+              </button>
+            </div>
           </div>
         </div>
       </section>
+
+      {/* 사고루틴 상세 모달 */}
+      {isModalOpen && selectedRoutine && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative max-w-4xl w-full max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-xl rounded-3xl border border-gray-700/50 p-8">
+            {/* 닫기 버튼 */}
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors duration-200"
+            >
+              ✕
+            </button>
+
+            {/* 모달 헤더 */}
+            <div className="text-center mb-8">
+              <h2 className="text-4xl font-bold text-white mb-2">{selectedRoutine.title}</h2>
+              <p className="text-xl text-gray-300">{selectedRoutine.subtitle}</p>
+              <p className="text-gray-400 mt-4 leading-relaxed">{selectedRoutine.longDescription}</p>
+            </div>
+
+            {/* 단계별 상세 설명 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {selectedRoutine.steps.map((step: any, index: number) => (
+                <div key={index} className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+                  <div className="text-center mb-4">
+                    <h3 className="text-xl font-semibold text-white mb-2">{step.name}</h3>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-blue-400 font-medium mb-2">💡 목표</h4>
+                      <p className="text-gray-300 text-sm">{step.description}</p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-purple-400 font-medium mb-2">❓ 질문 예시</h4>
+                      <p className="text-gray-300 text-sm">
+                        {step.name === 'SEE' && '"이 자료에서 무엇을 보았나요?"'}
+                        {step.name === 'THINK' && '"이것에 대해 어떻게 생각하나요?"'}
+                        {step.name === 'WONDER' && '"이것에 대해 무엇이 궁금한가요?"'}
+                        {step.name === 'CONNECT' && '"이 내용이 이미 알고 있는 것과 어떻게 연결되나요?"'}
+                        {step.name === 'CHALLENGE' && '"이 내용에서 어떤 아이디어나 가정에 도전하고 싶나요?"'}
+                        {step.name === 'CONCEPTS' && '"이 내용에서 중요하다고 생각하는 핵심 개념은 무엇인가요?"'}
+                        {step.name === 'CHANGES' && '"이 내용이 당신이나 다른 사람들에게 어떤 변화를 제안하나요?"'}
+                        {step.name === 'VIEWPOINTS' && '"이 주제에 대해 다양한 관점을 가질 수 있는 사람들은 누구인가요?"'}
+                        {step.name === 'PERSPECTIVE' && '"선택한 관점에서 이 주제를 어떻게 바라볼까요?"'}
+                        {step.name === 'QUESTIONS' && '"이 관점에서 가질 수 있는 질문은 무엇인가요?"'}
+                        {step.name === 'EXTEND' && '"이 내용이 당신의 생각을 어떻게 확장시켰나요?"'}
+                        {step.name === 'DEFINITION' && '"이 개념을 어떻게 정의하겠나요?"'}
+                        {step.name === 'CHARACTERISTICS' && '"이 개념의 주요 특징은 무엇인가요?"'}
+                        {step.name === 'EXAMPLES' && '"이 개념의 예시와 반례는 무엇인가요?"'}
+                        {step.name === 'USED TO THINK' && '"이 주제에 대해 이전에 어떻게 생각했나요?"'}
+                        {step.name === 'NOW THINK' && '"지금은 어떻게 생각하나요?"'}
+                        {step.name === 'WHY CHANGED' && '"생각이 바뀐 이유는 무엇인가요?"'}
+                        {step.name === 'PUZZLE' && '"무엇이 퍼즐이나 의문점인가요?"'}
+                        {step.name === 'EXPLORE' && '"이 퍼즐을 어떻게 탐구해보고 싶나요?"'}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-pink-400 font-medium mb-2">✍️ 작성 팁</h4>
+                      <p className="text-gray-300 text-sm">
+                        {step.name === 'SEE' && '"~이 보입니다", "~가 있습니다" 형태로 사실만 기술하세요.'}
+                        {step.name === 'THINK' && '"~라고 생각합니다" 형태로 관찰한 근거를 바탕으로 추론하세요.'}
+                        {step.name === 'WONDER' && '"~가 궁금합니다" 형태로 탐구하고 싶은 주제를 표현하세요.'}
+                        {step.name === 'CONNECT' && '이전 학습, 경험, 지식과의 공통점이나 연관성을 찾아보세요.'}
+                        {step.name === 'CHALLENGE' && '당연하다고 여겨지는 것에 대해 의문을 제기해보세요.'}
+                        {step.name === 'CONCEPTS' && '가장 중요한 개념이나 원리를 명확히 표현하세요.'}
+                        {step.name === 'CHANGES' && '구체적이고 실행 가능한 변화 방안을 제시하세요.'}
+                        {step.name === 'VIEWPOINTS' && '학생, 교사, 부모, 정부 등 다양한 입장의 사람들을 나열하세요.'}
+                        {step.name === 'PERSPECTIVE' && '선택한 관점의 입장에서 생각하고 느낄 수 있는 내용을 표현하세요.'}
+                        {step.name === 'QUESTIONS' && '해당 관점에서 중요하게 여길 만한 궁금증이나 우려사항을 작성하세요.'}
+                        {step.name === 'EXTEND' && '새롭게 알게 된 점, 확장된 관점, 깊어진 이해를 표현하세요.'}
+                        {step.name === 'DEFINITION' && '핵심적이고 정확한 정의를 간결하게 표현하세요.'}
+                        {step.name === 'CHARACTERISTICS' && '해당 개념을 다른 개념과 구별하는 고유한 특성들을 나열하세요.'}
+                        {step.name === 'EXAMPLES' && '긍정적 예시와 부정적 예시(반례)를 균형 있게 제시하세요.'}
+                        {step.name === 'USED TO THINK' && '솔직하고 구체적으로 이전 생각이나 오해를 기술하세요.'}
+                        {step.name === 'NOW THINK' && '새롭게 알게 된 내용, 바뀐 관점, 깊어진 이해를 표현하세요.'}
+                        {step.name === 'WHY CHANGED' && '어떤 정보나 경험이 생각의 변화를 가져왔는지 구체적으로 설명하세요.'}
+                        {step.name === 'PUZZLE' && '이해하기 어려운 부분, 모순되는 점, 더 알고 싶은 내용을 작성하세요.'}
+                        {step.name === 'EXPLORE' && '실행 가능한 구체적인 탐구 방법이나 활동을 제안하세요.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 교과별 활용 예시 */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+              <h3 className="text-2xl font-semibold text-white mb-4 text-center">📚 교과별 활용 예시</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {selectedRoutine.title === 'See-Think-Wonder' && (
+                  <>
+                    <div>
+                      <h4 className="text-blue-400 font-medium mb-2">🎨 미술 - 명화 감상</h4>
+                      <ul className="text-gray-300 text-sm space-y-1">
+                        <li>• <strong>보기:</strong> 색채, 구도, 인물의 표정 등 객관적 관찰</li>
+                        <li>• <strong>생각하기:</strong> 화가의 의도, 시대적 배경 추론</li>
+                        <li>• <strong>궁금하기:</strong> 제작 기법, 영감의 원천에 대한 궁금증</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="text-green-400 font-medium mb-2">🧪 과학 - 실험 관찰</h4>
+                      <ul className="text-gray-300 text-sm space-y-1">
+                        <li>• <strong>보기:</strong> 실험 현상의 구체적 관찰</li>
+                        <li>• <strong>생각하기:</strong> 현상의 원리와 원인 추론</li>
+                        <li>• <strong>궁금하기:</strong> 추가 실험이나 응용에 대한 호기심</li>
+                      </ul>
+                    </div>
+                  </>
+                )}
+                
+                {selectedRoutine.title === '4C' && (
+                  <>
+                    <div>
+                      <h4 className="text-purple-400 font-medium mb-2">🏛️ 사회 - 역사 사건</h4>
+                      <ul className="text-gray-300 text-sm space-y-1">
+                        <li>• <strong>연결:</strong> 현재 사회 문제와의 연관성</li>
+                        <li>• <strong>도전:</strong> 기존 역사 해석에 대한 의문</li>
+                        <li>• <strong>개념:</strong> 핵심 역사적 개념 파악</li>
+                        <li>• <strong>변화:</strong> 현재에 적용할 수 있는 교훈</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="text-orange-400 font-medium mb-2">🧬 과학 - 생명과학</h4>
+                      <ul className="text-gray-300 text-sm space-y-1">
+                        <li>• <strong>연결:</strong> 일상생활 속 생명현상</li>
+                        <li>• <strong>도전:</strong> 과학적 가설에 대한 비판적 검토</li>
+                        <li>• <strong>개념:</strong> 핵심 생물학적 원리</li>
+                        <li>• <strong>변화:</strong> 건강한 생활습관 제안</li>
+                      </ul>
+                    </div>
+                  </>
+                )}
+                
+                {(selectedRoutine.title === 'Circle of Viewpoints') && (
+                  <>
+                    <div>
+                      <h4 className="text-green-400 font-medium mb-2">📖 국어 - 소설 등장인물 분석</h4>
+                      <ul className="text-gray-300 text-sm space-y-1">
+                        <li>• <strong>관점 탐색:</strong> 주인공, 조연, 작가, 독자의 관점</li>
+                        <li>• <strong>관점 선택:</strong> 주인공의 입장에서 사건 바라보기</li>
+                        <li>• <strong>관점별 질문:</strong> "주인공이라면 어떤 선택을 했을까?"</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="text-red-400 font-medium mb-2">⚖️ 윤리 - 도덕적 딜레마</h4>
+                      <ul className="text-gray-300 text-sm space-y-1">
+                        <li>• <strong>관점 탐색:</strong> 당사자, 가족, 사회의 관점</li>
+                        <li>• <strong>관점 선택:</strong> 특정 이해관계자 입장</li>
+                        <li>• <strong>관점별 질문:</strong> 각 입장에서의 윤리적 고민</li>
+                      </ul>
+                    </div>
+                  </>
+                )}
+                
+                {/* 다른 사고루틴들도 비슷하게 추가 */}
+                {!['See-Think-Wonder', '4C', 'Circle of Viewpoints'].includes(selectedRoutine.title) && (
+                  <div className="col-span-full text-center">
+                    <p className="text-gray-400">다양한 교과에서 활용 가능한 사고루틴입니다.</p>
+                    <p className="text-gray-300 mt-2">상황에 맞게 적용해보세요!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 푸터 */}
       <footer className="relative py-16 px-4 border-t border-gray-800/50">
         <div className="max-w-4xl mx-auto text-center">
           <div className="mb-8">
-            <h4 className="text-2xl font-thin text-white mb-2">Think Routines</h4>
+            <h4 className="text-2xl font-thin text-white mb-2">사고루틴<br />학습 플랫폼</h4>
             <p className="text-gray-400">하버드 Project Zero 기반 사고루틴 학습 플랫폼</p>
           </div>
           
@@ -732,9 +969,6 @@ const LandingPage: React.FC = () => {
             <a href="mailto:qo1598@dge.go.kr" className="text-gray-400 hover:text-white transition-colors duration-300">
               📧 qo1598@dge.go.kr
             </a>
-            <div className="text-gray-400">
-              🔗 thinking-routines.vercel.app
-            </div>
           </div>
 
           <div className="text-gray-500 text-sm">
