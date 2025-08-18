@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 
+interface ParsedAnalysis {
+  individualSteps?: {[key: string]: string | string[]};
+  summary?: string;
+  suggestions?: string;
+}
+
 interface TeacherFeedbackSectionProps {
   responseId: string;
-  parsedAnalysis: any;
+  parsedAnalysis: ParsedAnalysis | null;
   template: any;
   room: any;
   onBack: () => void;
@@ -158,10 +164,10 @@ const TeacherFeedbackSection: React.FC<TeacherFeedbackSectionProps> = ({
                   <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
                     {Array.isArray(stepContent) ? (
                       stepContent.map((item, i) => (
-                        <p key={i} className="mb-2">{item}</p>
+                        <p key={i} className="mb-2">{String(item)}</p>
                       ))
                     ) : (
-                      <p>{stepContent}</p>
+                      <p>{String(stepContent)}</p>
                     )}
                   </div>
                 </div>

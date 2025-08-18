@@ -1,596 +1,205 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import AIAnalysisSection from './AIAnalysisSection';
 import TeacherFeedbackSection from './TeacherFeedbackSection';
 
-interface ActivityRoom {
-  id: string;
-  title: string;
-  description: string;
-  thinking_routine_type: string;
-  room_code: string;
-  teacher_id: string;
-  created_at: string;
-  is_active: boolean;
-}
-
-interface RoutineTemplate {
-  id: string;
-  room_id: string;
-  routine_type: string;
-  content: {
-    image_url: string;
-    text_content: string;
-    youtube_url: string;
-    see_question: string;
-    think_question: string;
-    wonder_question: string;
-    fourth_question?: string; // 4C의 Changes 단계용
-  };
-}
-
-interface StudentResponse {
-  id: string;
-  student_grade?: string;
-  student_name: string;
-  student_class?: string;
-  student_number?: number;
-  team_name?: string;
-  student_id: string;
-  response_data: {
-    see: string;
-    think: string;
-    wonder: string;
-    fourth_step?: string; // 4C의 Changes 단계용
-    [key: string]: string | undefined;
-  };
-  submitted_at: string;
-  ai_analysis?: string;
-  teacher_feedback?: string;
-  teacher_score?: number;
-}
+// 사고루틴 유형별 정규표현식 패턴
+const routineStepPatterns: {[routineType: string]: {[stepKey: string]: RegExp[]}} = {
+  'see-think-wonder': {
+    'see': [
+      /(?:^|\n)(?:\*\*)?(?:See|보기|관찰)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Think|생각|Wonder|궁금)|$)/s,
+      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:See|보기|관찰)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:Think|생각|Wonder|궁금)|$)/s
+    ],
+    'think': [
+      /(?:^|\n)(?:\*\*)?(?:Think|생각|생각하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Wonder|궁금|See|보기)|$)/s,
+      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:Think|생각|생각하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:Wonder|궁금|See|보기)|$)/s
+    ],
+    'wonder': [
+      /(?:^|\n)(?:\*\*)?(?:Wonder|궁금|궁금하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:See|보기|Think|생각)|$)/s,
+      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:Wonder|궁금|궁금하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:See|보기|Think|생각)|$)/s
+    ]
+  },
+  'frayer-model': {
+    'see': [
+      /(?:^|\n)(?:\*\*)?(?:Definition|정의)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Characteristics?|특징|Examples?|예시)|$)/s,
+      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:Definition|정의)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:Characteristics?|특징|Examples?|예시)|$)/s
+    ],
+    'think': [
+      /(?:^|\n)(?:\*\*)?(?:Characteristics?|특징)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Definition|정의|Examples?|예시)|$)/s,
+      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:Characteristics?|특징)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:Definition|정의|Examples?|예시)|$)/s
+    ],
+    'wonder': [
+      /(?:^|\n)(?:\*\*)?(?:Examples?\s*&?\s*Non[-\s]?Examples?|예시와?\s*반례|Examples?|예시)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Definition|정의|Characteristics?|특징)|$)/s,
+      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:Examples?\s*&?\s*Non[-\s]?Examples?|예시와?\s*반례|Examples?|예시)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:Definition|정의|Characteristics?|특징)|$)/s
+    ]
+  },
+  '4c': {
+    'see': [
+      /(?:^|\n)(?:\*\*)?(?:Connect|연결|연결하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Challenge|도전|Concepts?|개념|Changes?|변화)|$)/s
+    ],
+    'think': [
+      /(?:^|\n)(?:\*\*)?(?:Challenge|도전|도전하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Connect|연결|Concepts?|개념|Changes?|변화)|$)/s
+    ],
+    'wonder': [
+      /(?:^|\n)(?:\*\*)?(?:Concepts?|개념|개념\s*파악)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Connect|연결|Challenge|도전|Changes?|변화)|$)/s
+    ],
+    'fourth_step': [
+      /(?:^|\n)(?:\*\*)?(?:Changes?|변화|변화\s*제안)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Connect|연결|Challenge|도전|Concepts?|개념)|$)/s
+    ]
+  }
+};
 
 const StudentResponseDetail: React.FC = () => {
-  const { roomId, responseId } = useParams<{ roomId: string; responseId: string }>();
+  const { responseId } = useParams<{ responseId: string }>();
   const navigate = useNavigate();
   
-  const [room, setRoom] = useState<ActivityRoom | null>(null);
-  const [template, setTemplate] = useState<RoutineTemplate | null>(null);
-  const [response, setResponse] = useState<StudentResponse | null>(null);
+  const [response, setResponse] = useState<any>(null);
+  const [room, setRoom] = useState<any>(null);
+  const [template, setTemplate] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [aiAnalyzing, setAiAnalyzing] = useState(false);
-  
-  // 새로운 교사 피드백 시스템을 위한 state
+  const [error, setError] = useState<string | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [parsedAnalysis, setParsedAnalysis] = useState<{individualSteps?: {[key: string]: string | string[]}, summary?: string, suggestions?: string} | null>(null);
   const [currentAnalysisStep, setCurrentAnalysisStep] = useState(0);
-  const [parsedAnalysis, setParsedAnalysis] = useState<{
-    stepByStep: string;
-    comprehensive: string;
-    educational: string;
-    individualSteps?: {[key: string]: string | string[]};
-  } | null>(null);
   const [showTeacherFeedback, setShowTeacherFeedback] = useState(false);
+  const [analyzingAI, setAnalyzingAI] = useState(false);
 
-  // AI 분석 결과를 단계별로 파싱
-  const parseAnalysisResult = useCallback((analysis: string) => {
+  useEffect(() => {
+    if (responseId) {
+      fetchResponseData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [responseId]);
+
+  useEffect(() => {
+    if (aiAnalysis) {
+      parseAIAnalysis();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiAnalysis, template, room]);
+
+  const fetchResponseData = async () => {
     try {
-      console.log('🔍 AI 분석 원본 텍스트:', analysis);
+      setLoading(true);
       
-      // JSON 형태인지 확인
-      let parsedJson = null;
-      try {
-        parsedJson = JSON.parse(analysis);
-        console.log('📋 JSON 형태 분석 결과:', parsedJson);
-      } catch (e) {
-        console.log('📝 텍스트 형태 분석 결과 감지');
-      }
+      const { data: responseData, error: responseError } = await supabase
+        .from('student_responses')
+        .select('*')
+        .eq('id', responseId)
+        .single();
 
-      // 단계별 분석 파싱을 위한 정규표현식
-      const routineStepPatterns: {[routineType: string]: {[stepKey: string]: RegExp[]}} = {
-        'see-think-wonder': {
-          'see': [
-            /###\s*See\s*[(（]?보기[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*보기\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'think': [
-            /###\s*Think\s*[(（]?생각[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*생각[하기]?\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'wonder': [
-            /###\s*Wonder\s*[(（]?궁금[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*궁금[하기]?\s*([\s\S]*?)(?=###|$)/i
-          ]
-        },
-        '4c': {
-          'see': [
-            /###\s*Connect\s*[(（]?연결[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*연결[하기]?\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'think': [
-            /###\s*Challenge\s*[(（]?도전[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*도전[하기]?\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'wonder': [
-            /###\s*Concepts?\s*[(（]?개념[파악]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*개념[파악]?\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'fourth_step': [
-            /###\s*Changes?\s*[(（]?변화[제안]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*변화[제안]?\s*([\s\S]*?)(?=###|$)/i
-          ]
-        },
-        'frayer-model': {
-          'see': [
-            /###\s*Definition\s*[(（]?정의[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*정의\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'think': [
-            /###\s*Characteristics?\s*[(（]?특징[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*특징\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'wonder': [
-            /###\s*Examples?\s*&?\s*Non-Examples?\s*[(（]?예시[와반례]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*Examples?\s*[(（]?예시[와반례]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*예시[와반례]?\s*([\s\S]*?)(?=###|$)/i
-          ]
-        },
-        'used-to-think-now-think': {
-          'see': [
-            /###\s*Used\s*to\s*Think\s*[(（]?이전[생각]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*이전[생각]?\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'think': [
-            /###\s*Now\s*Think\s*[(（]?현재[생각]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*현재[생각]?\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'wonder': [
-            /###\s*Why\s*Changed\s*[(（]?변화[이유]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*변화[이유]?\s*([\s\S]*?)(?=###|$)/i
-          ]
-        },
-        'think-puzzle-explore': {
-          'see': [
-            /###\s*Think\s*[(（]?생각[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*생각[하기]?\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'think': [
-            /###\s*Puzzle\s*[(（]?퍼즐[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*퍼즐\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'wonder': [
-            /###\s*Explore\s*[(（]?탐구[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*탐구[하기]?\s*([\s\S]*?)(?=###|$)/i
-          ]
-        },
-        'circle-of-viewpoints': {
-          'see': [
-            /###\s*Viewpoints?\s*[(（]?관점[탐색]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*관점[탐색]?\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'think': [
-            /###\s*Perspective\s*[(（]?관점[선택]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*관점[선택]?\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'wonder': [
-            /###\s*Questions?\s*[(（]?관점별[질문]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*관점별[질문]?\s*([\s\S]*?)(?=###|$)/i
-          ]
-        },
-        'connect-extend-challenge': {
-          'see': [
-            /###\s*Connect\s*[(（]?연결[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*연결[하기]?\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'think': [
-            /###\s*Extend\s*[(（]?확장[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*확장[하기]?\s*([\s\S]*?)(?=###|$)/i
-          ],
-          'wonder': [
-            /###\s*Challenge\s*[(（]?도전[하기]?[)）]?([\s\S]*?)(?=###|$)/i,
-            /###\s*도전[하기]?\s*([\s\S]*?)(?=###|$)/i
-          ]
+      if (responseError) throw responseError;
+      setResponse(responseData);
+
+      if (responseData.room_id) {
+        const { data: roomData, error: roomError } = await supabase
+          .from('activity_rooms')
+          .select('*')
+          .eq('id', responseData.room_id)
+          .single();
+
+        if (roomError) throw roomError;
+        setRoom(roomData);
+
+        if (roomData.template_id) {
+          const { data: templateData, error: templateError } = await supabase
+            .from('thinking_routine_templates')
+            .select('*')
+            .eq('id', roomData.template_id)
+            .single();
+
+          if (templateError) throw templateError;
+          setTemplate(templateData);
         }
-      };
-
-      const currentRoutineType = template?.routine_type || 'see-think-wonder';
-      const patterns = routineStepPatterns[currentRoutineType];
-      const individualSteps: {[key: string]: string} = {};
-
-      if (patterns) {
-        Object.entries(patterns).forEach(([stepKey, stepPatterns]) => {
-          for (const pattern of stepPatterns) {
-            const match = analysis.match(pattern);
-            if (match && match[1]) {
-              individualSteps[stepKey] = match[1].trim();
-              break;
-            }
-          }
-        });
       }
 
-      const finalParsedData = {
-        stepByStep: analysis.substring(0, 500) + '...',
-        comprehensive: analysis.substring(500, 1000) + '...',
-        educational: analysis.substring(1000, 1500) + '...',
-        individualSteps
-      };
+      if (responseData.ai_analysis) {
+        setAiAnalysis(responseData.ai_analysis);
+      }
+    } catch (error: any) {
+      console.error('데이터 로딩 중 오류:', error);
+      setError(error.message || '데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      setParsedAnalysis(finalParsedData);
-      setCurrentAnalysisStep(0);
-      setShowTeacherFeedback(false);
+  const parseAIAnalysis = () => {
+    if (!aiAnalysis || !template?.routine_type) return;
+
+    try {
+      const routineType = template.routine_type;
+      const patterns = routineStepPatterns[routineType];
+      
+      if (!patterns) {
+        console.warn(`No patterns found for routine type: ${routineType}`);
+        return;
+      }
+
+      const individualSteps: {[key: string]: string} = {};
+      
+      Object.entries(patterns).forEach(([stepKey, stepPatterns]) => {
+        for (const pattern of stepPatterns) {
+          const match = aiAnalysis.match(pattern);
+          if (match && match[1]) {
+            individualSteps[stepKey] = match[1].trim();
+            break;
+          }
+        }
+      });
+
+      const summaryMatch = aiAnalysis.match(/(?:전체.*?분석|종합.*?평가|요약)[\s\S]*?(?=\n(?:\*\*)?(?:개선|제안|권장사항)|$)/i);
+      const suggestionsMatch = aiAnalysis.match(/(?:개선.*?제안|권장사항|제안사항)[\s\S]*$/i);
+
+      setParsedAnalysis({
+        individualSteps,
+        summary: summaryMatch ? summaryMatch[0].trim() : '',
+        suggestions: suggestionsMatch ? suggestionsMatch[0].trim() : ''
+      });
     } catch (error) {
       console.error('AI 분석 파싱 중 오류:', error);
     }
-  }, [template]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!isSupabaseConfigured()) {
-        setError('데이터베이스 연결이 설정되지 않았습니다.');
-        setLoading(false);
-        return;
-      }
-
-      if (!roomId || !responseId) {
-        setError('필수 파라미터가 누락되었습니다.');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        // 활동방 정보 조회
-        const { data: roomData, error: roomError } = await supabase!
-          .from('activity_rooms')
-          .select('*')
-          .eq('id', roomId)
-          .single();
-
-        if (roomError) {
-          console.error('Room fetch error:', roomError);
-          setError('활동방을 찾을 수 없습니다.');
-          setLoading(false);
-          return;
-        }
-
-        setRoom(roomData);
-
-        // 학생 응답 조회
-        const { data: responseData, error: responseError } = await supabase!
-          .from('student_responses')
-          .select('*')
-          .eq('id', responseId)
-          .eq('room_id', roomId)
-          .single();
-
-        if (responseError) {
-          console.error('Response fetch error:', responseError);
-          setError('학생 응답을 찾을 수 없습니다.');
-          setLoading(false);
-          return;
-        }
-
-        setResponse(responseData);
-
-        // 템플릿 정보 조회
-        const { data: templateData, error: templateError } = await supabase!
-          .from('thinking_routine_templates')
-          .select('*')
-          .eq('room_id', roomId)
-          .single();
-
-        if (templateError) {
-          console.error('Template fetch error:', templateError);
-        } else {
-          setTemplate(templateData);
-        }
-
-        // 기존 AI 분석 결과가 있으면 파싱
-        if (responseData.ai_analysis) {
-          try {
-            const analysisData = JSON.parse(responseData.ai_analysis);
-            console.log('기존 AI 분석 데이터:', analysisData);
-            
-            if (analysisData.aiAnalysis) {
-              setParsedAnalysis(analysisData.aiAnalysis);
-            } else if (typeof analysisData === 'string') {
-              parseAnalysisResult(analysisData);
-            }
-          } catch (e) {
-            console.log('AI 분석 데이터를 문자열로 파싱 시도');
-            parseAnalysisResult(responseData.ai_analysis);
-          }
-        }
-
-      } catch (err) {
-        console.error('Data fetch error:', err);
-        setError('데이터를 불러오는 중 오류가 발생했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [roomId, responseId, parseAnalysisResult]);
-
-  // 사고루틴별 AI 분석 프롬프트 생성
-  const generateAIPrompt = (routineType: string, response: StudentResponse, template: RoutineTemplate) => {
-    const basePrompt = `당신은 사고루틴(Thinking Routines) 교육 전문가입니다. 
-교사의 평가 보조 수단으로 활용될 분석과 피드백을 제공하는 것이 당신의 핵심 역할입니다.
-
-**분석 구조:**
-1. 각 단계별 개별 분석을 ### 제목으로 구분하여 작성
-2. 마지막에 종합 평가 및 개선 제안 제공
-
-**분석 형식 (반드시 아래 형식을 따르세요):**`;
-
-    const routineSpecificPrompts = {
-      'see-think-wonder': `
-### See (보기)
-[학생의 관찰 내용에 대한 분석]
-
-### Think (생각하기) 
-[학생의 사고 과정에 대한 분석]
-
-### Wonder (궁금하기)
-[학생의 호기심과 질문에 대한 분석]
-
-### 종합 평가 및 개선 제안
-[전체적인 평가와 구체적인 개선 방안]`,
-
-      'frayer-model': `
-### Definition (정의)
-[학생이 제시한 정의의 정확성과 완성도 분석]
-
-### Characteristics (특징)
-[학생이 파악한 특징의 적절성과 구체성 분석]
-
-### Examples & Non-Examples (예시와 반례)
-[학생이 제시한 예시와 반례의 적절성과 이해도 분석]
-
-### 종합 평가 및 개선 제안
-[전체적인 개념 이해도 평가와 구체적인 개선 방안]`,
-
-      '4c': `
-### Connect (연결하기)
-[학생의 연결 사고에 대한 분석]
-
-### Challenge (도전하기)
-[학생의 도전적 사고에 대한 분석]
-
-### Concepts (개념 파악)
-[학생의 개념 이해에 대한 분석]
-
-### Changes (변화 제안)
-[학생의 변화 제안에 대한 분석]
-
-### 종합 평가 및 개선 제안
-[전체적인 평가와 구체적인 개선 방안]`,
-
-      'circle-of-viewpoints': `
-### Viewpoints (관점 탐색)
-[학생의 다양한 관점 탐색에 대한 분석]
-
-### Perspective (관점 선택)
-[학생의 관점 선택과 근거에 대한 분석]
-
-### Questions (관점별 질문)
-[학생의 질문 형성 능력에 대한 분석]
-
-### 종합 평가 및 개선 제안
-[전체적인 평가와 구체적인 개선 방안]`,
-
-      'connect-extend-challenge': `
-### Connect (연결하기)
-[학생의 연결 사고에 대한 분석]
-
-### Extend (확장하기)
-[학생의 확장적 사고에 대한 분석]
-
-### Challenge (도전하기)
-[학생의 도전적 질문에 대한 분석]
-
-### 종합 평가 및 개선 제안
-[전체적인 평가와 구체적인 개선 방안]`,
-
-      'used-to-think-now-think': `
-### Used to Think (이전 생각)
-[학생의 이전 생각과 그 배경에 대한 분석]
-
-### Now Think (현재 생각)
-[학생의 현재 생각과 변화에 대한 분석]
-
-### Why Changed (변화 이유)
-[사고 변화의 원인과 과정에 대한 분석]
-
-### 종합 평가 및 개선 제안
-[사고 변화의 질과 깊이에 대한 평가]`,
-
-      'think-puzzle-explore': `
-### Think (생각하기)
-[학생의 초기 생각에 대한 분석]
-
-### Puzzle (퍼즐)
-[학생이 제기한 의문과 궁금증에 대한 분석]
-
-### Explore (탐구하기)
-[학생의 탐구 계획과 방향에 대한 분석]
-
-### 종합 평가 및 개선 제안
-[전체적인 탐구 능력과 개선 방안]`
-    };
-
-    const specificPrompt = routineSpecificPrompts[routineType as keyof typeof routineSpecificPrompts] || routineSpecificPrompts['see-think-wonder'];
-
-    return basePrompt + specificPrompt + `
-
-**평가 기준:**
-- 사고의 깊이와 창의성
-- 주제에 대한 이해도
-- 논리적 연결성
-- 구체성과 명확성
-- 비판적 사고 능력
-
-**피드백 톤:**
-- 학생의 노력을 인정하고 격려
-- 구체적이고 실행 가능한 개선 방안 제시
-- 긍정적이면서도 건설적인 톤 유지`;
   };
 
-  const generateUserPrompt = (response: StudentResponse, template: RoutineTemplate) => {
-    const routineType = template.routine_type;
-    const baseInfo = `
-**학생:** ${response.student_grade ? `${response.student_grade} ` : ''}${response.student_class ? `${response.student_class}반 ` : ''}${response.student_number ? `${response.student_number}번 ` : ''}${response.student_name}${response.team_name ? ` (${response.team_name})` : ''}
+  const handleAIAnalysis = async () => {
+    if (!response?.response_data || !template) return;
 
-**교사 제공 자료:**
-${template.content.image_url ? `- 이미지 자료 제공` : ''}
-${template.content.text_content ? `- 텍스트: "${template.content.text_content}"` : ''}
-${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
-
-**학생 응답:**`;
-
-    const responseFormats = {
-      'see-think-wonder': `
-- **See (관찰):** ${response.response_data.see}
-- **Think (사고):** ${response.response_data.think}
-- **Wonder (궁금증):** ${response.response_data.wonder}`,
-
-      '4c': `
-- **Connect (연결):** ${response.response_data.see}
-- **Challenge (도전):** ${response.response_data.think}
-- **Concepts (개념):** ${response.response_data.wonder}
-- **Changes (변화):** ${response.response_data.fourth_step || ''}`,
-
-      'circle-of-viewpoints': `
-- **Viewpoints (관점 탐색):** ${response.response_data.see}
-- **Perspective (관점 선택):** ${response.response_data.think}
-- **Questions (관점별 질문):** ${response.response_data.wonder}`,
-
-      'connect-extend-challenge': `
-- **Connect (연결):** ${response.response_data.see}
-- **Extend (확장):** ${response.response_data.think}
-- **Challenge (도전):** ${response.response_data.wonder}`,
-
-      'frayer-model': `
-- **Definition (정의):** ${response.response_data.see}
-- **Characteristics (특징):** ${response.response_data.think}
-- **Examples & Non-Examples (예시와 반례):** ${response.response_data.wonder}`,
-
-      'used-to-think-now-think': `
-- **Used to Think (이전 생각):** ${response.response_data.see}
-- **Now Think (현재 생각):** ${response.response_data.think}
-- **Why Changed (변화 이유):** ${response.response_data.wonder}`,
-
-      'think-puzzle-explore': `
-- **Think (생각):** ${response.response_data.see}
-- **Puzzle (퍼즐):** ${response.response_data.think}
-- **Explore (탐구):** ${response.response_data.wonder}`
-    };
-
-    const responseFormat = responseFormats[routineType as keyof typeof responseFormats] || responseFormats['see-think-wonder'];
-    
-    return baseInfo + responseFormat + `
-
-위 학생의 응답을 분석하여 각 단계별로 상세한 피드백을 제공해주세요.`;
-  };
-
-  const handleAiAnalysis = async () => {
-    if (!response || !template) return;
-
-    // 응답 품질 검사
-    const responseValues = [
-      response.response_data.see?.trim() || '',
-      response.response_data.think?.trim() || '',
-      response.response_data.wonder?.trim() || ''
-    ];
-
-    // 4C의 경우 fourth_step도 포함
-    if (template.routine_type === '4c' && response.response_data.fourth_step) {
-      responseValues.push(response.response_data.fourth_step.trim());
-    }
-    
-    // 극도로 성의 없는 응답 체크
-    const isExtremelyLowQuality = 
-      responseValues.every(r => r.length < 3) || // 모든 응답이 3글자 미만
-      responseValues.some(r => /^\d+$/.test(r)) || // 숫자만 입력
-      responseValues.some(r => /^[a-zA-Z]{1,2}$/.test(r)) || // 매우 짧은 영문자만
-      responseValues.some(r => /^[ㄱ-ㅎㅏ-ㅣ]{1,2}$/.test(r)) || // 자음/모음만
-      responseValues.some(r => /^[!@#$%^&*()_+\-=[\]{};':"\\|,.<>?]+$/.test(r)); // 특수문자만
-    
-    if (isExtremelyLowQuality) {
-      alert('학생의 응답이 너무 간단합니다. 더 구체적인 응답을 작성하도록 안내해주세요.\n\nAI 분석은 의미 있는 응답에 대해서만 실행됩니다.');
-      return;
-    }
-
-    setAiAnalyzing(true);
+    setAnalyzingAI(true);
     try {
-      // 사고루틴별 맞춤형 프롬프트 생성
-      const systemPrompt = generateAIPrompt(template.routine_type, response, template);
-      const userPrompt = generateUserPrompt(response, template);
-
-      // Google Gemini API 호출
-      console.log('AI 분석 요청 시작...');
-      
-      const apiResponse = await fetch('/api/gemini-analysis', {
+      const analysisResponse = await fetch('/api/gemini-analysis', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemPrompt,
-          userPrompt,
-          imageUrl: template.content.image_url,
-          youtubeUrl: template.content.youtube_url
+          routineType: template.routine_type,
+          responses: response.response_data,
+          imageData: response.image_data
         })
       });
 
-      console.log('API 응답 상태:', apiResponse.status);
-
-      if (!apiResponse.ok) {
-        const errorData = await apiResponse.json();
-        console.error('API 오류 응답:', errorData);
-        throw new Error(errorData.error || 'AI 분석 요청 실패');
+      if (!analysisResponse.ok) {
+        throw new Error('AI 분석 요청에 실패했습니다.');
       }
 
-      const analysisResult = await apiResponse.json();
-      console.log('분석 결과 수신:', analysisResult);
+      const result = await analysisResponse.json();
       
-      if (!analysisResult.analysis) {
-        throw new Error('AI 분석 결과가 없습니다');
-      }
-      
-      const aiAnalysis = analysisResult.analysis;
-
-      // 데이터베이스에 AI 분석 결과 저장
-      const { error: updateError } = await supabase!
+      const { error } = await supabase
         .from('student_responses')
-        .update({ ai_analysis: aiAnalysis })
+        .update({ ai_analysis: result.analysis })
         .eq('id', responseId);
 
-      if (updateError) {
-        console.error('AI analysis save error:', updateError);
-        alert('AI 분석 결과 저장에 실패했습니다.');
-        return;
-      }
+      if (error) throw error;
 
-      setResponse(prev => prev ? { ...prev, ai_analysis: aiAnalysis } : null);
-      
-      // AI 분석 결과를 단계별로 파싱하고 즉시 단계별 모드로 전환
-      parseAnalysisResult(aiAnalysis);
-      setCurrentAnalysisStep(0);
-      
-      alert('AI 분석이 완료되었습니다!');
-    } catch (err) {
-      console.error('AI analysis error:', err);
-      alert('AI 분석 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setAiAnalysis(result.analysis);
+      alert('AI 분석이 완료되었습니다.');
+    } catch (error: any) {
+      console.error('AI 분석 중 오류:', error);
+      alert('AI 분석 중 오류가 발생했습니다: ' + error.message);
     } finally {
-      setAiAnalyzing(false);
+      setAnalyzingAI(false);
     }
   };
 
-  // 단계 네비게이션 함수들
   const nextAnalysisStep = () => {
     if (currentAnalysisStep < 2) {
       setCurrentAnalysisStep(currentAnalysisStep + 1);
@@ -625,7 +234,7 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
     );
   }
 
-  if (error || !response || !room) {
+  if (error || !response) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-3xl mx-auto px-4">
@@ -638,10 +247,10 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
             <h2 className="text-2xl font-bold text-gray-900 mb-4">오류 발생</h2>
             <p className="text-red-600 mb-4">{error}</p>
             <button
-              onClick={() => navigate(`/teacher/room/${roomId}`)}
+              onClick={() => navigate(-1)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
             >
-              활동방으로 돌아가기
+              이전으로 돌아가기
             </button>
           </div>
         </div>
@@ -655,213 +264,56 @@ ${template.content.youtube_url ? `- 유튜브 영상 제공` : ''}
         {/* 헤더 */}
         <div className="mb-6">
           <button
-            onClick={() => navigate(`/teacher/room/${roomId}`)}
+            onClick={() => navigate(-1)}
             className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
           >
             <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            활동방으로 돌아가기
+            목록으로 돌아가기
           </button>
           <h1 className="text-2xl font-bold text-gray-900">학생 응답 상세</h1>
         </div>
 
-        {/* 학생 정보 */}
+        {/* 학생 응답 섹션 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">학생 응답</h2>
+          <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">
-                {response.student_grade && <span className="text-lg">{response.student_grade} </span>}
-                {response.student_class && <span className="text-lg">{response.student_class}반 </span>}
-                {response.student_number && <span className="text-lg">{response.student_number}번 </span>}
-                {response.student_name}
-                {response.team_name && (
-                  <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">
-                    {response.team_name}
-                  </span>
-                )}
-              </h2>
+              <span className="text-sm font-medium text-gray-700">학생명:</span>
+              <span className="ml-2 text-gray-900">{response.student_name}</span>
             </div>
-            <div className="text-sm text-gray-500">
-              제출일: {new Date(response.submitted_at).toLocaleDateString('ko-KR')}
+            <div>
+              <span className="text-sm font-medium text-gray-700">제출일:</span>
+              <span className="ml-2 text-gray-900">
+                {new Date(response.created_at).toLocaleDateString('ko-KR')}
+              </span>
             </div>
           </div>
-        </div>
-
-        {/* 학생 응답 */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">학생 응답</h3>
-          <div className="space-y-6">
-            {(() => {
-              const routineType = template?.routine_type || 'see-think-wonder';
-              const stepConfigs = {
-                'see-think-wonder': [
-                  { key: 'see', title: 'See', subtitle: '보기', color: 'bg-blue-500', bgColor: 'bg-blue-50' },
-                  { key: 'think', title: 'Think', subtitle: '생각하기', color: 'bg-green-500', bgColor: 'bg-green-50' },
-                  { key: 'wonder', title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500', bgColor: 'bg-purple-50' }
-                ],
-                '4c': [
-                  { key: 'see', title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500', bgColor: 'bg-blue-50' },
-                  { key: 'think', title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500', bgColor: 'bg-red-50' },
-                  { key: 'wonder', title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500', bgColor: 'bg-green-50' },
-                  { key: 'fourth_step', title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500', bgColor: 'bg-purple-50' }
-                ],
-                'frayer-model': [
-                  { key: 'see', title: 'Definition', subtitle: '정의', color: 'bg-blue-500', bgColor: 'bg-blue-50' },
-                  { key: 'think', title: 'Characteristics', subtitle: '특징', color: 'bg-green-500', bgColor: 'bg-green-50' },
-                  { key: 'wonder', title: 'Examples & Non-Examples', subtitle: '예시와 반례', color: 'bg-purple-500', bgColor: 'bg-purple-50' }
-                ],
-                'circle-of-viewpoints': [
-                  { key: 'see', title: 'Viewpoints', subtitle: '관점 탐색', color: 'bg-blue-500', bgColor: 'bg-blue-50' },
-                  { key: 'think', title: 'Perspective', subtitle: '관점 선택', color: 'bg-green-500', bgColor: 'bg-green-50' },
-                  { key: 'wonder', title: 'Questions', subtitle: '관점별 질문', color: 'bg-purple-500', bgColor: 'bg-purple-50' }
-                ],
-                'connect-extend-challenge': [
-                  { key: 'see', title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500', bgColor: 'bg-blue-50' },
-                  { key: 'think', title: 'Extend', subtitle: '확장하기', color: 'bg-green-500', bgColor: 'bg-green-50' },
-                  { key: 'wonder', title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500', bgColor: 'bg-red-50' }
-                ],
-                'used-to-think-now-think': [
-                  { key: 'see', title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500', bgColor: 'bg-blue-50' },
-                  { key: 'think', title: 'Now Think', subtitle: '현재 생각', color: 'bg-green-500', bgColor: 'bg-green-50' },
-                  { key: 'wonder', title: 'Why Changed', subtitle: '변화 이유', color: 'bg-purple-500', bgColor: 'bg-purple-50' }
-                ],
-                'think-puzzle-explore': [
-                  { key: 'see', title: 'Think', subtitle: '생각하기', color: 'bg-blue-500', bgColor: 'bg-blue-50' },
-                  { key: 'think', title: 'Puzzle', subtitle: '퍼즐', color: 'bg-yellow-500', bgColor: 'bg-yellow-50' },
-                  { key: 'wonder', title: 'Explore', subtitle: '탐구하기', color: 'bg-green-500', bgColor: 'bg-green-50' }
-                ]
-              };
-
-              const steps = stepConfigs[routineType as keyof typeof stepConfigs] || stepConfigs['see-think-wonder'];
-
-              // 프레이어 모델의 경우 특별한 레이아웃
-              if (routineType === 'frayer-model') {
-                return (
-                  <div className="space-y-6">
-                    {/* Definition */}
-                    <div>
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">1</span>
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">Definition</h4>
-                          <p className="text-sm text-gray-600">정의</p>
-                        </div>
-                      </div>
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <p className="text-gray-900 whitespace-pre-wrap">
-                          {response.response_data.see || '응답 없음'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Characteristics */}
-                    <div>
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">2</span>
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">Characteristics</h4>
-                          <p className="text-sm text-gray-600">특징</p>
-                        </div>
-                      </div>
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <p className="text-gray-900 whitespace-pre-wrap">
-                          {response.response_data.think || '응답 없음'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Examples & Non-Examples */}
-                    <div>
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">3</span>
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">Examples & Non-Examples</h4>
-                          <p className="text-sm text-gray-600">예시와 반례</p>
-                        </div>
-                      </div>
-                      <div className="bg-purple-50 p-4 rounded-lg space-y-4">
-                        <div>
-                          <div className="flex items-center mb-2">
-                            <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                            <span className="font-medium text-gray-900">예시 (Examples)</span>
-                          </div>
-                          <div className="bg-white p-3 rounded border">
-                            <p className="text-gray-900 whitespace-pre-wrap">
-                              {(() => {
-                                const wonderResponse = response.response_data.wonder || '';
-                                const parts = wonderResponse.split('||');
-                                return parts[0] || '응답 없음';
-                              })()}
-                            </p>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex items-center mb-2">
-                            <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                            <span className="font-medium text-gray-900">반례 (Non-Examples)</span>
-                          </div>
-                          <div className="bg-white p-3 rounded border">
-                            <p className="text-gray-900 whitespace-pre-wrap">
-                              {(() => {
-                                const wonderResponse = response.response_data.wonder || '';
-                                const parts = wonderResponse.split('||');
-                                return parts[1] || '응답 없음';
-                              })()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              // 다른 사고루틴들의 기본 레이아웃
-              return steps.map((step, index) => {
-                const responseValue = response.response_data[step.key as keyof typeof response.response_data];
-                if (!responseValue && step.key === 'fourth_step') return null; // 4단계가 없으면 표시하지 않음
-                
-                return (
-                  <div key={step.key}>
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className={`w-8 h-8 ${step.color} rounded-full flex items-center justify-center`}>
-                        <span className="text-white text-sm font-bold">{index + 1}</span>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{step.title}</h4>
-                        <p className="text-sm text-gray-600">{step.subtitle}</p>
-                      </div>
-                    </div>
-                    <div className={`${step.bgColor} p-4 rounded-lg`}>
-                      <p className="text-gray-900 whitespace-pre-wrap">
-                        {responseValue || '응답 없음'}
-                      </p>
-                    </div>
-                  </div>
-                );
-              });
-            })()}
-          </div>
+          
+          {response.response_data && (
+            <div className="space-y-4">
+              {Object.entries(response.response_data).map(([key, value]) => (
+                <div key={key} className="border rounded-lg p-4">
+                  <h3 className="font-medium text-gray-900 mb-2 capitalize">{key.replace(/_/g, ' ')}</h3>
+                  <p className="text-gray-700">{value as string}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* AI 분석 또는 교사 피드백 섹션 */}
-        {!parsedAnalysis ? (
+        {!aiAnalysis ? (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">AI 분석</h2>
             <p className="text-gray-600 mb-4">AI 분석을 실행하여 학생의 응답을 분석해보세요.</p>
             <button
-              onClick={handleAiAnalysis}
-              disabled={aiAnalyzing}
+              onClick={handleAIAnalysis}
+              disabled={analyzingAI}
               className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {aiAnalyzing ? '분석 중...' : 'AI 분석 시작'}
+              {analyzingAI ? '분석 중...' : 'AI 분석 시작'}
             </button>
           </div>
         ) : showTeacherFeedback ? (
