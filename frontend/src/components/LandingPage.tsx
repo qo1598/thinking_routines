@@ -1,11 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { TextPlugin } from 'gsap/TextPlugin';
+import gsap from 'gsap';
 
-// GSAP 플러그인 등록
-gsap.registerPlugin(ScrollTrigger, TextPlugin);
+// GSAP 기본 설정
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -277,7 +274,7 @@ const LandingPage: React.FC = () => {
       });
 
       // 부드러운 스크롤 효과 (Smooth Scrolling)
-      ScrollTrigger.normalizeScroll(true);
+      // 스크롤 정규화는 기본 브라우저 동작 사용
       
     }, heroRef);
 

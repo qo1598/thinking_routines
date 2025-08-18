@@ -9,10 +9,11 @@ console.log('Environment variables:', {
   REACT_APP_SUPABASE_ANON_KEY: supabaseAnonKey ? 'Set' : 'Not set'
 });
 
-// Supabase 클라이언트 생성 (환경 변수가 없어도 오류 발생하지 않도록)
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+// Supabase 클라이언트 생성 (빌드 시에는 더미 값 사용)
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co', 
+  supabaseAnonKey || 'placeholder-key'
+);
 
 // 설정 상태 확인 함수
 export const isSupabaseConfigured = () => {

@@ -69,12 +69,14 @@ const StudentResponseDetail: React.FC = () => {
     if (responseId) {
       fetchResponseData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [responseId]);
 
   useEffect(() => {
     if (aiAnalysis) {
       parseAIAnalysis();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aiAnalysis, template, room]);
 
   const fetchResponseData = async () => {
