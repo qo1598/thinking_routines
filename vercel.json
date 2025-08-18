@@ -1,8 +1,7 @@
 {
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/build",
-  "installCommand": "npm ci --prefix frontend --prefer-offline --no-audit",
-  "crons": [],
+  "installCommand": "npm install && npm install --prefix backend && npm install --prefix frontend",
   "functions": {
     "api/*.js": {
       "runtime": "@vercel/node@3.1.1"
