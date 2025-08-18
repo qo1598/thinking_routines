@@ -4,12 +4,14 @@
       "GENERATE_SOURCEMAP": "false",
       "INLINE_RUNTIME_CHUNK": "false",
       "NODE_OPTIONS": "--max_old_space_size=4096",
-      "SKIP_PREFLIGHT_CHECK": "true"
+      "SKIP_PREFLIGHT_CHECK": "true",
+      "CI": "false",
+      "BUILD_PATH": "./build"
     }
   },
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/build",
-  "installCommand": "npm install && npm install --prefix backend && npm install --prefix frontend",
+  "installCommand": "rm -rf node_modules/.cache && npm install && npm install --prefix backend && npm install --prefix frontend",
   "functions": {
     "api/*.js": {
       "runtime": "@vercel/node@3.1.1"
