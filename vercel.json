@@ -1,10 +1,21 @@
 {
-  "buildCommand": "npm run build --prefix frontend",
+  "buildCommand": "cd frontend && npm ci --only=production && npm run build",
   "outputDirectory": "frontend/build",
-  "installCommand": "npm install && npm install --prefix backend && npm install --prefix frontend",
+  "installCommand": "echo 'Skipping root install'",
+  "framework": "create-react-app",
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max_old_space_size=4096",
+      "GENERATE_SOURCEMAP": "false",
+      "DISABLE_ESLINT_PLUGIN": "true",
+      "TSC_COMPILE_ON_ERROR": "true",
+      "SKIP_PREFLIGHT_CHECK": "true"
+    }
+  },
   "functions": {
     "api/*.js": {
-      "runtime": "@vercel/node@3.1.1"
+      "runtime": "@vercel/node@3.1.1",
+      "maxDuration": 30
     }
   },
   "rewrites": [
