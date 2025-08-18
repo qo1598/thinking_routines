@@ -5,7 +5,7 @@
   "ignoreCommand": "git diff --quiet HEAD^ HEAD .",
   "functions": {
     "api/*.js": {
-      "runtime": "@vercel/node@18.x"
+      "runtime": "@vercel/node@3.1.1"
     }
   },
   "rewrites": [
