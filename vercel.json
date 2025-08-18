@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm install --prefer-offline --no-audit --progress=false && npm run build",
+  "buildCommand": "echo 'Node.js version:' && node -v && cd frontend && npm install --prefer-offline --no-audit --progress=false && npm run build",
   "outputDirectory": "frontend/build",
   "installCommand": "echo 'Skipping root install'",
   "framework": "create-react-app",
@@ -19,7 +19,7 @@
   },
   "functions": {
     "api/*.js": {
-      "runtime": "@vercel/node@3.2.1",
+      "runtime": "nodejs20.x",
       "maxDuration": 30
     }
   },
