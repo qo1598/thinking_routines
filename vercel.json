@@ -1,11 +1,16 @@
 {
-  "installCommand": "npm install && npm install --prefix backend && npm install --prefix frontend",
+  "installCommand": "npm ci --prefix frontend --production=false",
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/build",
+  "functions": {
+    "api/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/backend/server.js"
+      "destination": "/api/$1"
     },
     {
       "source": "/(.*)",

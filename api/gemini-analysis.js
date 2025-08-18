@@ -1,4 +1,4 @@
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 module.exports = async function handler(req, res) {
   // CORS 헤더 설정
@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
     }
 
     console.log('새로운 Gemini SDK 초기화 중...');
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     console.log('AI 분석 시작...');
     
