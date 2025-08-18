@@ -1,10 +1,11 @@
 {
-  "installCommand": "npm ci --prefix frontend --production=false",
-  "buildCommand": "npm run build --prefix frontend",
+  "buildCommand": "cd frontend && npm install --silent && npm run build",
   "outputDirectory": "frontend/build",
+  "installCommand": "npm --version",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD .",
   "functions": {
-    "api/gemini-analysis.js": {
-      "runtime": "@vercel/node@3.0.5"
+    "api/*.js": {
+      "runtime": "@vercel/node@18.x"
     }
   },
   "rewrites": [
