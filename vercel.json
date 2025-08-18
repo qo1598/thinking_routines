@@ -4,7 +4,7 @@
   "outputDirectory": "frontend/build",
   "installCommand": "echo 'Skipping root install'",
   "framework": "create-react-app",
-  "nodeVersion": "20.x",
+
   "build": {
     "env": {
       "NODE_OPTIONS": "--max_old_space_size=8192 --no-warnings",
