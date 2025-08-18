@@ -11,8 +11,5 @@
   },
   "keywords": ["education", "thinking-routines", "see-think-wonder"],
   "author": "",
-  "license": "MIT",
-  "engines": {
-    "node": "20.x"
-  }
+  "license": "MIT"
 } 
