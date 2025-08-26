@@ -94,20 +94,28 @@ const StudentResponseDetail: React.FC = () => {
   };
 
   const handleAIAnalysis = async () => {
-    if (!response?.response_data || !room) return;
+    if (!response?.response_data || !room) {
+      alert('응답 데이터 또는 활동방 정보가 없습니다.');
+      return;
+    }
 
     setAnalyzingAI(true);
+    
     try {
       console.log('🤖 AI 분석 시작...');
       console.log('📝 분석할 데이터:', response.response_data);
       console.log('🎯 사고루틴 유형:', room.thinking_routine_type);
 
-      // 학생 응답 데이터를 JSON 문자열로 준비
+      // 학생 응답 데이터 준비
       const studentResponses = response.response_data;
       const routineType = room.thinking_routine_type || 'see-think-wonder';
 
-      // Gemini API에 직접 요청
-      const analysisResponse = await fetch('/api/analyze-routine-image/text', {
+      // API 엔드포인트 확인
+      const apiUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analyze-routine-image/text`;
+      console.log('🌐 API URL:', apiUrl);
+
+      // Gemini API에 요청
+      const analysisResponse = await fetch(apiUrl, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json'
@@ -119,14 +127,23 @@ const StudentResponseDetail: React.FC = () => {
       });
 
       console.log('📡 API 응답 상태:', analysisResponse.status);
+      console.log('📡 API 응답 헤더:', analysisResponse.headers);
+
+      const responseText = await analysisResponse.text();
+      console.log('📄 응답 텍스트:', responseText);
 
       if (!analysisResponse.ok) {
-        const errorText = await analysisResponse.text();
-        console.error('❌ API 오류 응답:', errorText);
-        throw new Error(`AI 분석 요청 실패: ${analysisResponse.status} - ${errorText}`);
+        throw new Error(`API 요청 실패: ${analysisResponse.status} - ${responseText}`);
       }
 
-      const result = await analysisResponse.json();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON 파싱 오류:', parseError);
+        throw new Error('API 응답을 파싱할 수 없습니다: ' + responseText);
+      }
+
       console.log('✅ 분석 결과:', result);
       
       // 분석 결과를 데이터베이스에 저장
@@ -135,13 +152,17 @@ const StudentResponseDetail: React.FC = () => {
         .update({ ai_analysis: result.analysis })
         .eq('id', responseId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('DB 저장 오류:', error);
+        throw new Error('분석 결과 저장에 실패했습니다: ' + error.message);
+      }
 
       setAiAnalysis(result.analysis);
       alert('AI 분석이 완료되었습니다.');
+      
     } catch (error: any) {
       console.error('❌ AI 분석 중 오류:', error);
-      alert('AI 분석 중 오류가 발생했습니다: ' + error.message);
+      alert('AI 분석 중 오류가 발생했습니다:\n' + error.message);
     } finally {
       setAnalyzingAI(false);
     }
@@ -168,22 +189,46 @@ const StudentResponseDetail: React.FC = () => {
     setCurrentAnalysisStep(2);
   };
 
-  // 학생 정보 포맷팅 함수
+  // 학생 정보 포맷팅 함수 수정
   const formatStudentInfo = (response: any) => {
     const name = response.student_name || '이름 없음';
     const grade = response.student_grade || '';
     const studentClass = response.student_class || '';
     const number = response.student_number || '';
     
-    if (grade && studentClass && number) {
-      return `${name}(${grade}학년 ${studentClass}반 ${number}번)`;
-    } else if (grade || studentClass || number) {
-      const parts = [];
-      if (grade) parts.push(`${grade}학년`);
-      if (studentClass) parts.push(`${studentClass}반`);
-      if (number) parts.push(`${number}번`);
+    const parts = [];
+    
+    // 학년 처리 (이미 "학년"이 포함되어 있는지 확인)
+    if (grade) {
+      if (grade.includes('학년')) {
+        parts.push(grade);
+      } else {
+        parts.push(`${grade}학년`);
+      }
+    }
+    
+    // 반 처리
+    if (studentClass) {
+      if (studentClass.includes('반')) {
+        parts.push(studentClass);
+      } else {
+        parts.push(`${studentClass}반`);
+      }
+    }
+    
+    // 번호 처리
+    if (number) {
+      if (number.toString().includes('번')) {
+        parts.push(number.toString());
+      } else {
+        parts.push(`${number}번`);
+      }
+    }
+    
+    if (parts.length > 0) {
       return `${name}(${parts.join(' ')})`;
     }
+    
     return name;
   };
 
@@ -245,35 +290,37 @@ const StudentResponseDetail: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">학생 응답</h2>
           
-          {/* 학생 정보 - 가로 배치로 변경 */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg flex flex-wrap items-center gap-6">
+          {/* 학생 정보 - 수정된 레이아웃 */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg flex justify-between items-start">
             <div>
-              <span className="text-sm font-medium text-gray-700">학생명:</span>
-              <span className="ml-2 text-gray-900 font-semibold">
-                {formatStudentInfo(response)}
-              </span>
+              <div className="mb-2">
+                <span className="text-sm font-medium text-gray-700">학생명:</span>
+                <span className="ml-2 text-gray-900 font-semibold">
+                  {formatStudentInfo(response)}
+                </span>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-700">제출일:</span>
+                <span className="ml-2 text-gray-900">
+                  {new Date(response.created_at).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-sm font-medium text-gray-700">제출일:</span>
-              <span className="ml-2 text-gray-900">
-                {new Date(response.created_at).toLocaleDateString('ko-KR', {
-                  year: 'numeric',
-                  month: 'long', 
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </span>
-            </div>
-            <div>
+            <div className="text-right">
               <span className="text-sm font-medium text-gray-700">사고루틴:</span>
-              <span className="ml-2 text-blue-600 font-medium">
+              <div className="text-blue-600 font-medium">
                 {routineTypeLabels[room?.thinking_routine_type] || room?.thinking_routine_type || 'See-Think-Wonder'}
-              </span>
+              </div>
             </div>
           </div>
 
-          {/* 학생 응답 - 테이블 형태로 변경 */}
+          {/* 학생 응답 - 카드형 레이아웃 */}
           <div className="space-y-3">
             {response.response_data && Object.entries(response.response_data)
               .filter(([key]) => key !== 'fourth_step') // fourth_step 제외
@@ -315,6 +362,7 @@ const StudentResponseDetail: React.FC = () => {
             <p className="text-xs text-yellow-800 font-medium mb-1">디버깅 정보:</p>
             <p className="text-xs text-yellow-700">Response Data: {JSON.stringify(response.response_data)}</p>
             <p className="text-xs text-yellow-700">Routine Type: {room?.thinking_routine_type}</p>
+            <p className="text-xs text-yellow-700">API URL: {process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analyze-routine-image/text</p>
           </div>
         </div>
 
