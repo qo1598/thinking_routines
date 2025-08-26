@@ -10,6 +10,7 @@ interface AIAnalysisSectionProps {
   parsedAnalysis: ParsedAnalysis | null;
   template: any;
   room: any;
+  response: any;
   currentAnalysisStep: number;
   onPrevStep: () => void;
   onNextStep: () => void;
@@ -60,6 +61,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
   parsedAnalysis,
   template,
   room,
+  response,
   currentAnalysisStep,
   onPrevStep,
   onNextStep,
@@ -99,63 +101,218 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-              <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
-              각 단계별 분석
+              <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
+              사고루틴 단계별 학생 응답 분석
             </h3>
-            {parsedAnalysis?.individualSteps && Object.keys(parsedAnalysis.individualSteps).length > 0 ? (
-              Object.entries(parsedAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
-                const stepInfo = stepInfoMap[stepKey];
-                if (!stepInfo) return null;
+            {Object.entries(stepInfoMap)
+              .filter(([stepKey]) => stepKey !== 'fourth_step')
+              .map(([stepKey, stepInfo], index) => {
+                const studentResponse = response?.response_data?.[stepKey];
+                const aiAnalysis = parsedAnalysis?.individualSteps?.[stepKey];
+                
+                if (!studentResponse && !aiAnalysis) return null;
 
                 return (
-                  <div 
-                    key={stepKey}
-                    className={`bg-gradient-to-br ${gradientColors[stepInfo.color] || 'from-gray-50 to-white border-gray-200'} border rounded-xl p-6`}
-                  >
-                    <h4 className={`text-lg font-bold mb-4 flex items-center ${
-                      stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
-                      stepInfo.color === 'bg-green-500' ? 'text-green-800' :
-                      stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
-                      stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
-                    }`}>
-                      <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
-                        {index + 1}
-                      </span>
-                      {stepInfo.title} ({stepInfo.subtitle})
-                    </h4>
-                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                      {Array.isArray(stepContent) ? (
-                        stepContent.map((item, i) => (
-                          <p key={i} className="mb-2">{String(item)}</p>
-                        ))
-                      ) : (
-                        <p>{String(stepContent)}</p>
+                  <div key={stepKey} className="border rounded-lg overflow-hidden">
+                    {/* 단계 헤더 */}
+                    <div className={`${stepInfo.color} text-white p-4`}>
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-semibold mr-3">
+                          {stepInfo.title.charAt(0)}
+                        </div>
+                        <h4 className="font-medium text-white">
+                          {stepInfo.title} ({stepInfo.subtitle})
+                        </h4>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 space-y-3">
+                      {/* 학생 응답 */}
+                      {studentResponse && (
+                        <div>
+                          <div className="text-center text-sm text-gray-600 mb-2 py-1 bg-gray-50 rounded">
+                            학생 응답
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded text-center">
+                            <p className="text-sm text-gray-700">{studentResponse}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* AI 분석 */}
+                      {aiAnalysis && (
+                        <div className="p-3 bg-blue-50 rounded">
+                          <p className="text-sm font-medium text-gray-800 mb-2">분석:</p>
+                          <div className="text-sm text-gray-700 leading-relaxed">
+                            {Array.isArray(aiAnalysis) ? (
+                              aiAnalysis.map((item, i) => (
+                                <p key={i} className="mb-2">{String(item)}</p>
+                              ))
+                            ) : (
+                              <p>{String(aiAnalysis)}</p>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">점수: (1~100점 입력칸)</p>
+                        </div>
                       )}
                     </div>
                   </div>
                 );
-              })
-            ) : (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-yellow-800">개별 단계별 분석 결과를 찾을 수 없습니다.</p>
-              </div>
-            )}
+              })}
           </div>
         );
 
       case 2:
         return (
-          <div className="bg-orange-50 rounded-lg p-6 border border-orange-200">
-            <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center">
-              <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
-              개선 제안 및 종합 평가
+          <div className="space-y-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
+              사고루틴 종합 분석
             </h3>
-            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-              {parsedAnalysis?.suggestions ? (
-                <p>{parsedAnalysis.suggestions}</p>
-              ) : (
-                <p>개선 제안 및 종합 평가 내용을 확인할 수 있습니다.</p>
-              )}
+            
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h5 className="font-medium text-gray-800 mb-2">논리적 연결성:</h5>
+                <p className="text-sm text-gray-700">
+                  각 단계는 훌륭하게 연결되어 있습니다. See 단계에서 관찰한 페트병과 옷 제작 사실이 
+                  Think 단계에서 원인에 대한 질문으로 이어지고, Wonder 단계에서 더 근본적인 문제로 확장되는 자연스러운 
+                  흐름을 보여줍니다.
+                </p>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h5 className="font-medium text-gray-800 mb-2">사고의 깊이:</h5>
+                <p className="text-sm text-gray-700">
+                  아직은 얄은 수준이지만, 충분한 잠재력을 가지고 있습니다. Think 단계에서 '무슨 일이 있어서'
+                  라는 질문을 통해 문제의 원인을 찾으려는 시도는 긍정적입니다. Wonder 단계에서 '바다에서 많이 나오는 
+                  이유'에 대한 질문은 환경 문제에 대한 더 깊은 탐구 가능성을 보여줍니다.
+                </p>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h5 className="font-medium text-gray-800 mb-2">개선점과 건설적 피드백:</h5>
+                <p className="text-sm text-gray-700">
+                  Think 단계 강화: Think 단계에서 좀 더 구체적인 질문을 유도하면 사고의 깊이를 더할 수 있습니다. 
+                  예를 들어, "제주도에 페트병이 많은 이유가 관광객 때문일까, 아니면 다른 요인이 있을까?"와 같은 
+                  질문을 제안할 수 있습니다.<br/><br/>
+                  Wonder 단계 확장: Wonder 단계에서 질문의 범위를 넓혀 문제 해결 능력 및 비판적 사고를 향상
+                  시키도록 지도해주시면 더욱 효과적인 사고 활동이 될 것입니다.
+                </p>
+              </div>
+
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h5 className="font-medium text-gray-800 mb-2">추가 활동 제안:</h5>
+                <p className="text-sm text-gray-700">
+                  See-Think-Wonder 활동 이후, 학생 스스로 정보를 찾아보거나 토론을 진행하는 활동을 추
+                  가하면 학습 효과를 높일 수 있습니다. 예를 들어, 페트병 관련 기사를 읽고 토론하거나, 페트병 재활용 방법에 
+                  대해 조사하는 활동을 제안할 수 있습니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
+              사고루틴 단계별 학생 응답 피드백 및 평가
+            </h3>
+            
+            {Object.entries(stepInfoMap)
+              .filter(([stepKey]) => stepKey !== 'fourth_step')
+              .map(([stepKey, stepInfo], index) => {
+                const studentResponse = response?.response_data?.[stepKey];
+                const aiAnalysis = parsedAnalysis?.individualSteps?.[stepKey];
+                
+                if (!studentResponse && !aiAnalysis) return null;
+
+                return (
+                  <div key={stepKey} className="border rounded-lg overflow-hidden">
+                    {/* 단계 헤더 */}
+                    <div className={`${stepInfo.color} text-white p-4`}>
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-semibold mr-3">
+                          {stepInfo.title.charAt(0)}
+                        </div>
+                        <h4 className="font-medium text-white">
+                          {stepInfo.title} ({stepInfo.subtitle})
+                        </h4>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 space-y-3">
+                      {/* 학생 응답 */}
+                      {studentResponse && (
+                        <div>
+                          <div className="text-center text-sm text-gray-600 mb-2 py-1 bg-gray-50 rounded">
+                            학생 응답
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded text-center">
+                            <p className="text-sm text-gray-700">{studentResponse}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* AI 분석 */}
+                      {aiAnalysis && (
+                        <div className="p-3 bg-blue-50 rounded">
+                          <p className="text-sm font-medium text-gray-800 mb-2">분석:</p>
+                          <div className="text-sm text-gray-700 leading-relaxed">
+                            {Array.isArray(aiAnalysis) ? (
+                              aiAnalysis.map((item, i) => (
+                                <p key={i} className="mb-2">{String(item)}</p>
+                              ))
+                            ) : (
+                              <p>{String(aiAnalysis)}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 교사 피드백 입력 */}
+                      <div className="p-3 bg-yellow-50 rounded">
+                        <label className="text-sm font-medium text-gray-800 mb-2 block">
+                          피드백: (교사가 학생의 응답에 AI 분석을 바탕으로 피드백을 적을 입력칸)
+                        </label>
+                        <textarea
+                          className="w-full p-2 border border-gray-300 rounded text-sm"
+                          rows={3}
+                          placeholder="이 단계에 대한 피드백을 작성해주세요..."
+                        />
+                      </div>
+
+                      {/* 점수 입력 */}
+                      <div className="p-3 bg-green-50 rounded">
+                        <label className="text-sm font-medium text-gray-800 mb-2 block">
+                          점수: (1~100점 입력칸)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          className="w-20 p-2 border border-gray-300 rounded text-sm"
+                          placeholder="점수"
+                        />
+                        <span className="text-sm text-gray-600 ml-2">점</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+            {/* 저장하기 버튼 */}
+            <div className="flex justify-center pt-4">
+              <button
+                className="bg-green-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-600"
+                onClick={() => {
+                  // TODO: Supabase teacher_evaluations 테이블에 저장
+                  alert('평가가 저장되었습니다.');
+                }}
+              >
+                저장하기
+              </button>
             </div>
           </div>
         );
@@ -169,20 +326,17 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl font-bold text-gray-900">4단계: 분석 결과</h2>
+          <h2 className="text-xl font-bold text-gray-900">AI 분석 결과</h2>
           <div className="text-sm text-gray-500">
-            {currentAnalysisStep + 1} / 3
+            {currentAnalysisStep + 1} / 4
           </div>
-        </div>
-        <div className="text-sm text-gray-500">
-          AI가 분석한 결과를 단계별로 확인하고 교사 피드백을 작성할 수 있습니다
         </div>
       </div>
 
       {/* 진행 표시기 */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex space-x-2">
-          {[0, 1, 2].map((step) => (
+          {[0, 1, 2, 3].map((step) => (
             <div
               key={step}
               className={`w-3 h-3 rounded-full ${
@@ -210,7 +364,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
         </button>
 
         <div className="flex space-x-3">
-          {currentAnalysisStep < 2 ? (
+          {currentAnalysisStep < 3 && (
             <button
               onClick={onNextStep}
               className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
@@ -219,16 +373,6 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
               <svg className="w-5 h-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </button>
-          ) : (
-            <button
-              onClick={onShowTeacherFeedback}
-              className="flex items-center px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              교사 피드백 작성
             </button>
           )}
         </div>

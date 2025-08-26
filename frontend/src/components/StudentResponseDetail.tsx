@@ -171,7 +171,7 @@ const StudentResponseDetail: React.FC = () => {
   };
 
   const nextAnalysisStep = () => {
-    if (currentAnalysisStep < 2) {
+    if (currentAnalysisStep < 3) {
       setCurrentAnalysisStep(currentAnalysisStep + 1);
     }
   };
@@ -188,7 +188,7 @@ const StudentResponseDetail: React.FC = () => {
 
   const handleBackFromTeacherFeedback = () => {
     setShowTeacherFeedback(false);
-    setCurrentAnalysisStep(2);
+    setCurrentAnalysisStep(3);
   };
 
   // 학생 정보 포맷팅 함수 수정
@@ -394,6 +394,7 @@ const StudentResponseDetail: React.FC = () => {
             parsedAnalysis={parsedAnalysis}
             template={template}
             room={room}
+            response={response}
             currentAnalysisStep={currentAnalysisStep}
             onPrevStep={prevAnalysisStep}
             onNextStep={nextAnalysisStep}
