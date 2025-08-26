@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps } from '../lib/thinkingRoutineUtils';
 
 interface ActivityDetailProps {}
 
@@ -332,26 +333,73 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
               </span>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
+            {/* 학생 정보 - 수정된 레이아웃 */}
+            <div className="p-4 bg-gray-50 rounded-lg flex justify-between items-start">
               <div>
-                <span className="font-medium">학생:</span> {activity.student_name}
-                {activity.student_grade && activity.student_class && (
-                  <span> ({activity.student_grade} {activity.student_class}반</span>
-                )}
-                {activity.student_number && <span> {activity.student_number}번</span>}
-                {activity.student_grade && activity.student_class && <span>)</span>}
-              </div>
-              <div>
-                <span className="font-medium">제출일:</span> {formatDate(activity.submitted_at)}
-              </div>
-              <div>
-                <span className="font-medium">사고루틴:</span> {getRoutineTypeLabel(activity.routine_type)}
-              </div>
-              {activity.team_name && (
-                <div>
-                  <span className="font-medium">모둠:</span> {activity.team_name}
+                <div className="mb-2">
+                  <span className="text-sm font-medium text-gray-700">학생명:</span>
+                  <span className="ml-2 text-gray-900 font-semibold">
+                    {(() => {
+                      const name = activity.student_name || '학생';
+                      const grade = activity.student_grade || '';
+                      const studentClass = activity.student_class || '';
+                      const number = activity.student_number || '';
+                      
+                      const parts = [];
+                      if (grade) {
+                        if (grade.includes('학년')) {
+                          parts.push(grade);
+                        } else {
+                          parts.push(`${grade}학년`);
+                        }
+                      }
+                      if (studentClass) {
+                        if (studentClass.includes('반')) {
+                          parts.push(studentClass);
+                        } else {
+                          parts.push(`${studentClass}반`);
+                        }
+                      }
+                      if (number) {
+                        if (number.toString().includes('번')) {
+                          parts.push(number.toString());
+                        } else {
+                          parts.push(`${number}번`);
+                        }
+                      }
+                      
+                      if (parts.length > 0) {
+                        return `${name}(${parts.join(' ')})`;
+                      }
+                      return name;
+                    })()}
+                  </span>
                 </div>
-              )}
+                <div>
+                  <span className="text-sm font-medium text-gray-700">제출일:</span>
+                  <span className="ml-2 text-gray-900">
+                    {new Date(activity.submitted_at).toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long', 
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
+                {activity.team_name && (
+                  <div className="mt-1">
+                    <span className="text-sm font-medium text-gray-700">모둠:</span>
+                    <span className="ml-2 text-gray-900">{activity.team_name}</span>
+                  </div>
+                )}
+              </div>
+              <div className="text-right">
+                <span className="text-sm font-medium text-gray-700">사고루틴:</span>
+                <div className="text-blue-600 font-medium">
+                  {routineTypeLabels[activity.routine_type] || activity.routine_type || 'See-Think-Wonder'}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -459,232 +507,83 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
-        {/* 온라인 활동 - 학생 응답 (StudentResponseDetail 스타일) */}
-        {activity.activity_type === 'online' && activity.response_data && (
+        {/* 학생 응답 - 카드형 레이아웃 (온라인 + 오프라인 통합) */}
+        {activity.response_data && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">✏️ 학생 응답</h3>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">학생 응답</h2>
               
-              <div className="space-y-6">
+              {/* 학생 응답 - 카드형 레이아웃 */}
+              <div className="space-y-3">
                 {(() => {
-                  const routineType = activity.routine_type;
-                  const responseData = activity.response_data;
+                  const routineType = activity.routine_type || 'see-think-wonder';
+                  const mappedResponses = mapResponseToRoutineSteps(activity.response_data, routineType);
+                  const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
                   
-                  // See-Think-Wonder
-                  if (routineType === 'see-think-wonder') {
-                    return (
-                      <>
-                        <div>
-                          <div className="flex items-center space-x-3 mb-3">
-                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                              <span className="text-white font-bold text-sm">S</span>
-                            </div>
-                            <div>
-                              <h4 className="text-lg font-medium text-gray-900">See</h4>
-                              <p className="text-sm text-gray-600">보기</p>
-                            </div>
-                          </div>
-                          <div className="bg-blue-50 p-4 rounded-lg">
-                            <p className="text-gray-900 whitespace-pre-wrap">
-                              {responseData.see || '응답 없음'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="flex items-center space-x-3 mb-3">
-                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                              <span className="text-white font-bold text-sm">T</span>
-                            </div>
-                            <div>
-                              <h4 className="text-lg font-medium text-gray-900">Think</h4>
-                              <p className="text-sm text-gray-600">생각하기</p>
-                            </div>
-                          </div>
-                          <div className="bg-green-50 p-4 rounded-lg">
-                            <p className="text-gray-900 whitespace-pre-wrap">
-                              {responseData.think || '응답 없음'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="flex items-center space-x-3 mb-3">
-                            <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
-                              <span className="text-white font-bold text-sm">W</span>
-                            </div>
-                            <div>
-                              <h4 className="text-lg font-medium text-gray-900">Wonder</h4>
-                              <p className="text-sm text-gray-600">궁금하기</p>
-                            </div>
-                          </div>
-                          <div className="bg-purple-50 p-4 rounded-lg">
-                            <p className="text-gray-900 whitespace-pre-wrap">
-                              {responseData.wonder || '응답 없음'}
-                            </p>
-                          </div>
-                        </div>
-                      </>
-                    );
-                  }
-                  
-                  // Frayer Model
-                  if (routineType === 'frayer-model') {
-                    return (
-                      <>
-                        <div>
-                          <div className="flex items-center space-x-3 mb-3">
-                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                              <span className="text-white font-bold text-sm">D</span>
-                            </div>
-                            <div>
-                              <h4 className="text-lg font-medium text-gray-900">Definition</h4>
-                              <p className="text-sm text-gray-600">정의</p>
-                            </div>
-                          </div>
-                          <div className="bg-blue-50 p-4 rounded-lg">
-                            <p className="text-gray-900 whitespace-pre-wrap">
-                              {responseData.see || '응답 없음'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="flex items-center space-x-3 mb-3">
-                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                              <span className="text-white font-bold text-sm">C</span>
-                            </div>
-                            <div>
-                              <h4 className="text-lg font-medium text-gray-900">Characteristics</h4>
-                              <p className="text-sm text-gray-600">특징</p>
-                            </div>
-                          </div>
-                          <div className="bg-green-50 p-4 rounded-lg">
-                            <p className="text-gray-900 whitespace-pre-wrap">
-                              {responseData.think || '응답 없음'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="flex items-center space-x-3 mb-3">
-                            <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
-                              <span className="text-white font-bold text-sm">E</span>
-                            </div>
-                            <div>
-                              <h4 className="text-lg font-medium text-gray-900">Examples & Non-Examples</h4>
-                              <p className="text-sm text-gray-600">예시와 반례</p>
-                            </div>
-                          </div>
-                          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <span className="text-green-600 font-bold">✓</span>
-                                  <span className="font-medium text-gray-900">예시 (Examples)</span>
-                                </div>
-                                <div className="bg-white p-3 rounded border">
-                                  <p className="text-gray-900 whitespace-pre-wrap">
-                                    {(() => {
-                                      const wonderResponse = responseData.wonder || '';
-                                      const parts = wonderResponse.split('||');
-                                      return parts[0] || '응답 없음';
-                                    })()}
-                                  </p>
-                                </div>
-                              </div>
-                              <div>
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <span className="text-red-600 font-bold">✗</span>
-                                  <span className="font-medium text-gray-900">반례 (Non-Examples)</span>
-                                </div>
-                                <div className="bg-white p-3 rounded border">
-                                  <p className="text-gray-900 whitespace-pre-wrap">
-                                    {(() => {
-                                      const wonderResponse = responseData.wonder || '';
-                                      const parts = wonderResponse.split('||');
-                                      return parts[1] || '응답 없음';
-                                    })()}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    );
-                  }
-                  
-                  // 모든 사고루틴 유형별 단계 설정
-                  const routineStepConfigs: {[routineType: string]: {[key: string]: {title: string, subtitle: string, color: string, bgColor: string, icon: string}}} = {
-                    'see-think-wonder': {
-                      see: { title: 'See', subtitle: '보기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'S' },
-                      think: { title: 'Think', subtitle: '생각하기', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'T' },
-                      wonder: { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'W' }
-                    },
-                    '4c': {
-                      see: { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'C' },
-                      think: { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500', bgColor: 'bg-red-50', icon: 'C' },
-                      wonder: { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'C' },
-                      fourth_step: { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'C' }
-                    },
-                    'circle-of-viewpoints': {
-                      see: { title: 'Viewpoints', subtitle: '관점 탐색', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'V' },
-                      think: { title: 'Perspective', subtitle: '관점 선택', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'P' },
-                      wonder: { title: 'Questions', subtitle: '관점별 질문', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'Q' }
-                    },
-                    'connect-extend-challenge': {
-                      see: { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'C' },
-                      think: { title: 'Extend', subtitle: '확장하기', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'E' },
-                      wonder: { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500', bgColor: 'bg-red-50', icon: 'C' }
-                    },
-                    'frayer-model': {
-                      see: { title: 'Definition', subtitle: '정의', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'D' },
-                      think: { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'C' },
-                      wonder: { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'E' }
-                    },
-                    'used-to-think-now-think': {
-                      see: { title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'U' },
-                      think: { title: 'Now Think', subtitle: '현재 생각', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'N' },
-                      wonder: { title: 'Why Changed', subtitle: '변화 이유', color: 'bg-purple-500', bgColor: 'bg-purple-50', icon: 'W' }
-                    },
-                    'think-puzzle-explore': {
-                      see: { title: 'Think', subtitle: '생각하기', color: 'bg-blue-500', bgColor: 'bg-blue-50', icon: 'T' },
-                      think: { title: 'Puzzle', subtitle: '퍼즐', color: 'bg-yellow-500', bgColor: 'bg-yellow-50', icon: 'P' },
-                      wonder: { title: 'Explore', subtitle: '탐구하기', color: 'bg-green-500', bgColor: 'bg-green-50', icon: 'E' }
-                    }
+                  // 단계별 색상과 아이콘 정의 (더 많은 단계 지원)
+                  const stepColors = {
+                    'see': 'bg-blue-500',
+                    'think': 'bg-green-500', 
+                    'wonder': 'bg-purple-500',
+                    'connect': 'bg-indigo-500',
+                    'challenge': 'bg-red-500',
+                    'concepts': 'bg-yellow-500',
+                    'changes': 'bg-pink-500',
+                    'extend': 'bg-teal-500',
+                    'definition': 'bg-cyan-500',
+                    'characteristics': 'bg-orange-500',
+                    'examples': 'bg-lime-500',
+                    'non_examples': 'bg-rose-500',
+                    'used_to_think': 'bg-violet-500',
+                    'now_think': 'bg-emerald-500',
+                    'puzzle': 'bg-amber-500',
+                    'explore': 'bg-sky-500',
+                    'viewpoint_select': 'bg-fuchsia-500',
+                    'viewpoint_thinking': 'bg-slate-500',
+                    'viewpoint_concerns': 'bg-neutral-500'
                   };
-
-                  // 현재 루틴 타입에 따른 설정 가져오기
-                  const currentRoutineType = activity.routine_type || 'see-think-wonder';
-                  const stepConfigs = routineStepConfigs[currentRoutineType] || routineStepConfigs['see-think-wonder'];
                   
-                  return Object.entries(responseData)
-                    .filter(([key]) => key !== 'fourth_step' || currentRoutineType === '4c') // 4C가 아닌 경우 fourth_step 제외
+                  const stepIcons = {
+                    'see': 'S',
+                    'think': 'T', 
+                    'wonder': 'W',
+                    'connect': 'C',
+                    'challenge': 'Ch',
+                    'concepts': 'Co',
+                    'changes': 'Ch',
+                    'extend': 'E',
+                    'definition': 'D',
+                    'characteristics': 'Ch',
+                    'examples': 'Ex',
+                    'non_examples': 'N',
+                    'used_to_think': 'U',
+                    'now_think': 'N',
+                    'puzzle': 'P',
+                    'explore': 'E',
+                    'viewpoint_select': 'V1',
+                    'viewpoint_thinking': 'V2',
+                    'viewpoint_concerns': 'V3'
+                  };
+                  
+                  return Object.entries(mappedResponses)
+                    .filter(([key, value]) => value && value.trim().length > 0)
                     .map(([key, value]) => {
-                    if (!value && key === 'fourth_step') return null;
-                    const config = stepConfigs[key];
-                    if (!config) return null;
-                    
-                    return (
-                      <div key={key}>
-                        <div className="flex items-center space-x-3 mb-3">
-                          <div className={`w-8 h-8 rounded-full ${config.color} flex items-center justify-center`}>
-                            <span className="text-white font-bold text-sm">{config.icon}</span>
+                      const stepLabel = stepLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
+                      
+                      return (
+                        <div key={key} className="border border-gray-200 rounded-lg overflow-hidden">
+                          <div className={`${stepColors[key] || 'bg-gray-500'} px-4 py-2 flex items-center`}>
+                            <div className="w-8 h-6 bg-white bg-opacity-20 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                              {stepIcons[key] || key.charAt(0).toUpperCase()}
+                            </div>
+                            <h3 className="font-medium text-white">{stepLabel}</h3>
                           </div>
-                          <div>
-                            <h4 className="text-lg font-medium text-gray-900">{config.title}</h4>
-                            <p className="text-sm text-gray-600">{config.subtitle}</p>
+                          <div className="p-4 bg-white">
+                            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{value as string}</p>
                           </div>
                         </div>
-                        <div className={`${config.bgColor} p-4 rounded-lg`}>
-                          <p className="text-gray-900 whitespace-pre-wrap">
-                            {String(value) || '응답 없음'}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  }).filter(Boolean);
+                      );
+                    });
                 })()}
               </div>
             </div>
