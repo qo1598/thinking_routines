@@ -341,7 +341,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                 <div className="mb-2">
                   <span className="text-sm font-medium text-gray-700">학생명:</span>
                   <span className="ml-2 text-gray-900 font-semibold">
-                    {(() => {
+                  {(() => {
                       const name = activity.student_name || '학생';
                       const grade = activity.student_grade || '';
                       const studentClass = activity.student_class || '';
@@ -376,7 +376,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                       return name;
                     })()}
                   </span>
-                </div>
+                          </div>
                 <div>
                   <span className="text-sm font-medium text-gray-700">제출일:</span>
                   <span className="ml-2 text-gray-900">
@@ -388,23 +388,23 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                       minute: '2-digit'
                     })}
                   </span>
-                </div>
+                          </div>
                 {activity.team_name && (
                   <div className="mt-1">
                     <span className="text-sm font-medium text-gray-700">모둠:</span>
                     <span className="ml-2 text-gray-900">{activity.team_name}</span>
-                  </div>
+                          </div>
                 )}
-              </div>
+                          </div>
               <div className="text-right">
                 <span className="text-sm font-medium text-gray-700">사고루틴:</span>
                 <div className="text-blue-600 font-medium">
                   {routineTypeLabels[activity.routine_type] || activity.routine_type || 'See-Think-Wonder'}
+                      </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
+                  </div>
+                </div>
 
         {/* 온라인 활동 - 교사 제공 자료 */}
         {activity.activity_type === 'online' && activity.room_id && (
@@ -497,20 +497,20 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                     .filter(([key, value]) => value && value.trim().length > 0)
                     .map(([key, value]) => {
                       const stepLabel = stepLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
-                      
-                      return (
+                    
+                    return (
                         <div key={key} className="border border-gray-200 rounded-lg overflow-hidden">
                           <div className={`${stepColors[key] || 'bg-gray-500'} px-4 py-2 flex items-center`}>
                             <div className="w-8 h-6 bg-white bg-opacity-20 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
                               {stepIcons[key] || key.charAt(0).toUpperCase()}
-                            </div>
+                          </div>
                             <h3 className="font-medium text-white">{stepLabel}</h3>
                           </div>
                           <div className="p-4 bg-white">
                             <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{value as string}</p>
-                          </div>
                         </div>
-                      );
+                      </div>
+                    );
                     });
                 })()}
               </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { routineTypeLabels, routineStepLabels } from '../lib/thinkingRoutineUtils';
+import { parseStoredAIAnalysis, AIAnalysisData } from '../lib/aiAnalysisUtils';
 
 interface TeacherFeedbackReadOnlyProps {
   responseId: string;
@@ -24,118 +25,7 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
   const [evaluation, setEvaluation] = useState<TeacherEvaluation | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // AI 분석 결과 파싱 - 동적 루틴별 처리
-  const parseAIAnalysis = (aiAnalysisString: string) => {
-    try {
-      // 먼저 JSON 형태인지 확인
-      if (aiAnalysisString.trim().startsWith('{')) {
-        const parsed = JSON.parse(aiAnalysisString);
-        
-        // ThinkingRoutineAnalysis에서 저장한 구조화된 형태 처리
-        if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
-          return {
-            individualSteps: parsed.aiAnalysis.individualSteps,
-            comprehensive: parsed.aiAnalysis.comprehensive,
-            educational: parsed.aiAnalysis.educational,
-            stepByStep: parsed.aiAnalysis.stepByStep,
-            teacherFeedback: parsed.teacherFeedback?.individualSteps || {}
-          };
-        }
-        
-        // 기존 형태 처리 (직접 individualSteps가 있는 경우)
-        if (parsed.individualSteps) {
-          return parsed;
-        }
-        
-        return parsed;
-      }
-      
-      // 마크다운 텍스트 형태의 AI 분석 파싱 - 동적 루틴별 처리
-      const individualSteps: { [key: string]: string } = {};
-      const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
-      
-      console.log('🔍 Current routine type:', routineType);
-      console.log('🔍 Step labels to parse:', stepLabels);
-      
-      // 각 단계별로 동적 패턴 매칭 - 실제 AI 텍스트에서 사용되는 패턴 매칭
-      Object.entries(stepLabels).forEach(([stepKey, stepLabel]) => {
-        let found = false;
-        
-        // See-Think-Wonder의 경우 실제 AI 텍스트 패턴 사용
-        if (routineType === 'see-think-wonder') {
-          if (stepKey === 'see') {
-            const match = aiAnalysisString.match(/\*\s*\*\*See\s*\(본 것\)\*\*:?\s*"([^"]+)"/s);
-            if (match) {
-              individualSteps[stepKey] = match[1].trim();
-              console.log(`✅ Found ${stepKey} (실제 패턴):`, match[1].trim().substring(0, 50) + '...');
-              found = true;
-            }
-          } else if (stepKey === 'think') {
-            const match = aiAnalysisString.match(/\*\s*\*\*Think\s*\(생각한 것\)\*\*:?\s*"([^"]+)"/s);
-            if (match) {
-              individualSteps[stepKey] = match[1].trim();
-              console.log(`✅ Found ${stepKey} (실제 패턴):`, match[1].trim().substring(0, 50) + '...');
-              found = true;
-            }
-          } else if (stepKey === 'wonder') {
-            const match = aiAnalysisString.match(/\*\s*\*\*Wonder\s*\(궁금한 점\)\*\*:?\s*"([^"]+)"/s);
-            if (match) {
-              individualSteps[stepKey] = match[1].trim();
-              console.log(`✅ Found ${stepKey} (실제 패턴):`, match[1].trim().substring(0, 50) + '...');
-              found = true;
-            }
-          }
-        } else {
-          // 다른 루틴들은 기존 방식 사용
-          const patterns = [
-            // 패턴 1: *   **Label:** "content"
-            new RegExp(`\\*\\s*\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*"([^"]+)"`, 's'),
-            // 패턴 2: **Label:** "content"  
-            new RegExp(`\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*"([^"]+)"`, 's'),
-            // 패턴 3: *   **Label:** content (따옴표 없음)
-            new RegExp(`\\*\\s*\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*([^*]+?)(?=\\*\\*|$)`, 's'),
-            // 패턴 4: **Label:** content (따옴표 없음)
-            new RegExp(`\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*([^*]+?)(?=\\*\\*|$)`, 's')
-          ];
-          
-          for (const pattern of patterns) {
-            const match = aiAnalysisString.match(pattern);
-            if (match) {
-              individualSteps[stepKey] = match[1].trim();
-              console.log(`✅ Found ${stepKey} (${stepLabel}):`, match[1].trim().substring(0, 50) + '...');
-              found = true;
-              break;
-            }
-          }
-        }
-        
-        if (!found) {
-          console.log(`❌ Not found ${stepKey} (${stepLabel})`);
-        }
-      });
-      
-      console.log('🔍 Final parsed steps:', individualSteps);
-      
-      const result = {
-        individualSteps,
-        comprehensive: null,
-        educational: null,
-        stepByStep: null,
-        teacherFeedback: {}
-      };
-      
-      return result;
-      
-    } catch (error) {
-      console.error('AI 분석 데이터 파싱 오류:', error);
-      return null;
-    }
-  };
-
-  // 정규표현식 특수문자 이스케이프 함수
-  const escapeRegExp = (string: string): string => {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  };
+  // 새로운 구조화된 AI 분석 파싱 시스템 사용
 
   // 마크다운 텍스트 포맷팅
   const formatMarkdownText = (text: string): string => {
@@ -149,14 +39,14 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
       .replace(/\d+\. (.*?)(?=\n|$)/g, '<strong>$&</strong>');
   };
 
-  // 디버깅용 로그
+  // 새로운 구조화된 AI 분석 파싱 시스템
   console.log('🔍 TeacherFeedbackReadOnly - Raw AI Analysis:', aiAnalysis);
   
-  const parsedAI = aiAnalysis ? parseAIAnalysis(aiAnalysis) : null;
+  const parsedAI: AIAnalysisData | null = aiAnalysis ? parseStoredAIAnalysis(aiAnalysis, routineType) : null;
   
-  console.log('🔍 TeacherFeedbackReadOnly - Parsed AI:', parsedAI);
-  console.log('🔍 TeacherFeedbackReadOnly - Individual Steps:', parsedAI?.individualSteps);
-  console.log('🔍 TeacherFeedbackReadOnly - parsedAI 객체 전체:', JSON.stringify(parsedAI, null, 2));
+  console.log('🔍 TeacherFeedbackReadOnly - Parsed AI (NEW SYSTEM):', parsedAI);
+  console.log('🔍 TeacherFeedbackReadOnly - Individual Steps (NEW):', parsedAI?.individualSteps);
+  console.log('🔍 TeacherFeedbackReadOnly - Full AI Data:', JSON.stringify(parsedAI, null, 2));
 
   useEffect(() => {
     fetchTeacherEvaluation();

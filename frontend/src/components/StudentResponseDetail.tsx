@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import AIAnalysisSection from './AIAnalysisSection';
 import TeacherFeedbackSection from './TeacherFeedbackSection';
 import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps } from '../lib/thinkingRoutineUtils';
+import { parseMarkdownToStructuredAI, saveStructuredAIAnalysis } from '../lib/aiAnalysisUtils';
 
 const StudentResponseDetail: React.FC = () => {
   const { responseId } = useParams<{ responseId: string }>();
@@ -176,15 +177,26 @@ const StudentResponseDetail: React.FC = () => {
 
       console.log('✅ 분석 결과:', result);
       
-      // 분석 결과를 데이터베이스에 저장
-      const { error } = await supabase
-        .from('student_responses')
-        .update({ ai_analysis: result.analysis })
-        .eq('id', responseId);
-
-      if (error) {
-        console.error('DB 저장 오류:', error);
-        throw new Error('분석 결과 저장에 실패했습니다: ' + error.message);
+      // 🔧 NEW: 마크다운 AI 분석을 구조화된 형태로 변환 후 저장
+      console.log('🔄 Converting markdown AI analysis to structured format...');
+      const structuredAI = parseMarkdownToStructuredAI(result.analysis, routineType);
+      console.log('📊 Structured AI data:', structuredAI);
+      
+      // 구조화된 AI 분석 데이터 저장
+      const saveSuccess = await saveStructuredAIAnalysis(responseId!, structuredAI, supabase);
+      
+      if (!saveSuccess) {
+        // Fallback: 원본 마크다운 텍스트라도 저장
+        console.log('⚠️ Fallback to original markdown storage');
+        const { error: fallbackError } = await supabase
+          .from('student_responses')
+          .update({ ai_analysis: result.analysis })
+          .eq('id', responseId);
+          
+        if (fallbackError) {
+          console.error('DB 저장 오류 (Fallback):', fallbackError);
+          throw new Error('분석 결과 저장에 실패했습니다: ' + fallbackError.message);
+        }
       }
 
       setAiAnalysis(result.analysis);
