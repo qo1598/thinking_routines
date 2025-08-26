@@ -522,6 +522,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
         <TeacherFeedbackReadOnly 
           responseId={activity.id}
           routineType={activity.routine_type || 'see-think-wonder'}
+          aiAnalysis={activity.ai_analysis}
         />
 
         {/* 온라인 활동: AI 분석 결과 표시 (제거됨) */}

@@ -5,6 +5,7 @@ import { routineTypeLabels, routineStepLabels } from '../lib/thinkingRoutineUtil
 interface TeacherFeedbackReadOnlyProps {
   responseId: string;
   routineType: string;
+  aiAnalysis?: string; // AI 분석 데이터 추가
 }
 
 interface TeacherEvaluation {
@@ -17,10 +18,53 @@ interface TeacherEvaluation {
 
 const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({ 
   responseId, 
-  routineType 
+  routineType,
+  aiAnalysis 
 }) => {
   const [evaluation, setEvaluation] = useState<TeacherEvaluation | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // AI 분석 결과 파싱
+  const parseAIAnalysis = (aiAnalysisString: string) => {
+    try {
+      const parsed = JSON.parse(aiAnalysisString);
+      
+      // ThinkingRoutineAnalysis에서 저장한 구조화된 형태 처리
+      if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
+        return {
+          individualSteps: parsed.aiAnalysis.individualSteps,
+          comprehensive: parsed.aiAnalysis.comprehensive,
+          educational: parsed.aiAnalysis.educational,
+          stepByStep: parsed.aiAnalysis.stepByStep,
+          teacherFeedback: parsed.teacherFeedback?.individualSteps || {}
+        };
+      }
+      
+      // 기존 형태 처리 (직접 individualSteps가 있는 경우)
+      if (parsed.individualSteps) {
+        return parsed;
+      }
+      
+      return parsed;
+    } catch (error) {
+      console.error('AI 분석 데이터 파싱 오류:', error);
+      return null;
+    }
+  };
+
+  // 마크다운 텍스트 포맷팅
+  const formatMarkdownText = (text: string): string => {
+    if (!text) return '';
+    
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>')
+      .replace(/- (.*?)(?=\n|$)/g, '• $1')
+      .replace(/\d+\. (.*?)(?=\n|$)/g, '<strong>$&</strong>');
+  };
+
+  const parsedAI = aiAnalysis ? parseAIAnalysis(aiAnalysis) : null;
 
   useEffect(() => {
     fetchTeacherEvaluation();
@@ -147,13 +191,15 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
 
         {/* 단계별 피드백 */}
         <div className="space-y-4 mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">단계별 피드백 및 점수</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">단계별 AI 분석 및 교사 평가</h3>
           
           {Object.entries(stepLabels).map(([stepKey, stepLabel]) => {
             const feedback = evaluation.step_feedbacks?.[stepKey];
             const score = evaluation.step_scores?.[stepKey];
+            const aiStepAnalysis = parsedAI?.individualSteps?.[stepKey];
             
-            if (!feedback && !score) return null;
+            // AI 분석이나 교사 피드백 중 하나라도 있으면 표시
+            if (!aiStepAnalysis && !feedback && !score) return null;
 
             return (
               <div key={stepKey} className="border border-gray-200 rounded-lg overflow-hidden">
@@ -170,11 +216,37 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
                     </div>
                   )}
                 </div>
-                <div className="p-4 bg-white">
+                <div className="p-4 bg-white space-y-4">
+                  {/* AI 분석 */}
+                  {aiStepAnalysis && (
+                    <div>
+                      <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <svg className="w-4 h-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        AI 분석
+                      </h5>
+                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div 
+                          className="text-gray-700 leading-relaxed text-sm"
+                          dangerouslySetInnerHTML={{ __html: formatMarkdownText(String(aiStepAnalysis)) }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 교사 피드백 */}
                   {feedback && (
-                    <div className="mb-3">
-                      <h5 className="text-sm font-medium text-gray-700 mb-2">교사 피드백</h5>
-                      <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{feedback}</p>
+                    <div>
+                      <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <svg className="w-4 h-4 mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        교사 피드백
+                      </h5>
+                      <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                        <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-sm">{feedback}</p>
+                      </div>
                     </div>
                   )}
                 </div>
