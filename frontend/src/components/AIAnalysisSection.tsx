@@ -98,9 +98,9 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                 return (
                   <div key={stepKey} className="border rounded-lg overflow-hidden">
                     {/* 단계 헤더 */}
-                    <div className={`${stepInfo.color} text-white p-4`}>
+                    <div className={`${stepInfo.color} text-white px-4 py-2`}>
                       <div className="flex items-center">
-                        <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-semibold mr-3">
+                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-semibold mr-3 text-sm">
                           {stepInfo.title.charAt(0)}
                         </div>
                         <h4 className="font-medium text-white">
@@ -112,21 +112,16 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                     <div className="p-4 space-y-3">
                       {/* 학생 응답 */}
                       {studentResponse && (
-                        <div>
-                          <div className="text-center text-sm text-gray-600 mb-2 py-1 bg-gray-50 rounded">
-                            학생 응답
-                          </div>
-                          <div className="p-3 bg-gray-50 rounded text-center">
-                            <p className="text-sm text-gray-700">{studentResponse}</p>
-                          </div>
+                        <div className="p-3 bg-gray-50 rounded">
+                          <p className="text-sm text-gray-700">{studentResponse}</p>
                         </div>
                       )}
                       
                       {/* AI 분석 */}
                       {aiAnalysis && (
                         <div className="p-3 bg-blue-50 rounded">
-                          <p className="text-sm font-medium text-gray-800 mb-2">분석:</p>
-                          <div className="text-sm text-gray-700 leading-relaxed">
+                          <p className="text-sm font-medium text-gray-800 mb-2">AI 분석</p>
+                          <div className="text-sm text-gray-700 leading-relaxed text-left">
                             {Array.isArray(aiAnalysis) ? (
                               aiAnalysis.map((item, i) => (
                                 <p key={i} className="mb-2">{String(item)}</p>
@@ -135,7 +130,6 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                               <p>{String(aiAnalysis)}</p>
                             )}
                           </div>
-                          <p className="text-xs text-gray-500 mt-2">점수: (1~100점 입력칸)</p>
                         </div>
                       )}
                     </div>
@@ -155,8 +149,8 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
             
             <div className="space-y-4">
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h5 className="font-medium text-gray-800 mb-2">논리적 연결성:</h5>
-                <p className="text-sm text-gray-700">
+                <h5 className="font-medium text-gray-800 mb-2">논리적 연결성</h5>
+                <p className="text-sm text-gray-700 text-left">
                   각 단계는 훌륭하게 연결되어 있습니다. See 단계에서 관찰한 페트병과 옷 제작 사실이 
                   Think 단계에서 원인에 대한 질문으로 이어지고, Wonder 단계에서 더 근본적인 문제로 확장되는 자연스러운 
                   흐름을 보여줍니다.
@@ -164,8 +158,8 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
               </div>
 
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h5 className="font-medium text-gray-800 mb-2">사고의 깊이:</h5>
-                <p className="text-sm text-gray-700">
+                <h5 className="font-medium text-gray-800 mb-2">사고의 깊이</h5>
+                <p className="text-sm text-gray-700 text-left">
                   아직은 얄은 수준이지만, 충분한 잠재력을 가지고 있습니다. Think 단계에서 '무슨 일이 있어서'
                   라는 질문을 통해 문제의 원인을 찾으려는 시도는 긍정적입니다. Wonder 단계에서 '바다에서 많이 나오는 
                   이유'에 대한 질문은 환경 문제에 대한 더 깊은 탐구 가능성을 보여줍니다.
@@ -173,8 +167,8 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
               </div>
 
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h5 className="font-medium text-gray-800 mb-2">개선점과 건설적 피드백:</h5>
-                <p className="text-sm text-gray-700">
+                <h5 className="font-medium text-gray-800 mb-2">개선점과 건설적 피드백</h5>
+                <p className="text-sm text-gray-700 text-left">
                   Think 단계 강화: Think 단계에서 좀 더 구체적인 질문을 유도하면 사고의 깊이를 더할 수 있습니다. 
                   예를 들어, "제주도에 페트병이 많은 이유가 관광객 때문일까, 아니면 다른 요인이 있을까?"와 같은 
                   질문을 제안할 수 있습니다.<br/><br/>
@@ -184,8 +178,8 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
               </div>
 
               <div className="p-4 bg-blue-50 rounded-lg">
-                <h5 className="font-medium text-gray-800 mb-2">추가 활동 제안:</h5>
-                <p className="text-sm text-gray-700">
+                <h5 className="font-medium text-gray-800 mb-2">추가 활동 제안</h5>
+                <p className="text-sm text-gray-700 text-left">
                   See-Think-Wonder 활동 이후, 학생 스스로 정보를 찾아보거나 토론을 진행하는 활동을 추
                   가하면 학습 효과를 높일 수 있습니다. 예를 들어, 페트병 관련 기사를 읽고 토론하거나, 페트병 재활용 방법에 
                   대해 조사하는 활동을 제안할 수 있습니다.
@@ -214,9 +208,9 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                 return (
                   <div key={stepKey} className="border rounded-lg overflow-hidden">
                     {/* 단계 헤더 */}
-                    <div className={`${stepInfo.color} text-white p-4`}>
+                    <div className={`${stepInfo.color} text-white px-4 py-2`}>
                       <div className="flex items-center">
-                        <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-semibold mr-3">
+                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white font-semibold mr-3 text-sm">
                           {stepInfo.title.charAt(0)}
                         </div>
                         <h4 className="font-medium text-white">
@@ -228,21 +222,16 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                     <div className="p-4 space-y-3">
                       {/* 학생 응답 */}
                       {studentResponse && (
-                        <div>
-                          <div className="text-center text-sm text-gray-600 mb-2 py-1 bg-gray-50 rounded">
-                            학생 응답
-                          </div>
-                          <div className="p-3 bg-gray-50 rounded text-center">
-                            <p className="text-sm text-gray-700">{studentResponse}</p>
-                          </div>
+                        <div className="p-3 bg-gray-50 rounded">
+                          <p className="text-sm text-gray-700">{studentResponse}</p>
                         </div>
                       )}
                       
                       {/* AI 분석 */}
                       {aiAnalysis && (
                         <div className="p-3 bg-blue-50 rounded">
-                          <p className="text-sm font-medium text-gray-800 mb-2">분석:</p>
-                          <div className="text-sm text-gray-700 leading-relaxed">
+                          <p className="text-sm font-medium text-gray-800 mb-2">AI 분석</p>
+                          <div className="text-sm text-gray-700 leading-relaxed text-left">
                             {Array.isArray(aiAnalysis) ? (
                               aiAnalysis.map((item, i) => (
                                 <p key={i} className="mb-2">{String(item)}</p>
@@ -254,31 +243,32 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                         </div>
                       )}
 
-                      {/* 교사 피드백 입력 */}
+                      {/* 교사 피드백 및 점수 입력 */}
                       <div className="p-3 bg-yellow-50 rounded">
-                        <label className="text-sm font-medium text-gray-800 mb-2 block">
-                          피드백: (교사가 학생의 응답에 AI 분석을 바탕으로 피드백을 적을 입력칸)
-                        </label>
-                        <textarea
-                          className="w-full p-2 border border-gray-300 rounded text-sm"
-                          rows={3}
-                          placeholder="이 단계에 대한 피드백을 작성해주세요..."
-                        />
-                      </div>
-
-                      {/* 점수 입력 */}
-                      <div className="p-3 bg-green-50 rounded">
-                        <label className="text-sm font-medium text-gray-800 mb-2 block">
-                          점수: (1~100점 입력칸)
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="100"
-                          className="w-20 p-2 border border-gray-300 rounded text-sm"
-                          placeholder="점수"
-                        />
-                        <span className="text-sm text-gray-600 ml-2">점</span>
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-1">
+                            <label className="text-sm font-medium text-gray-800 mb-2 block">
+                              교사 피드백
+                            </label>
+                            <textarea
+                              className="w-full p-2 border border-gray-300 rounded text-sm"
+                              rows={3}
+                              placeholder="이 단계에 대한 피드백을 작성해주세요..."
+                            />
+                          </div>
+                          <div className="flex-shrink-0">
+                            <label className="text-sm font-medium text-gray-800 mb-2 block">
+                              점수
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              className="w-16 p-2 border border-gray-300 rounded text-sm text-center"
+                              placeholder="점수"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
