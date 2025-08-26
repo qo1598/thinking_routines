@@ -24,7 +24,7 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
   const [evaluation, setEvaluation] = useState<TeacherEvaluation | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // AI 분석 결과 파싱
+  // AI 분석 결과 파싱 - 동적 루틴별 처리
   const parseAIAnalysis = (aiAnalysisString: string) => {
     try {
       // 먼저 JSON 형태인지 확인
@@ -50,36 +50,42 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
         return parsed;
       }
       
-      // 마크다운 텍스트 형태의 AI 분석 파싱
+      // 마크다운 텍스트 형태의 AI 분석 파싱 - 동적 루틴별 처리
       const individualSteps: { [key: string]: string } = {};
+      const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
       
-      // See-Think-Wonder 패턴 매칭 - 실제 텍스트 구조에 맞게 수정
-      const seeMatch = aiAnalysisString.match(/\*\s*\*\*See\s*\([^)]*\)\*\*:?\s*"([^"]+)"/s);
-      const thinkMatch = aiAnalysisString.match(/\*\s*\*\*Think\s*\([^)]*\)\*\*:?\s*"([^"]+)"/s);
-      const wonderMatch = aiAnalysisString.match(/\*\s*\*\*Wonder\s*\([^)]*\)\*\*:?\s*"([^"]+)"/s);
+      console.log('🔍 Current routine type:', routineType);
+      console.log('🔍 Step labels to parse:', stepLabels);
       
-      console.log('🔍 Regex matching results:', {
-        seeMatch: seeMatch ? seeMatch[1] : 'NOT FOUND',
-        thinkMatch: thinkMatch ? thinkMatch[1] : 'NOT FOUND', 
-        wonderMatch: wonderMatch ? wonderMatch[1] : 'NOT FOUND'
+      // 각 단계별로 동적 패턴 매칭
+      Object.entries(stepLabels).forEach(([stepKey, stepLabel]) => {
+        // 다양한 패턴으로 시도
+        const patterns = [
+          // 패턴 1: *   **Label:** "content"
+          new RegExp(`\\*\\s*\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*"([^"]+)"`, 's'),
+          // 패턴 2: **Label:** "content"  
+          new RegExp(`\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*"([^"]+)"`, 's'),
+          // 패턴 3: *   **Label:** content (따옴표 없음)
+          new RegExp(`\\*\\s*\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*([^*]+?)(?=\\*\\*|$)`, 's'),
+          // 패턴 4: **Label:** content (따옴표 없음)
+          new RegExp(`\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*([^*]+?)(?=\\*\\*|$)`, 's')
+        ];
+        
+        for (const pattern of patterns) {
+          const match = aiAnalysisString.match(pattern);
+          if (match) {
+            individualSteps[stepKey] = match[1].trim();
+            console.log(`✅ Found ${stepKey} (${stepLabel}):`, match[1].trim().substring(0, 50) + '...');
+            break;
+          }
+        }
+        
+        if (!individualSteps[stepKey]) {
+          console.log(`❌ Not found ${stepKey} (${stepLabel})`);
+        }
       });
       
-      if (seeMatch) individualSteps.see = seeMatch[1].trim();
-      if (thinkMatch) individualSteps.think = thinkMatch[1].trim();
-      if (wonderMatch) individualSteps.wonder = wonderMatch[1].trim();
-      
-      // 4C 패턴 매칭
-      const connectMatch = aiAnalysisString.match(/\*\*Connect\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
-      const challengeMatch = aiAnalysisString.match(/\*\*Challenge\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
-      const conceptsMatch = aiAnalysisString.match(/\*\*Concepts?\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
-      const changesMatch = aiAnalysisString.match(/\*\*Changes?\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
-      
-      if (connectMatch) individualSteps.connect = connectMatch[1].trim();
-      if (challengeMatch) individualSteps.challenge = challengeMatch[1].trim();
-      if (conceptsMatch) individualSteps.concepts = conceptsMatch[1].trim();
-      if (changesMatch) individualSteps.changes = changesMatch[1].trim();
-      
-      console.log('🔍 Parsed markdown steps:', individualSteps);
+      console.log('🔍 Final parsed steps:', individualSteps);
       
       const result = {
         individualSteps,
@@ -89,13 +95,17 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
         teacherFeedback: {}
       };
       
-      console.log('🔍 Returning parsed result:', result);
       return result;
       
     } catch (error) {
       console.error('AI 분석 데이터 파싱 오류:', error);
       return null;
     }
+  };
+
+  // 정규표현식 특수문자 이스케이프 함수
+  const escapeRegExp = (string: string): string => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   };
 
   // 마크다운 텍스트 포맷팅
