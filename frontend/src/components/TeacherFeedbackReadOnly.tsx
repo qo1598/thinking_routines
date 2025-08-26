@@ -57,30 +57,59 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
       console.log('🔍 Current routine type:', routineType);
       console.log('🔍 Step labels to parse:', stepLabels);
       
-      // 각 단계별로 동적 패턴 매칭
+      // 각 단계별로 동적 패턴 매칭 - 실제 AI 텍스트에서 사용되는 패턴 매칭
       Object.entries(stepLabels).forEach(([stepKey, stepLabel]) => {
-        // 다양한 패턴으로 시도
-        const patterns = [
-          // 패턴 1: *   **Label:** "content"
-          new RegExp(`\\*\\s*\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*"([^"]+)"`, 's'),
-          // 패턴 2: **Label:** "content"  
-          new RegExp(`\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*"([^"]+)"`, 's'),
-          // 패턴 3: *   **Label:** content (따옴표 없음)
-          new RegExp(`\\*\\s*\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*([^*]+?)(?=\\*\\*|$)`, 's'),
-          // 패턴 4: **Label:** content (따옴표 없음)
-          new RegExp(`\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*([^*]+?)(?=\\*\\*|$)`, 's')
-        ];
+        let found = false;
         
-        for (const pattern of patterns) {
-          const match = aiAnalysisString.match(pattern);
-          if (match) {
-            individualSteps[stepKey] = match[1].trim();
-            console.log(`✅ Found ${stepKey} (${stepLabel}):`, match[1].trim().substring(0, 50) + '...');
-            break;
+        // See-Think-Wonder의 경우 실제 AI 텍스트 패턴 사용
+        if (routineType === 'see-think-wonder') {
+          if (stepKey === 'see') {
+            const match = aiAnalysisString.match(/\*\s*\*\*See\s*\(본 것\)\*\*:?\s*"([^"]+)"/s);
+            if (match) {
+              individualSteps[stepKey] = match[1].trim();
+              console.log(`✅ Found ${stepKey} (실제 패턴):`, match[1].trim().substring(0, 50) + '...');
+              found = true;
+            }
+          } else if (stepKey === 'think') {
+            const match = aiAnalysisString.match(/\*\s*\*\*Think\s*\(생각한 것\)\*\*:?\s*"([^"]+)"/s);
+            if (match) {
+              individualSteps[stepKey] = match[1].trim();
+              console.log(`✅ Found ${stepKey} (실제 패턴):`, match[1].trim().substring(0, 50) + '...');
+              found = true;
+            }
+          } else if (stepKey === 'wonder') {
+            const match = aiAnalysisString.match(/\*\s*\*\*Wonder\s*\(궁금한 점\)\*\*:?\s*"([^"]+)"/s);
+            if (match) {
+              individualSteps[stepKey] = match[1].trim();
+              console.log(`✅ Found ${stepKey} (실제 패턴):`, match[1].trim().substring(0, 50) + '...');
+              found = true;
+            }
+          }
+        } else {
+          // 다른 루틴들은 기존 방식 사용
+          const patterns = [
+            // 패턴 1: *   **Label:** "content"
+            new RegExp(`\\*\\s*\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*"([^"]+)"`, 's'),
+            // 패턴 2: **Label:** "content"  
+            new RegExp(`\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*"([^"]+)"`, 's'),
+            // 패턴 3: *   **Label:** content (따옴표 없음)
+            new RegExp(`\\*\\s*\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*([^*]+?)(?=\\*\\*|$)`, 's'),
+            // 패턴 4: **Label:** content (따옴표 없음)
+            new RegExp(`\\*\\*${escapeRegExp(stepLabel)}\\*\\*:?\\s*([^*]+?)(?=\\*\\*|$)`, 's')
+          ];
+          
+          for (const pattern of patterns) {
+            const match = aiAnalysisString.match(pattern);
+            if (match) {
+              individualSteps[stepKey] = match[1].trim();
+              console.log(`✅ Found ${stepKey} (${stepLabel}):`, match[1].trim().substring(0, 50) + '...');
+              found = true;
+              break;
+            }
           }
         }
         
-        if (!individualSteps[stepKey]) {
+        if (!found) {
           console.log(`❌ Not found ${stepKey} (${stepLabel})`);
         }
       });
