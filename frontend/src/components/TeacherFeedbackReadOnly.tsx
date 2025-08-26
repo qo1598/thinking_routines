@@ -27,25 +27,62 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
   // AI 분석 결과 파싱
   const parseAIAnalysis = (aiAnalysisString: string) => {
     try {
-      const parsed = JSON.parse(aiAnalysisString);
-      
-      // ThinkingRoutineAnalysis에서 저장한 구조화된 형태 처리
-      if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
-        return {
-          individualSteps: parsed.aiAnalysis.individualSteps,
-          comprehensive: parsed.aiAnalysis.comprehensive,
-          educational: parsed.aiAnalysis.educational,
-          stepByStep: parsed.aiAnalysis.stepByStep,
-          teacherFeedback: parsed.teacherFeedback?.individualSteps || {}
-        };
-      }
-      
-      // 기존 형태 처리 (직접 individualSteps가 있는 경우)
-      if (parsed.individualSteps) {
+      // 먼저 JSON 형태인지 확인
+      if (aiAnalysisString.trim().startsWith('{')) {
+        const parsed = JSON.parse(aiAnalysisString);
+        
+        // ThinkingRoutineAnalysis에서 저장한 구조화된 형태 처리
+        if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
+          return {
+            individualSteps: parsed.aiAnalysis.individualSteps,
+            comprehensive: parsed.aiAnalysis.comprehensive,
+            educational: parsed.aiAnalysis.educational,
+            stepByStep: parsed.aiAnalysis.stepByStep,
+            teacherFeedback: parsed.teacherFeedback?.individualSteps || {}
+          };
+        }
+        
+        // 기존 형태 처리 (직접 individualSteps가 있는 경우)
+        if (parsed.individualSteps) {
+          return parsed;
+        }
+        
         return parsed;
       }
       
-      return parsed;
+      // 마크다운 텍스트 형태의 AI 분석 파싱
+      const individualSteps: { [key: string]: string } = {};
+      
+      // See-Think-Wonder 패턴 매칭
+      const seeMatch = aiAnalysisString.match(/\*\*See\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
+      const thinkMatch = aiAnalysisString.match(/\*\*Think\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
+      const wonderMatch = aiAnalysisString.match(/\*\*Wonder\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
+      
+      if (seeMatch) individualSteps.see = seeMatch[1].trim();
+      if (thinkMatch) individualSteps.think = thinkMatch[1].trim();
+      if (wonderMatch) individualSteps.wonder = wonderMatch[1].trim();
+      
+      // 4C 패턴 매칭
+      const connectMatch = aiAnalysisString.match(/\*\*Connect\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
+      const challengeMatch = aiAnalysisString.match(/\*\*Challenge\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
+      const conceptsMatch = aiAnalysisString.match(/\*\*Concepts?\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
+      const changesMatch = aiAnalysisString.match(/\*\*Changes?\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
+      
+      if (connectMatch) individualSteps.connect = connectMatch[1].trim();
+      if (challengeMatch) individualSteps.challenge = challengeMatch[1].trim();
+      if (conceptsMatch) individualSteps.concepts = conceptsMatch[1].trim();
+      if (changesMatch) individualSteps.changes = changesMatch[1].trim();
+      
+      console.log('🔍 Parsed markdown steps:', individualSteps);
+      
+      return {
+        individualSteps,
+        comprehensive: null,
+        educational: null,
+        stepByStep: null,
+        teacherFeedback: {}
+      };
+      
     } catch (error) {
       console.error('AI 분석 데이터 파싱 오류:', error);
       return null;
