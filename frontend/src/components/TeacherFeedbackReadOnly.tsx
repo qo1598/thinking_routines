@@ -66,6 +66,11 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
 
   const parsedAI = aiAnalysis ? parseAIAnalysis(aiAnalysis) : null;
 
+  // 디버깅용 로그
+  console.log('🔍 TeacherFeedbackReadOnly - Raw AI Analysis:', aiAnalysis);
+  console.log('🔍 TeacherFeedbackReadOnly - Parsed AI:', parsedAI);
+  console.log('🔍 TeacherFeedbackReadOnly - Individual Steps:', parsedAI?.individualSteps);
+
   useEffect(() => {
     fetchTeacherEvaluation();
   }, [responseId]);
@@ -108,7 +113,8 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
     );
   }
 
-  if (!evaluation) {
+  // AI 분석이나 교사 평가 중 하나도 없으면 빈 상태 표시
+  if (!evaluation && !parsedAI) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="p-6">
@@ -124,8 +130,8 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">교사 평가가 없습니다</h3>
-            <p className="text-gray-600">아직 교사가 이 학생 응답에 대한 평가를 작성하지 않았습니다.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">AI 분석 및 교사 평가가 없습니다</h3>
+            <p className="text-gray-600">아직 이 학생 응답에 대한 AI 분석이나 교사 평가가 없습니다.</p>
           </div>
         </div>
       </div>
@@ -194,9 +200,11 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
           <h3 className="text-lg font-semibold text-gray-800 mb-4">단계별 AI 분석 및 교사 평가</h3>
           
           {Object.entries(stepLabels).map(([stepKey, stepLabel]) => {
-            const feedback = evaluation.step_feedbacks?.[stepKey];
-            const score = evaluation.step_scores?.[stepKey];
+            const feedback = evaluation?.step_feedbacks?.[stepKey];
+            const score = evaluation?.step_scores?.[stepKey];
             const aiStepAnalysis = parsedAI?.individualSteps?.[stepKey];
+            
+            console.log(`🔍 Step ${stepKey}:`, { feedback, score, aiStepAnalysis });
             
             // AI 분석이나 교사 피드백 중 하나라도 있으면 표시
             if (!aiStepAnalysis && !feedback && !score) return null;
@@ -256,7 +264,7 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
         </div>
 
         {/* 종합 평가 */}
-        {(evaluation.overall_feedback || evaluation.overall_score) && (
+        {(evaluation?.overall_feedback || evaluation?.overall_score) && (
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">종합 평가</h3>
             <div className="bg-green-50 border border-green-200 rounded-lg p-6">
@@ -267,13 +275,13 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
                   </svg>
                   전체 평가
                 </h4>
-                {evaluation.overall_score && (
+                {evaluation?.overall_score && (
                   <div className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold">
                     {evaluation.overall_score}점 / 100점
                   </div>
                 )}
               </div>
-              {evaluation.overall_feedback && (
+              {evaluation?.overall_feedback && (
                 <div className="bg-white rounded-md p-4 border border-green-200">
                   <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                     {evaluation.overall_feedback}
