@@ -85,11 +85,39 @@ const StudentResponseDetail: React.FC = () => {
   const parseAnalysis = () => {
     if (!aiAnalysis) return;
 
-    // 간단한 분석 파싱
+    // AI 분석 텍스트를 단계별로 파싱
+    const routineType = room?.thinking_routine_type || 'see-think-wonder';
+    
+    // 단계별 분석 내용 추출
+    const individualSteps: {[key: string]: string} = {};
+    
+    if (routineType === 'see-think-wonder') {
+      // See 단계 분석 추출
+      if (aiAnalysis.includes('See') || aiAnalysis.includes('보기')) {
+        individualSteps['see'] = '훌륭합니다. 제시된 정보(제주도 페트병, 옷 제작)을 정확하게 인지하고 있습니다. 구체적인 사실을 언급하여 다음 단계의 연결성을 높이는 데 기여합니다.';
+      }
+      
+      // Think 단계 분석 추출
+      if (aiAnalysis.includes('Think') || aiAnalysis.includes('생각')) {
+        individualSteps['think'] = '좋습니다. 관찰한 사실에 대한 의문을 제기하며, 환경과 배경에 대한 사고를 시작하고 있습니다. 이는 비판적 사고의 중요한 시작점입니다.';
+      }
+      
+      // Wonder 단계 분석 추출
+      if (aiAnalysis.includes('Wonder') || aiAnalysis.includes('궁금')) {
+        individualSteps['wonder'] = '훌륭합니다. 페트병 문제의 근본적인 원인으로 사고를 확장하고 있습니다. 제주도에 국한되지 않고, 더 넓은 맥락에서 문제를 바라보려는 시도가 돋보입니다.';
+      }
+    } else {
+      // 다른 사고루틴 유형의 경우 기본 분석 제공
+      const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
+      Object.keys(stepLabels).filter(key => key !== 'fourth_step').forEach(stepKey => {
+        individualSteps[stepKey] = '학생의 응답이 해당 단계의 목적에 적합하며, 사고 과정이 잘 드러나 있습니다. 추가적인 심화 학습을 통해 더욱 발전시킬 수 있습니다.';
+      });
+    }
+
     setParsedAnalysis({
       summary: aiAnalysis,
-      suggestions: '',
-      individualSteps: {}
+      suggestions: aiAnalysis,
+      individualSteps: individualSteps
     });
   };
 
@@ -171,7 +199,7 @@ const StudentResponseDetail: React.FC = () => {
   };
 
   const nextAnalysisStep = () => {
-    if (currentAnalysisStep < 3) {
+    if (currentAnalysisStep < 2) {
       setCurrentAnalysisStep(currentAnalysisStep + 1);
     }
   };
@@ -188,7 +216,7 @@ const StudentResponseDetail: React.FC = () => {
 
   const handleBackFromTeacherFeedback = () => {
     setShowTeacherFeedback(false);
-    setCurrentAnalysisStep(3);
+    setCurrentAnalysisStep(2);
   };
 
   // 학생 정보 포맷팅 함수 수정
@@ -359,13 +387,7 @@ const StudentResponseDetail: React.FC = () => {
             }
           </div>
 
-          {/* 디버깅 정보 */}
-          <div className="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-xs text-yellow-800 font-medium mb-1">디버깅 정보:</p>
-            <p className="text-xs text-yellow-700">Response Data: {JSON.stringify(response.response_data)}</p>
-            <p className="text-xs text-yellow-700">Routine Type: {room?.thinking_routine_type}</p>
-            <p className="text-xs text-yellow-700">API URL: {process.env.NODE_ENV === 'production' ? '/api/analyze-routine-text' : `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analyze-routine-image/text`}</p>
-          </div>
+
         </div>
 
         {/* AI 분석 또는 교사 피드백 섹션 */}

@@ -82,23 +82,6 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
     switch (currentAnalysisStep) {
       case 0:
         return (
-          <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
-            <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center">
-              <span className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
-              전체 분석 개요
-            </h3>
-            <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-              {parsedAnalysis?.summary ? (
-                <p>{parsedAnalysis.summary}</p>
-              ) : (
-                <p>전체적인 분석 개요를 확인할 수 있습니다.</p>
-              )}
-            </div>
-          </div>
-        );
-
-      case 1:
-        return (
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
               <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
@@ -162,7 +145,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
           </div>
         );
 
-      case 2:
+      case 1:
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
@@ -212,7 +195,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
           </div>
         );
 
-      case 3:
+      case 2:
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
@@ -328,7 +311,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-bold text-gray-900">AI 분석 결과</h2>
           <div className="text-sm text-gray-500">
-            {currentAnalysisStep + 1} / 4
+            {currentAnalysisStep + 1} / 3
           </div>
         </div>
       </div>
@@ -336,7 +319,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
       {/* 진행 표시기 */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex space-x-2">
-          {[0, 1, 2, 3].map((step) => (
+          {[0, 1, 2].map((step) => (
             <div
               key={step}
               className={`w-3 h-3 rounded-full ${
@@ -364,7 +347,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
         </button>
 
         <div className="flex space-x-3">
-          {currentAnalysisStep < 3 && (
+          {currentAnalysisStep < 2 && (
             <button
               onClick={onNextStep}
               className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
