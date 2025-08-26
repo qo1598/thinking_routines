@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps } from '../lib/thinkingRoutineUtils';
+import TeacherFeedbackReadOnly from './TeacherFeedbackReadOnly';
+import TeacherMaterialsSection from './TeacherMaterialsSection';
 
 interface ActivityDetailProps {}
 
@@ -405,86 +407,12 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
         </div>
 
         {/* 온라인 활동 - 교사 제공 자료 */}
-        {activity.activity_type === 'online' && activity.template_content && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">교사 제공 자료</h3>
-              
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6">
-                <div className="flex items-center mb-3">
-                  <span className="text-blue-600 font-medium">📝 텍스트 내용</span>
-                </div>
-                <p className="text-gray-900 mb-4">우리가 오늘 배워볼 개념은 충실하겠습니다.</p>
-                
-                <div className="space-y-3">
-                  {(() => {
-                    const template = activity.template_content;
-                    const routineType = activity.routine_type;
-                    
-                    if (routineType === 'see-think-wonder') {
-                      return (
-                        <>
-                          <div className="bg-white p-3 rounded border">
-                            <div className="font-medium text-blue-600 mb-1">See 질문</div>
-                            <p className="text-gray-700 text-sm">{template?.see_question || '이 개념을 어떻게 정의하겠나요?'}</p>
-                          </div>
-                          <div className="bg-white p-3 rounded border">
-                            <div className="font-medium text-green-600 mb-1">Think 질문</div>
-                            <p className="text-gray-700 text-sm">{template?.think_question || '이 개념의 주요 특징은 무엇인가요?'}</p>
-                          </div>
-                          <div className="bg-white p-3 rounded border">
-                            <div className="font-medium text-purple-600 mb-1">Wonder 질문</div>
-                            <p className="text-gray-700 text-sm">{template?.wonder_question || '이 개념에 대해 궁금한 것은 무엇인가요?'}</p>
-                          </div>
-                        </>
-                      );
-                    }
-                    
-                    if (routineType === 'frayer-model') {
-                      return (
-                        <>
-                          <div className="bg-white p-3 rounded border">
-                            <div className="font-medium text-blue-600 mb-1">Definition 질문</div>
-                            <p className="text-gray-700 text-sm">{template?.see_question || '이 개념을 어떻게 정의하겠나요?'}</p>
-                          </div>
-                          <div className="bg-white p-3 rounded border">
-                            <div className="font-medium text-green-600 mb-1">Characteristics 질문</div>
-                            <p className="text-gray-700 text-sm">{template?.think_question || '이 개념의 주요 특징은 무엇인가요?'}</p>
-                          </div>
-                          <div className="bg-white p-3 rounded border">
-                            <div className="font-medium text-purple-600 mb-1">Examples 질문</div>
-                            <p className="text-gray-700 text-sm">{template?.wonder_question || '이 개념의 예시와 반례는 무엇인가요?'}</p>
-                          </div>
-                        </>
-                      );
-                    }
-                    
-                    // 기타 사고루틴들
-                    return (
-                      <div className="bg-white p-3 rounded border">
-                        <div className="font-medium text-gray-700 mb-2">사고루틴 질문들</div>
-                        {Object.entries(template || {}).map(([key, value]) => (
-                          <div key={key} className="mb-2 last:mb-0">
-                            <span className="text-sm font-medium text-gray-600">{key}: </span>
-                            <span className="text-sm text-gray-700">{String(value)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-              
-              {activity.room_description && (
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-2">활동 설명</h4>
-                  <div className="bg-gray-50 p-3 rounded">
-                    <p className="text-gray-700">{activity.room_description}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+        {activity.activity_type === 'online' && activity.room_id && (
+          <TeacherMaterialsSection 
+            roomId={activity.room_id}
+            roomTitle={activity.room_title}
+            roomDescription={activity.room_description}
+          />
         )}
 
         {/* 오프라인 활동 - 이미지 */}
@@ -590,8 +518,14 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           </div>
         )}
 
-        {/* 온라인 활동: AI 분석 결과 표시 */}
-        {activity.activity_type === 'online' && activity.ai_analysis && (
+        {/* 교사 피드백 및 평가 (조회 전용) */}
+        <TeacherFeedbackReadOnly 
+          responseId={activity.id}
+          routineType={activity.routine_type || 'see-think-wonder'}
+        />
+
+        {/* 온라인 활동: AI 분석 결과 표시 (제거됨) */}
+        {false && activity.activity_type === 'online' && activity.ai_analysis && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               {aiAnalysis ? (
@@ -831,8 +765,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
 
         {/* 온라인 활동: AI 분석 결과 표시 완전 제거됨 */}
 
-        {/* 오프라인 활동: 5단계 교사 피드백 및 평가 (개선된 버전) */}
-        {activity.activity_type === 'offline' && activity.ai_analysis && (
+        {/* 오프라인 활동: 5단계 교사 피드백 및 평가 (제거됨) */}
+        {false && activity.activity_type === 'offline' && activity.ai_analysis && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               {aiAnalysis ? (
