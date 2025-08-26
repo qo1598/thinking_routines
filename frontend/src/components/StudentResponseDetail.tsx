@@ -46,6 +46,7 @@ const StudentResponseDetail: React.FC = () => {
 
       if (responseError) throw responseError;
       setResponse(responseData);
+      console.log('📋 Response Data:', responseData);
 
       if (responseData.room_id) {
         const { data: roomData, error: roomError } = await supabase
@@ -56,6 +57,7 @@ const StudentResponseDetail: React.FC = () => {
 
         if (roomError) throw roomError;
         setRoom(roomData);
+        console.log('🏠 Room Data:', roomData);
 
         // 템플릿 데이터도 가져오기 (있을 경우)
         const { data: templateData, error: templateError } = await supabase
@@ -151,6 +153,25 @@ const StudentResponseDetail: React.FC = () => {
     setCurrentAnalysisStep(2);
   };
 
+  // 학생 정보 포맷팅 함수
+  const formatStudentInfo = (response: any) => {
+    const name = response.student_name || '이름 없음';
+    const grade = response.student_grade || '';
+    const studentClass = response.student_class || '';
+    const number = response.student_number || '';
+    
+    if (grade && studentClass && number) {
+      return `${name}(${grade}학년 ${studentClass}반 ${number}번)`;
+    } else if (grade || studentClass || number) {
+      const parts = [];
+      if (grade) parts.push(`${grade}학년`);
+      if (studentClass) parts.push(`${studentClass}반`);
+      if (number) parts.push(`${number}번`);
+      return `${name}(${parts.join(' ')})`;
+    }
+    return name;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -209,11 +230,13 @@ const StudentResponseDetail: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">학생 응답</h2>
           
-          {/* 기본 정보 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-            <div>
+          {/* 학생 정보 */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <div className="mb-2">
               <span className="text-sm font-medium text-gray-700">학생명:</span>
-              <span className="ml-2 text-gray-900 font-semibold">{response.student_name}</span>
+              <span className="ml-2 text-gray-900 font-semibold">
+                {formatStudentInfo(response)}
+              </span>
             </div>
             <div>
               <span className="text-sm font-medium text-gray-700">제출일:</span>
@@ -227,7 +250,7 @@ const StudentResponseDetail: React.FC = () => {
                 })}
               </span>
             </div>
-            <div>
+            <div className="mt-2">
               <span className="text-sm font-medium text-gray-700">사고루틴:</span>
               <span className="ml-2 text-blue-600 font-medium">
                 {routineTypeLabels[room?.thinking_routine_type] || room?.thinking_routine_type || 'See-Think-Wonder'}
@@ -235,45 +258,8 @@ const StudentResponseDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* 교사 제공 자료 */}
-          <div className="mb-6">
-            <h3 className="font-medium text-gray-900 mb-3">교사 제공 자료</h3>
-            
-            {/* 텍스트 내용 */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <div className="space-y-2">
-                <div>
-                  <span className="text-sm font-medium text-blue-800">활동 제목:</span>
-                  <span className="ml-2 text-blue-900">{room?.title || '제목 없음'}</span>
-                </div>
-                {room?.description && (
-                  <div>
-                    <span className="text-sm font-medium text-blue-800">활동 설명:</span>
-                    <p className="ml-2 text-blue-900 mt-1">{room.description}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 유투브 영상 */}
-            {response.image_data && response.image_data.includes('youtube') && (
-              <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 mb-4">
-                <iframe
-                  src={response.image_data}
-                  title="교사 제공 영상"
-                  className="w-full h-full"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            )}
-          </div>
-
           {/* 학생 응답 */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">학생 응답</h3>
-            
             {response.response_data && Object.entries(response.response_data)
               .filter(([key]) => key !== 'fourth_step') // fourth_step 제외
               .map(([key, value]) => {
