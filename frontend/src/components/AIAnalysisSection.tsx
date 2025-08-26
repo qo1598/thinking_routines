@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface ParsedAnalysis {
   individualSteps?: {[key: string]: string | string[]};
@@ -70,12 +71,124 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
   const currentRoutineType = template?.routine_type || room?.thinking_routine_type || 'see-think-wonder';
   const stepInfoMap = stepInfoMaps[currentRoutineType] || stepInfoMaps['see-think-wonder'];
 
+  // 교사 피드백 및 점수 상태 관리
+  const [teacherFeedbacks, setTeacherFeedbacks] = useState<{[stepKey: string]: string}>({});
+  const [teacherScores, setTeacherScores] = useState<{[stepKey: string]: number}>({});
+  const [saving, setSaving] = useState(false);
+  const [existingEvaluation, setExistingEvaluation] = useState<any>(null);
+
   const gradientColors: {[key: string]: string} = {
     'bg-blue-500': 'from-blue-50 to-blue-100 border-blue-200',
     'bg-green-500': 'from-green-50 to-green-100 border-green-200',
     'bg-purple-500': 'from-purple-50 to-purple-100 border-purple-200',
     'bg-red-500': 'from-red-50 to-red-100 border-red-200',
     'bg-yellow-500': 'from-yellow-50 to-yellow-100 border-yellow-200'
+  };
+
+  // 기존 교사 평가 데이터 로드
+  useEffect(() => {
+    const loadExistingEvaluation = async () => {
+      if (!response?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('teacher_evaluations')
+          .select('*')
+          .eq('response_id', response.id)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116은 데이터 없음 에러
+          console.error('기존 평가 로드 오류:', error);
+          return;
+        }
+
+        if (data) {
+          setExistingEvaluation(data);
+          
+          // 기존 피드백과 점수 로드
+          if (data.step_feedbacks) {
+            setTeacherFeedbacks(data.step_feedbacks);
+          }
+          if (data.step_scores) {
+            setTeacherScores(data.step_scores);
+          }
+        }
+      } catch (error) {
+        console.error('평가 데이터 로드 중 오류:', error);
+      }
+    };
+
+    loadExistingEvaluation();
+  }, [response?.id]);
+
+  // 교사 평가 저장 함수
+  const handleSaveEvaluation = async () => {
+    if (!response?.id) {
+      alert('응답 데이터가 없습니다.');
+      return;
+    }
+
+    // 입력값 검증
+    const hasAnyFeedback = Object.values(teacherFeedbacks).some(feedback => feedback.trim() !== '');
+    const hasAnyScore = Object.values(teacherScores).some(score => score > 0);
+
+    if (!hasAnyFeedback && !hasAnyScore) {
+      alert('피드백이나 점수 중 하나는 입력해주세요.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const evaluationData = {
+        response_id: response.id,
+        step_feedbacks: teacherFeedbacks,
+        step_scores: teacherScores,
+        routine_type: currentRoutineType,
+        updated_at: new Date().toISOString()
+      };
+
+      let result;
+      if (existingEvaluation) {
+        // 기존 평가 업데이트
+        result = await supabase
+          .from('teacher_evaluations')
+          .update(evaluationData)
+          .eq('id', existingEvaluation.id);
+      } else {
+        // 새 평가 생성
+        result = await supabase
+          .from('teacher_evaluations')
+          .insert([{
+            ...evaluationData,
+            created_at: new Date().toISOString()
+          }]);
+      }
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      alert('교사 평가가 성공적으로 저장되었습니다!');
+      
+      // 저장 후 데이터 다시 로드
+      if (!existingEvaluation) {
+        const { data: newData } = await supabase
+          .from('teacher_evaluations')
+          .select('*')
+          .eq('response_id', response.id)
+          .maybeSingle();
+        
+        if (newData) {
+          setExistingEvaluation(newData);
+        }
+      }
+
+    } catch (error: any) {
+      console.error('평가 저장 오류:', error);
+      alert('평가 저장 중 오류가 발생했습니다: ' + error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const renderAnalysisStep = () => {
@@ -254,6 +367,11 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                               className="w-full p-2 border border-gray-300 rounded text-sm"
                               rows={3}
                               placeholder="이 단계에 대한 피드백을 작성해주세요..."
+                              value={teacherFeedbacks[stepKey] || ''}
+                              onChange={(e) => setTeacherFeedbacks(prev => ({
+                                ...prev,
+                                [stepKey]: e.target.value
+                              }))}
                             />
                           </div>
                           <div className="flex-shrink-0">
@@ -266,6 +384,11 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                               max="100"
                               className="w-16 p-2 border border-gray-300 rounded text-sm text-center"
                               placeholder="점수"
+                              value={teacherScores[stepKey] || ''}
+                              onChange={(e) => setTeacherScores(prev => ({
+                                ...prev,
+                                [stepKey]: parseInt(e.target.value) || 0
+                              }))}
                             />
                           </div>
                         </div>
@@ -278,13 +401,11 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
             {/* 저장하기 버튼 */}
             <div className="flex justify-center pt-4">
               <button
-                className="bg-green-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-600"
-                onClick={() => {
-                  // TODO: Supabase teacher_evaluations 테이블에 저장
-                  alert('평가가 저장되었습니다.');
-                }}
+                className="bg-green-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleSaveEvaluation}
+                disabled={saving}
               >
-                저장하기
+                {saving ? '저장 중...' : existingEvaluation ? '평가 업데이트' : '평가 저장'}
               </button>
             </div>
           </div>
