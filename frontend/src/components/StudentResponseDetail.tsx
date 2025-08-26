@@ -110,8 +110,10 @@ const StudentResponseDetail: React.FC = () => {
       const studentResponses = response.response_data;
       const routineType = room.thinking_routine_type || 'see-think-wonder';
 
-      // API 엔드포인트 확인
-      const apiUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analyze-routine-image/text`;
+      // API 엔드포인트 확인 - Vercel 배포 환경에 맞게 수정
+      const apiUrl = process.env.NODE_ENV === 'production' 
+        ? '/api/analyze-routine-text'  // Vercel 배포환경
+        : `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analyze-routine-image/text`; // 로컬 개발환경
       console.log('🌐 API URL:', apiUrl);
 
       // Gemini API에 요청
@@ -362,7 +364,7 @@ const StudentResponseDetail: React.FC = () => {
             <p className="text-xs text-yellow-800 font-medium mb-1">디버깅 정보:</p>
             <p className="text-xs text-yellow-700">Response Data: {JSON.stringify(response.response_data)}</p>
             <p className="text-xs text-yellow-700">Routine Type: {room?.thinking_routine_type}</p>
-            <p className="text-xs text-yellow-700">API URL: {process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analyze-routine-image/text</p>
+            <p className="text-xs text-yellow-700">API URL: {process.env.NODE_ENV === 'production' ? '/api/analyze-routine-text' : `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analyze-routine-image/text`}</p>
           </div>
         </div>
 
