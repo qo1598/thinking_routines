@@ -53,10 +53,16 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
       // 마크다운 텍스트 형태의 AI 분석 파싱
       const individualSteps: { [key: string]: string } = {};
       
-      // See-Think-Wonder 패턴 매칭
-      const seeMatch = aiAnalysisString.match(/\*\*See\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
-      const thinkMatch = aiAnalysisString.match(/\*\*Think\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
-      const wonderMatch = aiAnalysisString.match(/\*\*Wonder\s*\([^)]*\)\*\*:?\s*([^*]+?)(?=\*\*|$)/s);
+      // See-Think-Wonder 패턴 매칭 - 실제 텍스트 구조에 맞게 수정
+      const seeMatch = aiAnalysisString.match(/\*\s*\*\*See\s*\([^)]*\)\*\*:?\s*"([^"]+)"/s);
+      const thinkMatch = aiAnalysisString.match(/\*\s*\*\*Think\s*\([^)]*\)\*\*:?\s*"([^"]+)"/s);
+      const wonderMatch = aiAnalysisString.match(/\*\s*\*\*Wonder\s*\([^)]*\)\*\*:?\s*"([^"]+)"/s);
+      
+      console.log('🔍 Regex matching results:', {
+        seeMatch: seeMatch ? seeMatch[1] : 'NOT FOUND',
+        thinkMatch: thinkMatch ? thinkMatch[1] : 'NOT FOUND', 
+        wonderMatch: wonderMatch ? wonderMatch[1] : 'NOT FOUND'
+      });
       
       if (seeMatch) individualSteps.see = seeMatch[1].trim();
       if (thinkMatch) individualSteps.think = thinkMatch[1].trim();
