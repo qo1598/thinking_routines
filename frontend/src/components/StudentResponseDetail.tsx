@@ -3,52 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import AIAnalysisSection from './AIAnalysisSection';
 import TeacherFeedbackSection from './TeacherFeedbackSection';
-
-// 사고루틴 유형별 정규표현식 패턴
-const routineStepPatterns: {[routineType: string]: {[stepKey: string]: RegExp[]}} = {
-  'see-think-wonder': {
-    'see': [
-      /(?:^|\n)(?:\*\*)?(?:See|보기|관찰)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Think|생각|Wonder|궁금)|$)/s,
-      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:See|보기|관찰)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:Think|생각|Wonder|궁금)|$)/s
-    ],
-    'think': [
-      /(?:^|\n)(?:\*\*)?(?:Think|생각|생각하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Wonder|궁금|See|보기)|$)/s,
-      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:Think|생각|생각하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:Wonder|궁금|See|보기)|$)/s
-    ],
-    'wonder': [
-      /(?:^|\n)(?:\*\*)?(?:Wonder|궁금|궁금하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:See|보기|Think|생각)|$)/s,
-      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:Wonder|궁금|궁금하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:See|보기|Think|생각)|$)/s
-    ]
-  },
-  'frayer-model': {
-    'see': [
-      /(?:^|\n)(?:\*\*)?(?:Definition|정의)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Characteristics?|특징|Examples?|예시)|$)/s,
-      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:Definition|정의)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:Characteristics?|특징|Examples?|예시)|$)/s
-    ],
-    'think': [
-      /(?:^|\n)(?:\*\*)?(?:Characteristics?|특징)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Definition|정의|Examples?|예시)|$)/s,
-      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:Characteristics?|특징)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:Definition|정의|Examples?|예시)|$)/s
-    ],
-    'wonder': [
-      /(?:^|\n)(?:\*\*)?(?:Examples?\s*&?\s*Non[-\s]?Examples?|예시와?\s*반례|Examples?|예시)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Definition|정의|Characteristics?|특징)|$)/s,
-      /(?:^|\n)(?:\d+\.\s*)?(?:\*\*)?(?:Examples?\s*&?\s*Non[-\s]?Examples?|예시와?\s*반례|Examples?|예시)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\d+\.\s*)?(?:\*\*)?(?:Definition|정의|Characteristics?|특징)|$)/s
-    ]
-  },
-  '4c': {
-    'see': [
-      /(?:^|\n)(?:\*\*)?(?:Connect|연결|연결하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Challenge|도전|Concepts?|개념|Changes?|변화)|$)/s
-    ],
-    'think': [
-      /(?:^|\n)(?:\*\*)?(?:Challenge|도전|도전하기)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Connect|연결|Concepts?|개념|Changes?|변화)|$)/s
-    ],
-    'wonder': [
-      /(?:^|\n)(?:\*\*)?(?:Concepts?|개념|개념\s*파악)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Connect|연결|Challenge|도전|Changes?|변화)|$)/s
-    ],
-    'fourth_step': [
-      /(?:^|\n)(?:\*\*)?(?:Changes?|변화|변화\s*제안)(?:\*\*)?(?:\s*[:：]?\s*)(.*?)(?=\n(?:\*\*)?(?:Connect|연결|Challenge|도전|Concepts?|개념)|$)/s
-    ]
-  }
-};
+import StudentResponseSection from './StudentResponseSection';
+import { parseAIAnalysis } from '../lib/thinkingRoutineUtils';
 
 const StudentResponseDetail: React.FC = () => {
   const { responseId } = useParams<{ responseId: string }>();
@@ -74,10 +30,10 @@ const StudentResponseDetail: React.FC = () => {
 
   useEffect(() => {
     if (aiAnalysis) {
-      parseAIAnalysis();
+      parseAnalysis();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiAnalysis, template, room]);
+  }, [aiAnalysis, room]);
 
   const fetchResponseData = async () => {
     try {
@@ -102,14 +58,14 @@ const StudentResponseDetail: React.FC = () => {
         if (roomError) throw roomError;
         setRoom(roomData);
 
-        if (roomData.template_id) {
-          const { data: templateData, error: templateError } = await supabase
-            .from('thinking_routine_templates')
-            .select('*')
-            .eq('id', roomData.template_id)
-            .single();
+        // 템플릿 데이터도 가져오기 (있을 경우)
+        const { data: templateData, error: templateError } = await supabase
+          .from('routine_templates')
+          .select('*')
+          .eq('room_id', responseData.room_id)
+          .maybeSingle();
 
-          if (templateError) throw templateError;
+        if (templateData && !templateError) {
           setTemplate(templateData);
         }
       }
@@ -125,40 +81,14 @@ const StudentResponseDetail: React.FC = () => {
     }
   };
 
-  const parseAIAnalysis = () => {
-    if (!aiAnalysis || !template?.routine_type) return;
+  const parseAnalysis = () => {
+    if (!aiAnalysis || !room?.thinking_routine_type) return;
 
-    try {
-      const routineType = template.routine_type;
-      const patterns = routineStepPatterns[routineType];
-      
-      if (!patterns) {
-        console.warn(`No patterns found for routine type: ${routineType}`);
-        return;
-      }
-
-      const individualSteps: {[key: string]: string} = {};
-      
-      Object.entries(patterns).forEach(([stepKey, stepPatterns]) => {
-        for (const pattern of stepPatterns) {
-          const match = aiAnalysis.match(pattern);
-          if (match && match[1]) {
-            individualSteps[stepKey] = match[1].trim();
-            break;
-          }
-        }
-      });
-
-      const summaryMatch = aiAnalysis.match(/(?:전체.*?분석|종합.*?평가|요약)[\s\S]*?(?=\n(?:\*\*)?(?:개선|제안|권장사항)|$)/i);
-      const suggestionsMatch = aiAnalysis.match(/(?:개선.*?제안|권장사항|제안사항)[\s\S]*$/i);
-
-      setParsedAnalysis({
-        individualSteps,
-        summary: summaryMatch ? summaryMatch[0].trim() : '',
-        suggestions: suggestionsMatch ? suggestionsMatch[0].trim() : ''
-      });
-    } catch (error) {
-      console.error('AI 분석 파싱 중 오류:', error);
+    const routineType = room.thinking_routine_type;
+    const parsed = parseAIAnalysis(aiAnalysis, routineType);
+    
+    if (parsed) {
+      setParsedAnalysis(parsed);
     }
   };
 
@@ -167,11 +97,11 @@ const StudentResponseDetail: React.FC = () => {
 
     setAnalyzingAI(true);
     try {
-      const analysisResponse = await fetch('/api/gemini-analysis', {
+      const analysisResponse = await fetch('/api/analyze-routine-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          routineType: template.routine_type,
+          routineType: room.thinking_routine_type,
           responses: response.response_data,
           imageData: response.image_data
         })
@@ -276,32 +206,11 @@ const StudentResponseDetail: React.FC = () => {
         </div>
 
         {/* 학생 응답 섹션 */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">학생 응답</h2>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <span className="text-sm font-medium text-gray-700">학생명:</span>
-              <span className="ml-2 text-gray-900">{response.student_name}</span>
-            </div>
-            <div>
-              <span className="text-sm font-medium text-gray-700">제출일:</span>
-              <span className="ml-2 text-gray-900">
-                {new Date(response.created_at).toLocaleDateString('ko-KR')}
-              </span>
-            </div>
-          </div>
-          
-          {response.response_data && (
-            <div className="space-y-4">
-              {Object.entries(response.response_data).map(([key, value]) => (
-                <div key={key} className="border rounded-lg p-4">
-                  <h3 className="font-medium text-gray-900 mb-2 capitalize">{key.replace(/_/g, ' ')}</h3>
-                  <p className="text-gray-700">{value as string}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <StudentResponseSection 
+          response={response}
+          room={room}
+          template={template}
+        />
 
         {/* AI 분석 또는 교사 피드백 섹션 */}
         {!aiAnalysis ? (
