@@ -39,17 +39,35 @@ export const parseMarkdownToStructuredAI = (
     // 다양한 패턴으로 매칭 시도
     const patterns = getStepPatterns(stepKey, stepLabel, routineType);
     
-    for (const pattern of patterns) {
+    console.log(`🔍 Trying to extract ${stepKey} (${stepLabel}) with ${patterns.length} patterns`);
+    
+    for (let i = 0; i < patterns.length; i++) {
+      const pattern = patterns[i];
+      console.log(`📝 Pattern ${i + 1}:`, pattern.toString());
+      
       const match = markdownText.match(pattern);
       if (match && match[1]) {
         individualSteps[stepKey] = cleanExtractedText(match[1]);
-        console.log(`✅ Extracted ${stepKey}:`, individualSteps[stepKey].substring(0, 100) + '...');
+        console.log(`✅ MATCH! Extracted ${stepKey} with pattern ${i + 1}:`, individualSteps[stepKey].substring(0, 100) + '...');
         break;
+      } else {
+        console.log(`❌ Pattern ${i + 1} failed for ${stepKey}`);
       }
     }
     
     if (!individualSteps[stepKey]) {
-      console.log(`❌ Could not extract ${stepKey} (${stepLabel})`);
+      console.log(`❌ Could not extract ${stepKey} (${stepLabel}) with any pattern`);
+      
+      // 실제 텍스트에서 해당 키워드가 있는지 확인
+      const keywordCheck = markdownText.includes(`**${stepKey.charAt(0).toUpperCase() + stepKey.slice(1)}`);
+      const koreanCheck = markdownText.includes(stepLabel.split(' ')[0]);
+      console.log(`🔍 Keyword check for ${stepKey}:`, { keywordCheck, koreanCheck });
+      
+      // 실제 텍스트 샘플 표시
+      const sampleMatch = markdownText.match(new RegExp(`\\*.*${stepKey.charAt(0).toUpperCase() + stepKey.slice(1)}.*`, 'i'));
+      if (sampleMatch) {
+        console.log(`📋 Found sample text for ${stepKey}:`, sampleMatch[0]);
+      }
     }
   });
   
@@ -79,14 +97,23 @@ export const parseMarkdownToStructuredAI = (
 const getStepPatterns = (stepKey: string, stepLabel: string, routineType: string): RegExp[] => {
   const patterns: RegExp[] = [];
   
-  // See-Think-Wonder 전용 실제 AI 텍스트 패턴
+  // See-Think-Wonder 전용 실제 AI 텍스트 패턴 (정확한 공백 패턴 반영)
   if (routineType === 'see-think-wonder') {
     if (stepKey === 'see') {
-      patterns.push(/\*\s*\*\*See\s*\(본\s*것\)\*\*:?\s*"([^"]+)"/s);
+      patterns.push(
+        /\*\s+\*\*See\s+\(본\s+것\)\*\*:\s*"([^"]+)"/s,
+        /\*\s*\*\*See\s*\(본\s*것\)\*\*:?\s*"([^"]+)"/s
+      );
     } else if (stepKey === 'think') {
-      patterns.push(/\*\s*\*\*Think\s*\(생각한\s*것\)\*\*:?\s*"([^"]+)"/s);
+      patterns.push(
+        /\*\s+\*\*Think\s+\(생각한\s+것\)\*\*:\s*"([^"]+)"/s,
+        /\*\s*\*\*Think\s*\(생각한\s*것\)\*\*:?\s*"([^"]+)"/s
+      );
     } else if (stepKey === 'wonder') {
-      patterns.push(/\*\s*\*\*Wonder\s*\(궁금한\s*점\)\*\*:?\s*"([^"]+)"/s);
+      patterns.push(
+        /\*\s+\*\*Wonder\s+\(궁금한\s+점\)\*\*:\s*"([^"]+)"/s,
+        /\*\s*\*\*Wonder\s*\(궁금한\s*점\)\*\*:?\s*"([^"]+)"/s
+      );
     }
   }
   
