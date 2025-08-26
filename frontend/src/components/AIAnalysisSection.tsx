@@ -141,9 +141,10 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
     try {
       const evaluationData = {
         response_id: response.id,
+        routine_type: currentRoutineType,
         step_feedbacks: teacherFeedbacks,
         step_scores: teacherScores,
-        routine_type: currentRoutineType,
+        teacher_feedback: Object.values(teacherFeedbacks).filter(f => f.trim()).join('\n\n'),
         updated_at: new Date().toISOString()
       };
 
