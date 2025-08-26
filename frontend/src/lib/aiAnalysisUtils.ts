@@ -97,20 +97,23 @@ export const parseMarkdownToStructuredAI = (
 const getStepPatterns = (stepKey: string, stepLabel: string, routineType: string): RegExp[] => {
   const patterns: RegExp[] = [];
   
-  // See-Think-Wonder 전용 실제 AI 텍스트 패턴 (정확한 공백 패턴 반영)
+  // See-Think-Wonder 전용 실제 AI 텍스트 패턴 (콘솔에서 확인된 정확한 패턴)
   if (routineType === 'see-think-wonder') {
     if (stepKey === 'see') {
       patterns.push(
+        // 실제 텍스트: *   **See (본 것):** "내용"
         /\*\s+\*\*See\s+\(본\s+것\)\*\*:\s*"([^"]+)"/s,
         /\*\s*\*\*See\s*\(본\s*것\)\*\*:?\s*"([^"]+)"/s
       );
     } else if (stepKey === 'think') {
       patterns.push(
+        // 실제 텍스트: *   **Think (생각한 것):** "내용"
         /\*\s+\*\*Think\s+\(생각한\s+것\)\*\*:\s*"([^"]+)"/s,
         /\*\s*\*\*Think\s*\(생각한\s*것\)\*\*:?\s*"([^"]+)"/s
       );
     } else if (stepKey === 'wonder') {
       patterns.push(
+        // 실제 텍스트: *   **Wonder (궁금한 점):** "내용"
         /\*\s+\*\*Wonder\s+\(궁금한\s+점\)\*\*:\s*"([^"]+)"/s,
         /\*\s*\*\*Wonder\s*\(궁금한\s*점\)\*\*:?\s*"([^"]+)"/s
       );
