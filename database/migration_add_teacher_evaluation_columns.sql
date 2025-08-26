@@ -79,19 +79,8 @@ SELECT
   column_name,
   data_type,
   is_nullable,
-  column_default,
-  CHECK_CLAUSE
+  column_default
 FROM information_schema.columns 
-LEFT JOIN (
-  SELECT 
-    tc.table_name,
-    cc.column_name,
-    cc.check_clause
-  FROM information_schema.table_constraints tc
-  JOIN information_schema.check_constraints cc 
-    ON tc.constraint_name = cc.constraint_name
-  WHERE tc.table_name = 'teacher_evaluations'
-) constraints ON constraints.column_name = information_schema.columns.column_name
 WHERE table_name = 'teacher_evaluations' 
 AND column_name IN ('routine_type', 'step_feedbacks', 'step_scores', 'overall_feedback', 'overall_score')
 ORDER BY ordinal_position;
