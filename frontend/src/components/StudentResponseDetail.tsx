@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import AIAnalysisSection from './AIAnalysisSection';
 import TeacherFeedbackSection from './TeacherFeedbackSection';
-import StudentResponseSection from './StudentResponseSection';
-import { parseAIAnalysis } from '../lib/thinkingRoutineUtils';
+import { routineTypeLabels, routineStepLabels } from '../lib/thinkingRoutineUtils';
 
 const StudentResponseDetail: React.FC = () => {
   const { responseId } = useParams<{ responseId: string }>();
@@ -82,33 +81,34 @@ const StudentResponseDetail: React.FC = () => {
   };
 
   const parseAnalysis = () => {
-    if (!aiAnalysis || !room?.thinking_routine_type) return;
+    if (!aiAnalysis) return;
 
-    const routineType = room.thinking_routine_type;
-    const parsed = parseAIAnalysis(aiAnalysis, routineType);
-    
-    if (parsed) {
-      setParsedAnalysis(parsed);
-    }
+    // 간단한 분석 파싱
+    setParsedAnalysis({
+      summary: aiAnalysis,
+      suggestions: '',
+      individualSteps: {}
+    });
   };
 
   const handleAIAnalysis = async () => {
-    if (!response?.response_data || !template) return;
+    if (!response?.response_data || !room) return;
 
     setAnalyzingAI(true);
     try {
-      const analysisResponse = await fetch('/api/analyze-routine-image', {
+      // 텍스트 기반 분석 요청
+      const analysisResponse = await fetch('/api/analyze-routine-image/text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           routineType: room.thinking_routine_type,
-          responses: response.response_data,
-          imageData: response.image_data
+          responses: response.response_data
         })
       });
 
       if (!analysisResponse.ok) {
-        throw new Error('AI 분석 요청에 실패했습니다.');
+        const errorData = await analysisResponse.json();
+        throw new Error(errorData.error || 'AI 분석 요청에 실패했습니다.');
       }
 
       const result = await analysisResponse.json();
@@ -206,11 +206,109 @@ const StudentResponseDetail: React.FC = () => {
         </div>
 
         {/* 학생 응답 섹션 */}
-        <StudentResponseSection 
-          response={response}
-          room={room}
-          template={template}
-        />
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">학생 응답</h2>
+          
+          {/* 기본 정보 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <span className="text-sm font-medium text-gray-700">학생명:</span>
+              <span className="ml-2 text-gray-900 font-semibold">{response.student_name}</span>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-700">제출일:</span>
+              <span className="ml-2 text-gray-900">
+                {new Date(response.created_at).toLocaleDateString('ko-KR', {
+                  year: 'numeric',
+                  month: 'long', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-700">사고루틴:</span>
+              <span className="ml-2 text-blue-600 font-medium">
+                {routineTypeLabels[room?.thinking_routine_type] || room?.thinking_routine_type || 'See-Think-Wonder'}
+              </span>
+            </div>
+          </div>
+
+          {/* 교사 제공 자료 */}
+          <div className="mb-6">
+            <h3 className="font-medium text-gray-900 mb-3">교사 제공 자료</h3>
+            
+            {/* 텍스트 내용 */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="space-y-2">
+                <div>
+                  <span className="text-sm font-medium text-blue-800">활동 제목:</span>
+                  <span className="ml-2 text-blue-900">{room?.title || '제목 없음'}</span>
+                </div>
+                {room?.description && (
+                  <div>
+                    <span className="text-sm font-medium text-blue-800">활동 설명:</span>
+                    <p className="ml-2 text-blue-900 mt-1">{room.description}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 유투브 영상 */}
+            {response.image_data && response.image_data.includes('youtube') && (
+              <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 mb-4">
+                <iframe
+                  src={response.image_data}
+                  title="교사 제공 영상"
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            )}
+          </div>
+
+          {/* 학생 응답 */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">학생 응답</h3>
+            
+            {response.response_data && Object.entries(response.response_data)
+              .filter(([key]) => key !== 'fourth_step') // fourth_step 제외
+              .map(([key, value]) => {
+                const routineType = room?.thinking_routine_type || 'see-think-wonder';
+                const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
+                const stepLabel = stepLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
+                
+                const stepColors = {
+                  'see': 'bg-blue-500',
+                  'think': 'bg-green-500', 
+                  'wonder': 'bg-purple-500'
+                };
+                const stepIcons = {
+                  'see': 'S',
+                  'think': 'T',
+                  'wonder': 'W'
+                };
+                
+                return (
+                  <div key={key} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center mb-3">
+                      <div className={`w-8 h-8 ${stepColors[key] || 'bg-gray-500'} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
+                        {stepIcons[key] || key.charAt(0).toUpperCase()}
+                      </div>
+                      <h3 className="font-medium text-gray-900">{stepLabel}</h3>
+                    </div>
+                    <div className="bg-gray-50 rounded-md p-4">
+                      <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{value as string}</p>
+                    </div>
+                  </div>
+                );
+              })
+            }
+          </div>
+        </div>
 
         {/* AI 분석 또는 교사 피드백 섹션 */}
         {!aiAnalysis ? (

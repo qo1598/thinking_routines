@@ -252,6 +252,85 @@ router.post('/', upload.single('image'), async (req, res) => {
   }
 });
 
+// POST /api/analyze-routine-image/text - 텍스트 기반 분석
+router.post('/text', async (req, res) => {
+  try {
+    const { routineType, responses } = req.body;
+
+    if (!routineType || !responses) {
+      return res.status(400).json({ error: '사고루틴 유형과 응답 데이터가 필요합니다.' });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ error: 'Gemini API 키가 설정되지 않았습니다.' });
+    }
+
+    console.log(`텍스트 분석 시작: ${routineType}`);
+
+    // 텍스트 응답을 분석용 텍스트로 변환
+    const responseText = Object.entries(responses)
+      .filter(([key]) => key !== 'fourth_step') // fourth_step 제외
+      .map(([key, value]) => `${key}: ${value}`)
+      .join('\n\n');
+
+    // 프롬프트 생성
+    const prompt = `당신은 한국의 사고루틴(Thinking Routines) 교육 전문가입니다.
+학생이 작성한 ${routineType} 사고루틴 활동 결과물을 분석하여 교사에게 도움이 되는 피드백을 제공하는 것이 목표입니다.
+
+**학생 응답:**
+${responseText}
+
+**분석 요청:**
+1. 각 단계별 응답의 품질과 적절성 평가
+2. 논리적 연결성과 사고의 깊이 분석
+3. 개선점과 건설적 피드백 제안
+4. 긍정적이면서 건설적인 평가
+
+한국어로 자세하고 구체적인 분석을 제공해주세요.`;
+
+    console.log('Gemini API 호출 중...');
+
+    // Gemini API 호출
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-lite',
+      contents: [prompt]
+    });
+
+    const analysisText = response.text;
+
+    console.log('분석 완료, 응답 길이:', analysisText.length);
+
+    // 신뢰도 계산
+    const confidence = calculateConfidence(analysisText);
+
+    res.json({
+      analysis: analysisText,
+      confidence,
+      routineType
+    });
+
+  } catch (error) {
+    console.error('텍스트 분석 오류:', error);
+    
+    if (error.message.includes('API_KEY')) {
+      return res.status(500).json({ error: 'API 키 오류가 발생했습니다.' });
+    }
+    
+    if (error.message.includes('SAFETY')) {
+      return res.status(400).json({ error: '안전 정책에 위반되는 콘텐츠입니다.' });
+    }
+
+    if (error.message.includes('QUOTA')) {
+      return res.status(429).json({ error: 'API 사용량 한도를 초과했습니다.' });
+    }
+
+    res.status(500).json({ 
+      error: '텍스트 분석 중 오류가 발생했습니다.',
+      details: error.message 
+    });
+  }
+});
+
 // 신뢰도 계산 함수
 const calculateConfidence = (analysisText) => {
   let confidence = 0.5; // 기본값
