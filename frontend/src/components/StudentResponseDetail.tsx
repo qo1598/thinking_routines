@@ -98,23 +98,38 @@ const StudentResponseDetail: React.FC = () => {
 
     setAnalyzingAI(true);
     try {
-      // 텍스트 기반 분석 요청
+      console.log('🤖 AI 분석 시작...');
+      console.log('📝 분석할 데이터:', response.response_data);
+      console.log('🎯 사고루틴 유형:', room.thinking_routine_type);
+
+      // 학생 응답 데이터를 JSON 문자열로 준비
+      const studentResponses = response.response_data;
+      const routineType = room.thinking_routine_type || 'see-think-wonder';
+
+      // Gemini API에 직접 요청
       const analysisResponse = await fetch('/api/analyze-routine-image/text', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          routineType: room.thinking_routine_type,
-          responses: response.response_data
+          routineType: routineType,
+          responses: studentResponses
         })
       });
 
+      console.log('📡 API 응답 상태:', analysisResponse.status);
+
       if (!analysisResponse.ok) {
-        const errorData = await analysisResponse.json();
-        throw new Error(errorData.error || 'AI 분석 요청에 실패했습니다.');
+        const errorText = await analysisResponse.text();
+        console.error('❌ API 오류 응답:', errorText);
+        throw new Error(`AI 분석 요청 실패: ${analysisResponse.status} - ${errorText}`);
       }
 
       const result = await analysisResponse.json();
+      console.log('✅ 분석 결과:', result);
       
+      // 분석 결과를 데이터베이스에 저장
       const { error } = await supabase
         .from('student_responses')
         .update({ ai_analysis: result.analysis })
@@ -125,7 +140,7 @@ const StudentResponseDetail: React.FC = () => {
       setAiAnalysis(result.analysis);
       alert('AI 분석이 완료되었습니다.');
     } catch (error: any) {
-      console.error('AI 분석 중 오류:', error);
+      console.error('❌ AI 분석 중 오류:', error);
       alert('AI 분석 중 오류가 발생했습니다: ' + error.message);
     } finally {
       setAnalyzingAI(false);
@@ -230,9 +245,9 @@ const StudentResponseDetail: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">학생 응답</h2>
           
-          {/* 학생 정보 */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <div className="mb-2">
+          {/* 학생 정보 - 가로 배치로 변경 */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg flex flex-wrap items-center gap-6">
+            <div>
               <span className="text-sm font-medium text-gray-700">학생명:</span>
               <span className="ml-2 text-gray-900 font-semibold">
                 {formatStudentInfo(response)}
@@ -250,7 +265,7 @@ const StudentResponseDetail: React.FC = () => {
                 })}
               </span>
             </div>
-            <div className="mt-2">
+            <div>
               <span className="text-sm font-medium text-gray-700">사고루틴:</span>
               <span className="ml-2 text-blue-600 font-medium">
                 {routineTypeLabels[room?.thinking_routine_type] || room?.thinking_routine_type || 'See-Think-Wonder'}
@@ -258,8 +273,8 @@ const StudentResponseDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* 학생 응답 */}
-          <div className="space-y-4">
+          {/* 학생 응답 - 테이블 형태로 변경 */}
+          <div className="space-y-3">
             {response.response_data && Object.entries(response.response_data)
               .filter(([key]) => key !== 'fourth_step') // fourth_step 제외
               .map(([key, value]) => {
@@ -279,14 +294,14 @@ const StudentResponseDetail: React.FC = () => {
                 };
                 
                 return (
-                  <div key={key} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center mb-3">
-                      <div className={`w-8 h-8 ${stepColors[key] || 'bg-gray-500'} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
+                  <div key={key} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className={`${stepColors[key] || 'bg-gray-500'} px-4 py-2 flex items-center`}>
+                      <div className="w-6 h-6 bg-white bg-opacity-20 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">
                         {stepIcons[key] || key.charAt(0).toUpperCase()}
                       </div>
-                      <h3 className="font-medium text-gray-900">{stepLabel}</h3>
+                      <h3 className="font-medium text-white">{stepLabel}</h3>
                     </div>
-                    <div className="bg-gray-50 rounded-md p-4">
+                    <div className="p-4 bg-white">
                       <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{value as string}</p>
                     </div>
                   </div>
@@ -294,16 +309,23 @@ const StudentResponseDetail: React.FC = () => {
               })
             }
           </div>
+
+          {/* 디버깅 정보 */}
+          <div className="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-xs text-yellow-800 font-medium mb-1">디버깅 정보:</p>
+            <p className="text-xs text-yellow-700">Response Data: {JSON.stringify(response.response_data)}</p>
+            <p className="text-xs text-yellow-700">Routine Type: {room?.thinking_routine_type}</p>
+          </div>
         </div>
 
         {/* AI 분석 또는 교사 피드백 섹션 */}
         {!aiAnalysis ? (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">AI 분석</h2>
-            <p className="text-gray-600 mb-4">AI 분석을 실행하여 학생의 응답을 분석해보세요.</p>
+            <p className="text-gray-600 mb-4">AI가 학생의 사고루틴 응답을 분석하여 피드백을 제공합니다.</p>
             <button
               onClick={handleAIAnalysis}
-              disabled={analyzingAI}
+              disabled={analyzingAI || !response?.response_data}
               className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {analyzingAI ? '분석 중...' : 'AI 분석 시작'}
