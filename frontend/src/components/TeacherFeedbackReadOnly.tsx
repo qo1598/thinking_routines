@@ -75,13 +75,16 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
       
       console.log('🔍 Parsed markdown steps:', individualSteps);
       
-      return {
+      const result = {
         individualSteps,
         comprehensive: null,
         educational: null,
         stepByStep: null,
         teacherFeedback: {}
       };
+      
+      console.log('🔍 Returning parsed result:', result);
+      return result;
       
     } catch (error) {
       console.error('AI 분석 데이터 파싱 오류:', error);
@@ -101,12 +104,14 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
       .replace(/\d+\. (.*?)(?=\n|$)/g, '<strong>$&</strong>');
   };
 
-  const parsedAI = aiAnalysis ? parseAIAnalysis(aiAnalysis) : null;
-
   // 디버깅용 로그
   console.log('🔍 TeacherFeedbackReadOnly - Raw AI Analysis:', aiAnalysis);
+  
+  const parsedAI = aiAnalysis ? parseAIAnalysis(aiAnalysis) : null;
+  
   console.log('🔍 TeacherFeedbackReadOnly - Parsed AI:', parsedAI);
   console.log('🔍 TeacherFeedbackReadOnly - Individual Steps:', parsedAI?.individualSteps);
+  console.log('🔍 TeacherFeedbackReadOnly - parsedAI 객체 전체:', JSON.stringify(parsedAI, null, 2));
 
   useEffect(() => {
     fetchTeacherEvaluation();
@@ -241,10 +246,25 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
             const score = evaluation?.step_scores?.[stepKey];
             const aiStepAnalysis = parsedAI?.individualSteps?.[stepKey];
             
-            console.log(`🔍 Step ${stepKey}:`, { feedback, score, aiStepAnalysis });
+            console.log(`🔍 Step ${stepKey}:`, { 
+              stepLabel,
+              feedback, 
+              score, 
+              aiStepAnalysis,
+              hasAI: !!aiStepAnalysis,
+              hasFeedback: !!feedback,
+              hasScore: !!score,
+              shouldShow: !(!aiStepAnalysis && !feedback && !score)
+            });
             
             // AI 분석이나 교사 피드백 중 하나라도 있으면 표시
-            if (!aiStepAnalysis && !feedback && !score) return null;
+            if (!aiStepAnalysis && !feedback && !score) {
+              console.log(`❌ Skipping step ${stepKey} - no data`);
+              return null;
+            }
+            
+            console.log(`✅ Rendering step ${stepKey}`);
+            
 
             return (
               <div key={stepKey} className="border border-gray-200 rounded-lg overflow-hidden">
