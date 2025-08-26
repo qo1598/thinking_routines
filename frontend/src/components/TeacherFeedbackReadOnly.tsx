@@ -179,13 +179,23 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
           {Object.entries(stepLabels).map(([stepKey, stepLabel]) => {
             const feedback = evaluation?.step_feedbacks?.[stepKey];
             const score = evaluation?.step_scores?.[stepKey];
-            const aiStepAnalysis = parsedAI?.individualSteps?.[stepKey];
+            
+            // 🔧 NEW: stepByStep에서 해당 단계 분석 추출 (단순한 방법)
+            let aiStepAnalysis = '';
+            if (parsedAI?.stepByStep) {
+              // stepByStep에서 해당 단계의 한국어 라벨 찾기
+              const koreanLabel = stepLabel.split(' ')[0]; // "See", "Think", "Wonder"
+              const sectionMatch = parsedAI.stepByStep.match(new RegExp(`\\*\\s*\\*\\*${koreanLabel}[^:]*:\\*\\*[\\s\\S]*?(?=\\*\\s*\\*\\*|$)`, 'i'));
+              if (sectionMatch) {
+                aiStepAnalysis = sectionMatch[0].replace(/^\*\s*\*\*[^:]*:\*\*\s*/, '').trim();
+              }
+            }
             
             console.log(`🔍 Step ${stepKey}:`, { 
               stepLabel,
               feedback, 
               score, 
-              aiStepAnalysis,
+              aiStepAnalysis: aiStepAnalysis.substring(0, 100) + '...',
               hasAI: !!aiStepAnalysis,
               hasFeedback: !!feedback,
               hasScore: !!score,
