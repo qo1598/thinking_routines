@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import AIAnalysisSection from './AIAnalysisSection';
 import TeacherFeedbackSection from './TeacherFeedbackSection';
-import { routineTypeLabels, routineStepLabels } from '../lib/thinkingRoutineUtils';
+import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps } from '../lib/thinkingRoutineUtils';
 
 const StudentResponseDetail: React.FC = () => {
   const { responseId } = useParams<{ responseId: string }>();
@@ -109,7 +109,7 @@ const StudentResponseDetail: React.FC = () => {
     } else {
       // 다른 사고루틴 유형의 경우 기본 분석 제공
       const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
-      Object.keys(stepLabels).filter(key => key !== 'fourth_step').forEach(stepKey => {
+      Object.keys(stepLabels).forEach(stepKey => {
         individualSteps[stepKey] = '학생의 응답이 해당 단계의 목적에 적합하며, 사고 과정이 잘 드러나 있습니다. 추가적인 심화 학습을 통해 더욱 발전시킬 수 있습니다.';
       });
     }
@@ -352,39 +352,76 @@ const StudentResponseDetail: React.FC = () => {
 
           {/* 학생 응답 - 카드형 레이아웃 */}
           <div className="space-y-3">
-            {response.response_data && Object.entries(response.response_data)
-              .filter(([key]) => key !== 'fourth_step') // fourth_step 제외
-              .map(([key, value]) => {
-                const routineType = room?.thinking_routine_type || 'see-think-wonder';
-                const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
-                const stepLabel = stepLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
-                
-                const stepColors = {
-                  'see': 'bg-blue-500',
-                  'think': 'bg-green-500', 
-                  'wonder': 'bg-purple-500'
-                };
-                const stepIcons = {
-                  'see': 'S',
-                  'think': 'T',
-                  'wonder': 'W'
-                };
-                
-                return (
-                  <div key={key} className="border border-gray-200 rounded-lg overflow-hidden">
-                    <div className={`${stepColors[key] || 'bg-gray-500'} px-4 py-2 flex items-center`}>
-                      <div className="w-6 h-6 bg-white bg-opacity-20 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">
-                        {stepIcons[key] || key.charAt(0).toUpperCase()}
+            {response.response_data && (() => {
+              const routineType = room?.thinking_routine_type || 'see-think-wonder';
+              const mappedResponses = mapResponseToRoutineSteps(response.response_data, routineType);
+              const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
+              
+              // 단계별 색상과 아이콘 정의 (더 많은 단계 지원)
+              const stepColors = {
+                'see': 'bg-blue-500',
+                'think': 'bg-green-500', 
+                'wonder': 'bg-purple-500',
+                'connect': 'bg-indigo-500',
+                'challenge': 'bg-red-500',
+                'concepts': 'bg-yellow-500',
+                'changes': 'bg-pink-500',
+                'extend': 'bg-teal-500',
+                'definition': 'bg-cyan-500',
+                'characteristics': 'bg-orange-500',
+                'examples': 'bg-lime-500',
+                'non_examples': 'bg-rose-500',
+                'used_to_think': 'bg-violet-500',
+                'now_think': 'bg-emerald-500',
+                'puzzle': 'bg-amber-500',
+                'explore': 'bg-sky-500',
+                'viewpoint_select': 'bg-fuchsia-500',
+                'viewpoint_thinking': 'bg-slate-500',
+                'viewpoint_concerns': 'bg-neutral-500'
+              };
+              
+              const stepIcons = {
+                'see': 'S',
+                'think': 'T', 
+                'wonder': 'W',
+                'connect': 'C',
+                'challenge': 'Ch',
+                'concepts': 'Co',
+                'changes': 'Ch',
+                'extend': 'E',
+                'definition': 'D',
+                'characteristics': 'Ch',
+                'examples': 'Ex',
+                'non_examples': 'N',
+                'used_to_think': 'U',
+                'now_think': 'N',
+                'puzzle': 'P',
+                'explore': 'E',
+                'viewpoint_select': 'V1',
+                'viewpoint_thinking': 'V2',
+                'viewpoint_concerns': 'V3'
+              };
+              
+              return Object.entries(mappedResponses)
+                .filter(([key, value]) => value && value.trim().length > 0)
+                .map(([key, value]) => {
+                  const stepLabel = stepLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
+                  
+                  return (
+                    <div key={key} className="border border-gray-200 rounded-lg overflow-hidden">
+                      <div className={`${stepColors[key] || 'bg-gray-500'} px-4 py-2 flex items-center`}>
+                        <div className="w-8 h-6 bg-white bg-opacity-20 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                          {stepIcons[key] || key.charAt(0).toUpperCase()}
+                        </div>
+                        <h3 className="font-medium text-white">{stepLabel}</h3>
                       </div>
-                      <h3 className="font-medium text-white">{stepLabel}</h3>
+                      <div className="p-4 bg-white">
+                        <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{value as string}</p>
+                      </div>
                     </div>
-                    <div className="p-4 bg-white">
-                      <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{value as string}</p>
-                    </div>
-                  </div>
-                );
-              })
-            }
+                  );
+                });
+            })()}
           </div>
 
 

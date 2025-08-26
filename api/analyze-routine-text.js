@@ -32,9 +32,9 @@ module.exports = async function handler(req, res) {
     console.log('Gemini AI 초기화 중...');
     const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // 응답 데이터를 텍스트로 변환 (fourth_step 제외)
+    // 응답 데이터를 텍스트로 변환 (모든 단계 포함)
     const responseText = Object.entries(responses)
-      .filter(([key]) => key !== 'fourth_step')
+      .filter(([key, value]) => value && value.trim().length > 0)
       .map(([key, value]) => `${key}: ${value}`)
       .join('\n\n');
 

@@ -59,18 +59,18 @@ const generateAnalysisPrompt = (routineType) => {
 
     '4c': `
 **4C 사고루틴 분석:**
-이 이미지는 학생이 작성한 4C(연결-도전-개념-변화) 활동 결과물입니다.
+이 이미지는 학생이 작성한 4C(Connect-Challenge-Concepts-Changes) 활동 결과물입니다.
 
-- **Connect(연결)**: 새로운 정보를 기존 지식과 연결하는 능력
-- **Challenge(도전)**: 도전적이거나 논란이 될 수 있는 아이디어 식별
+- **Connect(연결하기)**: 새로운 정보를 기존 지식과 연결하는 능력
+- **Challenge(도전하기)**: 도전적이거나 논란이 될 수 있는 아이디어 식별
 - **Concepts(개념)**: 핵심 개념과 아이디어 파악
 - **Changes(변화)**: 태도나 사고, 행동의 변화 제안
 
 **분석 형식:**
 ## 1. 각 단계별 분석
-### Connect (연결)
+### Connect (연결하기)
 - [연결 능력 평가와 구체적 피드백 2-3줄]
-### Challenge (도전)
+### Challenge (도전하기)
 - [비판적 사고 능력 평가와 구체적 피드백 2-3줄]
 ### Concepts (개념)
 - [핵심 개념 파악 능력 평가와 구체적 피드백 2-3줄]
@@ -83,12 +83,12 @@ const generateAnalysisPrompt = (routineType) => {
 
 **분석 형식:**
 ## 1. 각 단계별 분석
-### 관점 탐색
-- [다양한 관점 식별 능력 평가 2-3줄]
-### 관점 선택 및 이해
-- [특정 관점에서의 사고 능력 평가 2-3줄]
-### 관점별 질문 생성
-- [질문 생성 능력 평가 2-3줄]`,
+### 관점 정하기
+- [관점 선택 능력 평가 2-3줄]
+### 관점에 따라 생각 쓰기
+- [선택한 관점에서의 사고 능력 평가 2-3줄]
+### 관점에 대한 염려되거나 더 알고 싶은 것 쓰기
+- [비판적 사고 및 호기심 능력 평가 2-3줄]`,
 
     'connect-extend-challenge': `
 **Connect-Extend-Challenge 사고루틴 분석:**
@@ -113,8 +113,10 @@ const generateAnalysisPrompt = (routineType) => {
 - [개념 정의 능력 평가 2-3줄]
 ### Characteristics (특징)
 - [특징 파악 능력 평가 2-3줄]
-### Examples & Non-Examples (예시와 반례)
-- [예시 제시 능력 평가 2-3줄]`,
+### Examples (예시)
+- [예시 제시 능력 평가 2-3줄]
+### Non-Examples (반례)
+- [반례 제시 능력 평가 2-3줄]`,
 
     'used-to-think-now-think': `
 **I Used to Think... Now I Think... 사고루틴 분석:**
@@ -122,24 +124,22 @@ const generateAnalysisPrompt = (routineType) => {
 
 **분석 형식:**
 ## 1. 각 단계별 분석
-### Used to Think (이전 생각)
+### I Used to Think (이전 생각)
 - [이전 생각 표현 능력 평가 2-3줄]
-### Now Think (현재 생각)
-- [현재 생각 표현 능력 평가 2-3줄]
-### 변화 과정 분석
-- [사고 변화 성찰 능력 평가 2-3줄]`,
+### Now I Think (현재 생각)
+- [현재 생각 표현 능력 평가 2-3줄]`,
 
     'think-puzzle-explore': `
 **Think-Puzzle-Explore 사고루틴 분석:**
-이 이미지는 학생이 작성한 Think-Puzzle-Explore(생각-퍼즐-탐구) 활동 결과물입니다.
+이 이미지는 학생이 작성한 Think-Puzzle-Explore(생각하기-질문하기-탐구하기) 활동 결과물입니다.
 
 **분석 형식:**
 ## 1. 각 단계별 분석
-### Think (생각)
+### Think (생각하기)
 - [기존 지식 활용 능력 평가 2-3줄]
-### Puzzle (퍼즐)
+### Puzzle (질문하기)
 - [의문 제기 능력 평가 2-3줄]
-### Explore (탐구)
+### Explore (탐구하기)
 - [탐구 계획 능력 평가 2-3줄]`
   };
 
@@ -267,9 +267,9 @@ router.post('/text', async (req, res) => {
 
     console.log(`텍스트 분석 시작: ${routineType}`);
 
-    // 텍스트 응답을 분석용 텍스트로 변환
+    // 텍스트 응답을 분석용 텍스트로 변환 (모든 단계 포함)
     const responseText = Object.entries(responses)
-      .filter(([key]) => key !== 'fourth_step') // fourth_step 제외
+      .filter(([key, value]) => value && value.trim().length > 0)
       .map(([key, value]) => `${key}: ${value}`)
       .join('\n\n');
 

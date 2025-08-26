@@ -17,37 +17,35 @@ export const routineStepLabels: { [routineType: string]: { [stepKey: string]: st
     'wonder': 'Wonder (궁금하기)'
   },
   '4c': {
-    'see': 'Connect (연결하기)',
-    'think': 'Challenge (도전하기)',
-    'wonder': 'Concepts (개념)',
-    'fourth_step': 'Changes (변화)'
+    'connect': 'Connect (연결하기)',
+    'challenge': 'Challenge (도전하기)',
+    'concepts': 'Concepts (개념)',
+    'changes': 'Changes (변화)'
   },
   'circle-of-viewpoints': {
-    'see': '관점 1',
-    'think': '관점 2',
-    'wonder': '관점 3',
-    'fourth_step': '종합적 관점'
+    'viewpoint_select': '관점 정하기',
+    'viewpoint_thinking': '관점에 따라 생각 쓰기',
+    'viewpoint_concerns': '관점에 대한 염려되거나 더 알고 싶은 것 쓰기'
   },
   'connect-extend-challenge': {
-    'see': 'Connect (연결)',
-    'think': 'Extend (확장)',
-    'wonder': 'Challenge (도전)'
+    'connect': 'Connect (연결)',
+    'extend': 'Extend (확장)',
+    'challenge': 'Challenge (도전)'
   },
   'frayer-model': {
-    'see': 'Definition (정의)',
-    'think': 'Characteristics (특징)',
-    'wonder': 'Examples (예시)',
-    'fourth_step': 'Non-Examples (반례)'
+    'definition': 'Definition (정의)',
+    'characteristics': 'Characteristics (특징)',
+    'examples': 'Examples (예시)',
+    'non_examples': 'Non-Examples (반례)'
   },
   'used-to-think-now-think': {
-    'see': 'I Used to Think (이전 생각)',
-    'think': 'Now I Think (현재 생각)',
-    'wonder': 'What Changed My Thinking (변화 요인)'
+    'used_to_think': 'I Used to Think (이전 생각)',
+    'now_think': 'Now I Think (현재 생각)'
   },
   'think-puzzle-explore': {
-    'see': 'Think (생각)',
-    'think': 'Puzzle (의문)',
-    'wonder': 'Explore (탐구)'
+    'think': 'Think (생각하기)',
+    'puzzle': 'Puzzle (질문하기)',
+    'explore': 'Explore (탐구하기)'
   }
 };
 
@@ -59,16 +57,35 @@ export const routineDescriptions: { [routineType: string]: { [stepKey: string]: 
     'wonder': '궁금한 점이나 더 알고 싶은 것을 기록해주세요.'
   },
   '4c': {
-    'see': '기존 지식이나 경험과 어떻게 연결되는지 설명해주세요.',
-    'think': '비판적으로 검토하고 도전해볼 점을 기록해주세요.',
-    'wonder': '핵심 개념이 무엇인지 파악해주세요.',
-    'fourth_step': '어떤 변화나 개선이 필요한지 제안해주세요.'
+    'connect': '기존 지식이나 경험과 어떻게 연결되는지 설명해주세요.',
+    'challenge': '비판적으로 검토하고 도전해볼 점을 기록해주세요.',
+    'concepts': '핵심 개념이 무엇인지 파악해주세요.',
+    'changes': '어떤 변화나 개선이 필요한지 제안해주세요.'
+  },
+  'circle-of-viewpoints': {
+    'viewpoint_select': '어떤 관점에서 바라볼지 정해주세요.',
+    'viewpoint_thinking': '선택한 관점에 따라 생각한 내용을 써주세요.',
+    'viewpoint_concerns': '이 관점에 대해 염려되거나 더 알고 싶은 것을 써주세요.'
+  },
+  'connect-extend-challenge': {
+    'connect': '기존 지식이나 경험과 어떻게 연결되는지 설명해주세요.',
+    'extend': '이 주제를 더 확장하거나 발전시킬 수 있는 방법을 생각해주세요.',
+    'challenge': '비판적으로 검토하고 도전해볼 점을 기록해주세요.'
   },
   'frayer-model': {
-    'see': '개념의 정의를 명확하게 써주세요.',
-    'think': '개념의 특징이나 속성을 나열해주세요.',
-    'wonder': '개념에 해당하는 구체적인 예시를 들어주세요.',
-    'fourth_step': '개념에 해당하지 않는 반례를 들어주세요.'
+    'definition': '개념의 정의를 명확하게 써주세요.',
+    'characteristics': '개념의 특징이나 속성을 나열해주세요.',
+    'examples': '개념에 해당하는 구체적인 예시를 들어주세요.',
+    'non_examples': '개념에 해당하지 않는 반례를 들어주세요.'
+  },
+  'used-to-think-now-think': {
+    'used_to_think': '이전에 생각했던 내용을 써주세요.',
+    'now_think': '지금 새롭게 생각하는 내용을 써주세요.'
+  },
+  'think-puzzle-explore': {
+    'think': '주제에 대해 생각한 내용을 써주세요.',
+    'puzzle': '궁금하거나 질문하고 싶은 것을 써주세요.',
+    'explore': '더 탐구하고 싶은 방향이나 방법을 써주세요.'
   }
 };
 
@@ -88,32 +105,77 @@ export const routineStepPatterns: {[routineType: string]: {[stepKey: string]: Re
       new RegExp('(?:^|\\n)(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:Wonder|궁금|궁금하기)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:See|보기|Think|생각)|$)', 'is')
     ]
   },
+  '4c': {
+    'connect': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Connect|연결|연결하기)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Challenge|도전|Concepts?|개념|Changes?|변화)|$)', 'is')
+    ],
+    'challenge': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Challenge|도전|도전하기)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Connect|연결|Concepts?|개념|Changes?|변화)|$)', 'is')
+    ],
+    'concepts': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Concepts?|개념|개념\\s*파악)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Connect|연결|Challenge|도전|Changes?|변화)|$)', 'is')
+    ],
+    'changes': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Changes?|변화|변화\\s*제안)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Connect|연결|Challenge|도전|Concepts?|개념)|$)', 'is')
+    ]
+  },
+  'circle-of-viewpoints': {
+    'viewpoint_select': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:관점\\s*선택|관점\\s*정하기|Viewpoint)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:관점\\s*생각|염려|우려)|$)', 'is')
+    ],
+    'viewpoint_thinking': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:관점\\s*생각|관점\\s*따라|Thinking)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:관점\\s*선택|염려|우려)|$)', 'is')
+    ],
+    'viewpoint_concerns': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:염려|우려|더\\s*알고\\s*싶은|Concerns?)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:관점\\s*선택|관점\\s*생각)|$)', 'is')
+    ]
+  },
+  'connect-extend-challenge': {
+    'connect': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Connect|연결)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Extend|확장|Challenge|도전)|$)', 'is')
+    ],
+    'extend': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Extend|확장)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Connect|연결|Challenge|도전)|$)', 'is')
+    ],
+    'challenge': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Challenge|도전)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Connect|연결|Extend|확장)|$)', 'is')
+    ]
+  },
   'frayer-model': {
-    'see': [
+    'definition': [
       new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Definition|정의)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Characteristics?|특징|Examples?|예시)|$)', 'is'),
       new RegExp('(?:^|\\n)(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:Definition|정의)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:Characteristics?|특징|Examples?|예시)|$)', 'is')
     ],
-    'think': [
+    'characteristics': [
       new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Characteristics?|특징)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Definition|정의|Examples?|예시)|$)', 'is'),
       new RegExp('(?:^|\\n)(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:Characteristics?|특징)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:Definition|정의|Examples?|예시)|$)', 'is')
     ],
-    'wonder': [
-      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Examples?\\s*&?\\s*Non[-\\s]?Examples?|예시와?\\s*반례|Examples?|예시)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Definition|정의|Characteristics?|특징)|$)', 'is'),
-      new RegExp('(?:^|\\n)(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:Examples?\\s*&?\\s*Non[-\\s]?Examples?|예시와?\\s*반례|Examples?|예시)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:Definition|정의|Characteristics?|특징)|$)', 'is')
+    'examples': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Examples?|예시)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Definition|정의|Characteristics?|특징|Non[-\\s]?Examples?|반례)|$)', 'is'),
+      new RegExp('(?:^|\\n)(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:Examples?|예시)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:Definition|정의|Characteristics?|특징|Non[-\\s]?Examples?|반례)|$)', 'is')
+    ],
+    'non_examples': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Non[-\\s]?Examples?|반례)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Definition|정의|Characteristics?|특징|Examples?|예시)|$)', 'is'),
+      new RegExp('(?:^|\\n)(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:Non[-\\s]?Examples?|반례)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\d+\\.\\s*)?(?:\\*\\*)?(?:Definition|정의|Characteristics?|특징|Examples?|예시)|$)', 'is')
     ]
   },
-  '4c': {
-    'see': [
-      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Connect|연결|연결하기)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Challenge|도전|Concepts?|개념|Changes?|변화)|$)', 'is')
+  'used-to-think-now-think': {
+    'used_to_think': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Used\\s*to\\s*Think|이전\\s*생각)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Now\\s*Think|현재\\s*생각)|$)', 'is')
     ],
+    'now_think': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Now\\s*Think|현재\\s*생각)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Used\\s*to\\s*Think|이전\\s*생각)|$)', 'is')
+    ]
+  },
+  'think-puzzle-explore': {
     'think': [
-      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Challenge|도전|도전하기)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Connect|연결|Concepts?|개념|Changes?|변화)|$)', 'is')
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Think|생각|생각하기)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Puzzle|질문|Explore|탐구)|$)', 'is')
     ],
-    'wonder': [
-      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Concepts?|개념|개념\\s*파악)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Connect|연결|Challenge|도전|Changes?|변화)|$)', 'is')
+    'puzzle': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Puzzle|질문|질문하기)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Think|생각|Explore|탐구)|$)', 'is')
     ],
-    'fourth_step': [
-      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Changes?|변화|변화\\s*제안)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Connect|연결|Challenge|도전|Concepts?|개념)|$)', 'is')
+    'explore': [
+      new RegExp('(?:^|\\n)(?:\\*\\*)?(?:Explore|탐구|탐구하기)(?:\\*\\*)?(?:\\s*[:：]?\\s*)(.*?)(?=\\n(?:\\*\\*)?(?:Think|생각|Puzzle|질문)|$)', 'is')
     ]
   }
 };
@@ -127,27 +189,92 @@ export const mapResponseToRoutineSteps = (responseData: any, routineType: string
 
   const mappedResponse: { [stepKey: string]: string } = {};
   
-  // 표준화된 키 매핑
-  const keyMappings: { [key: string]: string } = {
-    'see': 'see',
-    'think': 'think', 
-    'wonder': 'wonder',
-    'fourth_step': 'fourth_step',
-    'connect': 'see',
-    'challenge': 'think',
-    'concepts': 'wonder',
-    'changes': 'fourth_step',
-    'definition': 'see',
-    'characteristics': 'think',
-    'examples': 'wonder',
-    'non_examples': 'fourth_step'
+  // 사고루틴 유형별 키 매핑
+  const routineKeyMappings: { [routineType: string]: { [key: string]: string } } = {
+    'see-think-wonder': {
+      'see': 'see',
+      'think': 'think',
+      'wonder': 'wonder'
+    },
+    '4c': {
+      'connect': 'connect',
+      'challenge': 'challenge', 
+      'concepts': 'concepts',
+      'changes': 'changes',
+      // 이전 키들도 지원 (하위 호환성)
+      'see': 'connect',
+      'think': 'challenge',
+      'wonder': 'concepts',
+      'fourth_step': 'changes'
+    },
+    'circle-of-viewpoints': {
+      'viewpoint_select': 'viewpoint_select',
+      'viewpoint_thinking': 'viewpoint_thinking',
+      'viewpoint_concerns': 'viewpoint_concerns',
+      // 이전 키들도 지원
+      'see': 'viewpoint_select',
+      'think': 'viewpoint_thinking', 
+      'wonder': 'viewpoint_concerns'
+    },
+    'connect-extend-challenge': {
+      'connect': 'connect',
+      'extend': 'extend',
+      'challenge': 'challenge',
+      // 이전 키들도 지원
+      'see': 'connect',
+      'think': 'extend',
+      'wonder': 'challenge'
+    },
+    'frayer-model': {
+      'definition': 'definition',
+      'characteristics': 'characteristics',
+      'examples': 'examples',
+      'non_examples': 'non_examples',
+      // 이전 키들도 지원
+      'see': 'definition',
+      'think': 'characteristics',
+      'wonder': 'examples',
+      'fourth_step': 'non_examples'
+    },
+    'used-to-think-now-think': {
+      'used_to_think': 'used_to_think',
+      'now_think': 'now_think',
+      // 이전 키들도 지원
+      'see': 'used_to_think',
+      'think': 'now_think'
+    },
+    'think-puzzle-explore': {
+      'think': 'think',
+      'puzzle': 'puzzle',
+      'explore': 'explore',
+      // 이전 키들도 지원
+      'see': 'think',
+      'wonder': 'explore'
+    }
   };
+
+  const keyMappings = routineKeyMappings[routineType] || {};
 
   // 응답 데이터의 각 키를 사고루틴 단계에 매핑
   Object.entries(responseData).forEach(([key, value]) => {
-    const normalizedKey = key.toLowerCase().replace(/_/g, '');
-    const mappedKey = keyMappings[normalizedKey] || key;
-    mappedResponse[mappedKey] = value as string;
+    const normalizedKey = key.toLowerCase().replace(/_/g, '').replace(/-/g, '');
+    
+    // 직접 매칭 먼저 시도
+    if (keyMappings[key]) {
+      mappedResponse[keyMappings[key]] = value as string;
+    }
+    // 정규화된 키로 매칭 시도
+    else {
+      const foundKey = Object.keys(keyMappings).find(k => 
+        k.toLowerCase().replace(/_/g, '').replace(/-/g, '') === normalizedKey
+      );
+      if (foundKey) {
+        mappedResponse[keyMappings[foundKey]] = value as string;
+      } else {
+        // 매칭되지 않으면 원본 키 사용
+        mappedResponse[key] = value as string;
+      }
+    }
   });
 
   return mappedResponse;
