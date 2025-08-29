@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/build",
+  "installCommand": "echo 'Skipping root install'",
+  "framework": null,
+
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max_old_space_size=8192",
+      "GENERATE_SOURCEMAP": "false",
+      "CI": "false"
+    }
+  },
+
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+} 
