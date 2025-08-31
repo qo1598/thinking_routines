@@ -245,37 +245,84 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
             
             <div className="space-y-4">
               {parsedAnalysis?.comprehensive ? (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h5 className="font-medium text-gray-800 mb-2">논리적 연결성과 사고의 깊이</h5>
-                  <div className="text-sm text-gray-700 text-left whitespace-pre-wrap">
-                    {parsedAnalysis.comprehensive}
-                  </div>
+                <div className="space-y-4">
+                  {/* 종합 분석을 마크다운으로 파싱해서 4가지 항목으로 분리 표시 */}
+                  {(() => {
+                    const comprehensive = parsedAnalysis.comprehensive;
+                    
+                    // 논리적 연결성 추출
+                    const logicalMatch = comprehensive.match(/\*\*논리적\s*연결성\*\*\s*\n([\s\S]*?)(?=\*\*사고의\s*깊이|\*\*개선점|$)/);
+                    const logical = logicalMatch ? logicalMatch[1].trim() : '';
+                    
+                    // 사고의 깊이 추출
+                    const depthMatch = comprehensive.match(/\*\*사고의\s*깊이\*\*\s*\n([\s\S]*?)(?=\*\*개선점|\*\*추가\s*활동|$)/);
+                    const depth = depthMatch ? depthMatch[1].trim() : '';
+                    
+                    // 개선점과 건설적 피드백 추출
+                    const improvementMatch = comprehensive.match(/\*\*개선점과?\s*(?:건설적\s*)?피드백\*\*\s*\n([\s\S]*?)(?=\*\*추가\s*활동|$)/);
+                    const improvement = improvementMatch ? improvementMatch[1].trim() : '';
+                    
+                    // 추가 활동 제안 추출
+                    const suggestionMatch = comprehensive.match(/\*\*추가\s*활동\s*제안\*\*\s*\n([\s\S]*?)$/);
+                    const suggestion = suggestionMatch ? suggestionMatch[1].trim() : '';
+                    
+                    return (
+                      <>
+                        {logical && (
+                          <div className="p-4 bg-gray-50 rounded-lg">
+                            <h5 className="font-medium text-gray-800 mb-2">논리적 연결성</h5>
+                            <p className="text-sm text-gray-700 text-left">
+                              {logical}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {depth && (
+                          <div className="p-4 bg-gray-50 rounded-lg">
+                            <h5 className="font-medium text-gray-800 mb-2">사고의 깊이</h5>
+                            <p className="text-sm text-gray-700 text-left">
+                              {depth}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {improvement && (
+                          <div className="p-4 bg-gray-50 rounded-lg">
+                            <h5 className="font-medium text-gray-800 mb-2">개선점과 건설적 피드백</h5>
+                            <p className="text-sm text-gray-700 text-left">
+                              {improvement}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {suggestion && (
+                          <div className="p-4 bg-blue-50 rounded-lg">
+                            <h5 className="font-medium text-gray-800 mb-2">추가 활동 제안</h5>
+                            <p className="text-sm text-gray-700 text-left">
+                              {suggestion}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* 개별 항목이 없는 경우 전체 텍스트 표시 */}
+                        {!logical && !depth && !improvement && !suggestion && (
+                          <div className="p-4 bg-gray-50 rounded-lg">
+                            <h5 className="font-medium text-gray-800 mb-2">종합 분석</h5>
+                            <div className="text-sm text-gray-700 text-left whitespace-pre-wrap">
+                              {comprehensive}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="p-4 bg-gray-50 rounded-lg">
-                  <h5 className="font-medium text-gray-800 mb-2">논리적 연결성과 사고의 깊이</h5>
+                  <h5 className="font-medium text-gray-800 mb-2">분석 결과가 없습니다</h5>
                   <p className="text-sm text-gray-700 text-left">
-                    {getDefaultAnalysisText(currentRoutineType)}
+                    AI 분석 결과를 불러오는 중입니다...
                   </p>
-                </div>
-              )}
-              
-              {parsedAnalysis?.educational && (
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <h5 className="font-medium text-gray-800 mb-2">개선점과 건설적 피드백</h5>
-                  <div className="text-sm text-gray-700 text-left whitespace-pre-wrap">
-                    {parsedAnalysis.educational}
-                  </div>
-                </div>
-              )}
-              
-              {/* stepByStep이 있는 경우 단계별 요약도 표시 */}
-              {parsedAnalysis?.stepByStep && (
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <h5 className="font-medium text-gray-800 mb-2">단계별 응답 품질 평가</h5>
-                  <div className="text-sm text-gray-700 text-left whitespace-pre-wrap">
-                    {parsedAnalysis.stepByStep}
-                  </div>
                 </div>
               )}
             </div>

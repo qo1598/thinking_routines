@@ -686,6 +686,26 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                           {stepInfo.title} ({stepInfo.subtitle})
                         </h3>
                         
+                        {/* 학생 응답 */}
+                        {(() => {
+                          const mappedResponses = mapResponseToRoutineSteps(activityData?.response_data, activityData?.routine_type || 'see-think-wonder');
+                          const studentResponse = mappedResponses[stepKey];
+                          
+                          return studentResponse ? (
+                            <div className="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-200">
+                              <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                                <svg className="w-4 h-4 mr-1 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                학생 응답
+                              </h4>
+                              <p className="text-gray-700 leading-relaxed text-left">
+                                {studentResponse}
+                              </p>
+                            </div>
+                          ) : null;
+                        })()}
+
                         {/* AI 분석 내용 */}
                         <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
                           <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">

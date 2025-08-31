@@ -71,15 +71,46 @@ export const parseMarkdownToStructuredAI = (
     }
   });
   
-  // 종합 분석 추출
-  const comprehensiveMatch = markdownText.match(/\*\*2\.\s*논리적\s*연결성과\s*사고의\s*깊이\s*분석\*\*\s*\n\n([\s\S]*?)(?=\*\*3\.|$)/);
-  const comprehensive = comprehensiveMatch ? cleanExtractedText(comprehensiveMatch[1]) : '';
+  // 종합 분석 추출 - 더 유연한 패턴들
+  let comprehensive = '';
+  let educational = '';
+  let stepByStep = '';
   
+  // 논리적 연결성 패턴
+  const logicalMatch = markdownText.match(/(?:\*\*)?논리적\s*연결성(?:\*\*)?(?:\s*[:：]?\s*)([\s\S]*?)(?=(?:\*\*)?사고의\s*깊이|(?:\*\*)?개선점|(?:\*\*)?제안|$)/);
+  
+  // 사고의 깊이 패턴  
+  const depthMatch = markdownText.match(/(?:\*\*)?사고의\s*깊이(?:\*\*)?(?:\s*[:：]?\s*)([\s\S]*?)(?=(?:\*\*)?개선점|(?:\*\*)?건설적|(?:\*\*)?제안|$)/);
+  
+  // 개선점과 건설적 피드백 패턴
+  const improvementMatch = markdownText.match(/(?:\*\*)?개선점과?\s*(?:건설적\s*)?피드백(?:\*\*)?(?:\s*[:：]?\s*)([\s\S]*?)(?=(?:\*\*)?추가\s*활동|(?:\*\*)?제안|$)/);
+  
+  // 추가 활동 제안 패턴
+  const suggestionsMatch = markdownText.match(/(?:\*\*)?추가\s*활동\s*제안(?:\*\*)?(?:\s*[:：]?\s*)([\s\S]*?)$/);
+  
+  // 전체 종합 분석 섹션 추출 시도
+  const comprehensiveSection = markdownText.match(/\*\*2\.\s*.*?종합\s*분석\*\*\s*\n\n([\s\S]*?)(?=\*\*3\.|$)/);
+  
+  if (comprehensiveSection) {
+    comprehensive = cleanExtractedText(comprehensiveSection[1]);
+  } else {
+    // 개별 항목들을 조합
+    const parts = [];
+    if (logicalMatch) parts.push(`**논리적 연결성**\n${cleanExtractedText(logicalMatch[1])}`);
+    if (depthMatch) parts.push(`**사고의 깊이**\n${cleanExtractedText(depthMatch[1])}`);
+    if (improvementMatch) parts.push(`**개선점과 건설적 피드백**\n${cleanExtractedText(improvementMatch[1])}`);
+    if (suggestionsMatch) parts.push(`**추가 활동 제안**\n${cleanExtractedText(suggestionsMatch[1])}`);
+    
+    comprehensive = parts.join('\n\n');
+  }
+  
+  // 교육적 제안 추출
   const educationalMatch = markdownText.match(/\*\*3\.\s*개선점과\s*건설적\s*피드백\s*제안\*\*\s*\n\n([\s\S]*?)(?=\*\*4\.|$)/);
-  const educational = educationalMatch ? cleanExtractedText(educationalMatch[1]) : '';
+  educational = educationalMatch ? cleanExtractedText(educationalMatch[1]) : '';
   
+  // 단계별 분석 추출
   const stepByStepMatch = markdownText.match(/\*\*1\.\s*각\s*단계별\s*응답의\s*품질과\s*적절성\s*평가\*\*\s*\n\n([\s\S]*?)(?=\*\*2\.|$)/);
-  const stepByStep = stepByStepMatch ? cleanExtractedText(stepByStepMatch[1]) : '';
+  stepByStep = stepByStepMatch ? cleanExtractedText(stepByStepMatch[1]) : '';
   
   return {
     individualSteps,
@@ -104,7 +135,10 @@ const getStepPatterns = (stepKey: string, stepLabel: string, routineType: string
         // 실제 텍스트: *   **See (본 것):** "내용"
         /\*\s+\*\*See\s+\(본\s+것\)\*\*:\s*"([^"]+)"/s,
         /\*\s*\*\*See\s*\(본\s*것\)\*\*:?\s*"([^"]+)"/s,
-        /###\s*See\s*\(보기\)\s*\n([\s\S]*?)(?=###|##|$)/s
+        /###\s*See\s*\(보기\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        // 추가 패턴들
+        /\*\*See\s*\(보기\)\*\*:?\s*([\s\S]*?)(?=\*\*Think|\*\*Wonder|###|$)/s,
+        /-\s*\*\*See\s*\(보기\)\*\*:?\s*([\s\S]*?)(?=-\s*\*\*Think|-\s*\*\*Wonder|$)/s
       );
     } else if (stepKey === 'think') {
       patterns.push(
@@ -243,7 +277,14 @@ const getStepPatterns = (stepKey: string, stepLabel: string, routineType: string
     new RegExp(`\\*\\*${escapedLabel}\\*\\*:?\\s*([^*]+?)(?=\\*\\*|$)`, 's'),
     // 패턴 5: 영어 키워드 기반 (4C, Connect-Extend-Challenge 등)
     new RegExp(`\\*\\s*\\*\\*${stepKey}\\s*\\([^)]*\\)\\*\\*:?\\s*"([^"]+)"`, 'si'),
-    new RegExp(`\\*\\*${stepKey}\\s*\\([^)]*\\)\\*\\*:?\\s*"([^"]+)"`, 'si')
+    new RegExp(`\\*\\*${stepKey}\\s*\\([^)]*\\)\\*\\*:?\\s*"([^"]+)"`, 'si'),
+    // 패턴 6: ### 헤더 형태
+    new RegExp(`###\\s*${escapedLabel}\\s*\\n([\\s\\S]*?)(?=###|##|$)`, 's'),
+    new RegExp(`###\\s*${stepLabel.split('(')[0].trim()}\\s*\\n([\\s\\S]*?)(?=###|##|$)`, 's'),
+    // 패턴 7: - 리스트 형태
+    new RegExp(`-\\s*\\*\\*${escapedLabel}\\*\\*:?\\s*([\\s\\S]*?)(?=-\\s*\\*\\*|$)`, 's'),
+    // 패턴 8: 더 유연한 매칭 (대소문자 무시)
+    new RegExp(`(?:^|\\n)\\s*(?:\\*\\*)?\\s*${stepLabel.split('(')[0].trim()}\\s*(?:\\([^)]*\\))?\\s*(?:\\*\\*)?\\s*(?:[:：]?)\\s*([\\s\\S]*?)(?=\\n\\s*(?:\\*\\*)?\\s*[A-Za-z가-힣]|$)`, 'is')
   );
   
   return patterns;
