@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { routineStepLabels, routineTypeLabels, generateStepInfoMap } from '../lib/thinkingRoutineUtils';
+import { routineStepLabels, routineTypeLabels, generateStepInfoMap, mapResponseToRoutineSteps } from '../lib/thinkingRoutineUtils';
 
 interface ParsedAnalysis {
   individualSteps?: {[key: string]: string | string[]};
@@ -340,7 +340,9 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
             {Object.entries(stepInfoMap)
 
               .map(([stepKey, stepInfo], index) => {
-                const studentResponse = response?.response_data?.[stepKey];
+                // 응답 데이터를 올바른 사고루틴 형태로 변환
+                const mappedResponseData = mapResponseToRoutineSteps(response?.response_data, currentRoutineType);
+                const studentResponse = mappedResponseData[stepKey];
                 const aiAnalysis = parsedAnalysis?.individualSteps?.[stepKey];
                 
                 if (!studentResponse && !aiAnalysis) return null;

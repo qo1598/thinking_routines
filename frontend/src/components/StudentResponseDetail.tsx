@@ -135,9 +135,15 @@ const StudentResponseDetail: React.FC = () => {
       console.log('📝 분석할 데이터:', response.response_data);
       console.log('🎯 사고루틴 유형:', room.thinking_routine_type);
 
-      // 학생 응답 데이터 준비
-      const studentResponses = response.response_data;
+      // 학생 응답 데이터 준비 - 올바른 사고루틴 형태로 변환
       const routineType = room.thinking_routine_type || 'see-think-wonder';
+      const rawResponseData = response.response_data;
+      console.log('🔍 원본 응답 데이터:', rawResponseData);
+      
+      // mapResponseToRoutineSteps를 사용하여 올바른 키로 변환
+      const studentResponses = mapResponseToRoutineSteps(rawResponseData, routineType);
+      console.log('🔄 변환된 응답 데이터:', studentResponses);
+      console.log('🎯 대상 사고루틴 유형:', routineType);
 
       // API 엔드포인트 확인 - Vercel 배포 환경에 맞게 수정
       const apiUrl = process.env.NODE_ENV === 'production' 
