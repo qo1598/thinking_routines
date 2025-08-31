@@ -40,6 +40,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [parsedAiAnalysis, setParsedAiAnalysis] = useState<any>(null);
 
   // 사고루틴 타입 라벨 함수
   const getRoutineTypeLabel = (routineType: string): string => {
@@ -62,6 +63,16 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityId]);
+
+  // AI 분석 데이터 파싱
+  useEffect(() => {
+    if (activity?.ai_analysis) {
+      console.log('🎯 AI 분석 데이터 파싱 시작:', activity.ai_analysis);
+      const parsed = parseAIAnalysis(activity.ai_analysis);
+      console.log('✅ 파싱 완료, state 업데이트:', parsed);
+      setParsedAiAnalysis(parsed);
+    }
+  }, [activity?.ai_analysis]);
 
   const loadActivityDetail = async () => {
     if (!isSupabaseConfigured() || !supabase) {
@@ -263,6 +274,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
         // aiAnalysisUtils의 parseMarkdownToStructuredAI 사용
         const structuredData = parseMarkdownToStructuredAI(aiAnalysis, routineType);
         console.log('🔄 파싱된 구조화 데이터:', structuredData);
+        console.log('🔄 individualSteps:', structuredData?.individualSteps);
+        console.log('🔄 comprehensive:', structuredData?.comprehensive);
         return structuredData;
       }
     } catch (error) {
@@ -327,7 +340,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
     );
   }
 
-  const aiAnalysis = parseAIAnalysis(activity.ai_analysis || '{}');
+  // 파싱된 AI 분석 데이터는 이제 state에서 가져옴
+  const aiAnalysis = parsedAiAnalysis;
 
   return (
     <div className="min-h-screen bg-gray-50">
