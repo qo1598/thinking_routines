@@ -590,7 +590,20 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                           const stepInfoMap = generateStepInfoMap(activityData?.routine_type || 'see-think-wonder');
 
                           const stepInfo = stepInfoMap[stepKey];
-                          if (!stepInfo || !stepContent) return null;
+                          
+                          // 중요: stepContent 내용 디버깅
+                          console.log(`🎯 화면 표시 중 - ${stepKey} 단계:`, {
+                            stepInfo,
+                            stepContent,
+                            stepContentType: typeof stepContent,
+                            stepContentLength: stepContent ? stepContent.length : 0,
+                            firstChars: stepContent ? stepContent.substring(0, 100) : 'NULL'
+                          });
+                          
+                          if (!stepInfo || !stepContent) {
+                            console.log(`❌ ${stepKey} 단계 표시 실패:`, { stepInfo: !!stepInfo, stepContent: !!stepContent });
+                            return null;
+                          }
 
                           const gradientColors: {[key: string]: string} = {
                             'bg-blue-500': 'from-blue-50 to-white border-blue-200',
@@ -626,7 +639,18 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                                 </h6>
                                 <div 
                                   className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-left"
-                                  dangerouslySetInnerHTML={{ __html: formatMarkdownText(stepContent as string) }}
+                                  dangerouslySetInnerHTML={{ 
+                                    __html: (() => {
+                                      const formattedText = formatMarkdownText(stepContent as string);
+                                      console.log(`🎨 ${stepKey} 포맷팅 결과:`, {
+                                        originalText: stepContent,
+                                        formattedText,
+                                        originalLength: stepContent ? stepContent.length : 0,
+                                        formattedLength: formattedText ? formattedText.length : 0
+                                      });
+                                      return formattedText;
+                                    })()
+                                  }}
                                 />
                               </div>
 
@@ -862,7 +886,20 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                           const stepInfoMap = generateStepInfoMap(activityData?.routine_type || 'see-think-wonder');
 
                           const stepInfo = stepInfoMap[stepKey];
-                          if (!stepInfo || !stepContent) return null;
+                          
+                          // 중요: stepContent 내용 디버깅
+                          console.log(`🎯 화면 표시 중 - ${stepKey} 단계:`, {
+                            stepInfo,
+                            stepContent,
+                            stepContentType: typeof stepContent,
+                            stepContentLength: stepContent ? stepContent.length : 0,
+                            firstChars: stepContent ? stepContent.substring(0, 100) : 'NULL'
+                          });
+                          
+                          if (!stepInfo || !stepContent) {
+                            console.log(`❌ ${stepKey} 단계 표시 실패:`, { stepInfo: !!stepInfo, stepContent: !!stepContent });
+                            return null;
+                          }
 
                           const gradientColors: {[key: string]: string} = {
                             'bg-blue-500': 'from-blue-50 to-white border-blue-200',
@@ -898,7 +935,18 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                                 </h6>
                                 <div 
                                   className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-left"
-                                  dangerouslySetInnerHTML={{ __html: formatMarkdownText(stepContent as string) }}
+                                  dangerouslySetInnerHTML={{ 
+                                    __html: (() => {
+                                      const formattedText = formatMarkdownText(stepContent as string);
+                                      console.log(`🎨 ${stepKey} 포맷팅 결과:`, {
+                                        originalText: stepContent,
+                                        formattedText,
+                                        originalLength: stepContent ? stepContent.length : 0,
+                                        formattedLength: formattedText ? formattedText.length : 0
+                                      });
+                                      return formattedText;
+                                    })()
+                                  }}
                                 />
                               </div>
 
