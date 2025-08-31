@@ -401,6 +401,16 @@ const StudentResponseDetail: React.FC = () => {
               const mappedResponses = mapResponseToRoutineSteps(response.response_data, routineType);
               const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
               
+              // Think-Puzzle-Explore 디버깅
+              if (routineType === 'think-puzzle-explore') {
+                console.log('🎯 Think-Puzzle-Explore 학생 응답 디버깅:', {
+                  routineType,
+                  originalResponseData: response.response_data,
+                  mappedResponses,
+                  stepLabels
+                });
+              }
+              
               // 단계별 색상과 아이콘 정의 (더 많은 단계 지원)
               const stepColors = {
                 'see': 'bg-blue-500',
@@ -450,6 +460,41 @@ const StudentResponseDetail: React.FC = () => {
                 .filter(([key, value]) => value && value.trim().length > 0)
                 .map(([key, value]) => {
                   const stepLabel = stepLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
+                  
+                  // Frayer Model에서 examples||non_examples 형태 처리
+                  if (routineType === 'frayer-model' && typeof value === 'string' && value.includes('||')) {
+                    const [examples, nonExamples] = value.split('||');
+                    
+                    return (
+                      <div key={key} className="space-y-3">
+                        {/* 예시 */}
+                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                          <div className="bg-lime-500 px-4 py-2 flex items-center">
+                            <div className="w-8 h-6 bg-white bg-opacity-20 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                              Ex
+                            </div>
+                            <h3 className="font-medium text-white">Examples (예시)</h3>
+                          </div>
+                          <div className="p-4 bg-white">
+                            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{examples.trim()}</p>
+                          </div>
+                        </div>
+                        
+                        {/* 반례 */}
+                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                          <div className="bg-rose-500 px-4 py-2 flex items-center">
+                            <div className="w-8 h-6 bg-white bg-opacity-20 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                              N
+                            </div>
+                            <h3 className="font-medium text-white">Non-Examples (반례)</h3>
+                          </div>
+                          <div className="p-4 bg-white">
+                            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{nonExamples.trim()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
                   
                   return (
                     <div key={key} className="border border-gray-200 rounded-lg overflow-hidden">

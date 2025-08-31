@@ -257,6 +257,11 @@ export const mapResponseToRoutineSteps = (responseData: any, routineType: string
 
   // 응답 데이터의 각 키를 사고루틴 단계에 매핑
   Object.entries(responseData).forEach(([key, value]) => {
+    // used-to-think-now-think에서 wonder 제외
+    if (routineType === 'used-to-think-now-think' && (key === 'wonder' || key === 'Wonder')) {
+      return; // wonder 단계는 건너뛰기
+    }
+    
     const normalizedKey = key.toLowerCase().replace(/_/g, '').replace(/-/g, '');
     
     // 직접 매칭 먼저 시도
