@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps } from '../lib/thinkingRoutineUtils';
+import { parseMarkdownToStructuredAI } from '../lib/aiAnalysisUtils';
 import AIAnalysisSection from './AIAnalysisSection';
 import TeacherFeedbackSection from './TeacherFeedbackSection';
-import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps } from '../lib/thinkingRoutineUtils';
-import { parseMarkdownToStructuredAI, saveStructuredAIAnalysis } from '../lib/aiAnalysisUtils';
 
 const StudentResponseDetail: React.FC = () => {
   const { responseId } = useParams<{ responseId: string }>();
@@ -85,41 +85,58 @@ const StudentResponseDetail: React.FC = () => {
 
   const parseAnalysis = () => {
     if (!aiAnalysis) return;
-
-    // AI 분석 텍스트를 단계별로 파싱
+    
+    console.log('🚨 StudentResponseDetail AI 분석 파싱 시작:', aiAnalysis);
+    
     const routineType = room?.thinking_routine_type || 'see-think-wonder';
+    console.log('🎯 StudentResponseDetail 사고루틴 유형:', routineType);
     
-    // 단계별 분석 내용 추출
-    const individualSteps: {[key: string]: string} = {};
-    
-    if (routineType === 'see-think-wonder') {
-      // See 단계 분석 추출
-      if (aiAnalysis.includes('See') || aiAnalysis.includes('보기')) {
-        individualSteps['see'] = '훌륭합니다. 제시된 정보(제주도 페트병, 옷 제작)을 정확하게 인지하고 있습니다. 구체적인 사실을 언급하여 다음 단계의 연결성을 높이는 데 기여합니다.';
+    try {
+      // JSON 형태인지 확인
+      if (aiAnalysis.startsWith('{') || aiAnalysis.startsWith('[')) {
+        const parsed = JSON.parse(aiAnalysis);
+        console.log('📋 StudentResponseDetail JSON 파싱:', parsed);
+        
+        if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
+          console.log('✅ StudentResponseDetail 구조화된 데이터 발견');
+          setParsedAnalysis({
+            summary: parsed.aiAnalysis.comprehensive || aiAnalysis,
+            suggestions: parsed.aiAnalysis.educational || aiAnalysis,
+            individualSteps: parsed.aiAnalysis.individualSteps
+          });
+          return;
+        }
       }
       
-      // Think 단계 분석 추출
-      if (aiAnalysis.includes('Think') || aiAnalysis.includes('생각')) {
-        individualSteps['think'] = '좋습니다. 관찰한 사실에 대한 의문을 제기하며, 환경과 배경에 대한 사고를 시작하고 있습니다. 이는 비판적 사고의 중요한 시작점입니다.';
-      }
+      // 마크다운 텍스트 형태 - aiAnalysisUtils 사용
+      console.log('📝 StudentResponseDetail 마크다운 파싱 시도');
       
-      // Wonder 단계 분석 추출
-      if (aiAnalysis.includes('Wonder') || aiAnalysis.includes('궁금')) {
-        individualSteps['wonder'] = '훌륭합니다. 페트병 문제의 근본적인 원인으로 사고를 확장하고 있습니다. 제주도에 국한되지 않고, 더 넓은 맥락에서 문제를 바라보려는 시도가 돋보입니다.';
-      }
-    } else {
-      // 다른 사고루틴 유형의 경우 기본 분석 제공
+      // parseMarkdownToStructuredAI 직접 호출
+      const structuredData = parseMarkdownToStructuredAI(aiAnalysis, routineType);
+      console.log('🔄 StudentResponseDetail 구조화된 데이터:', structuredData);
+      
+      setParsedAnalysis({
+        summary: structuredData.comprehensive || aiAnalysis,
+        suggestions: structuredData.educational || aiAnalysis,
+        individualSteps: structuredData.individualSteps || {}
+      });
+      
+    } catch (error) {
+      console.error('❌ StudentResponseDetail 파싱 오류:', error);
+      
+      // 오류 시 기본 처리 (하드코딩된 메시지 제거)
       const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
+      const individualSteps: {[key: string]: string} = {};
       Object.keys(stepLabels).forEach(stepKey => {
-        individualSteps[stepKey] = '학생의 응답이 해당 단계의 목적에 적합하며, 사고 과정이 잘 드러나 있습니다. 추가적인 심화 학습을 통해 더욱 발전시킬 수 있습니다.';
+        individualSteps[stepKey] = '분석 중 오류가 발생했습니다. 다시 시도해주세요.';
+      });
+
+      setParsedAnalysis({
+        summary: aiAnalysis,
+        suggestions: aiAnalysis,
+        individualSteps: individualSteps
       });
     }
-
-    setParsedAnalysis({
-      summary: aiAnalysis,
-      suggestions: aiAnalysis,
-      individualSteps: individualSteps
-    });
   };
 
   const handleAIAnalysis = async () => {
