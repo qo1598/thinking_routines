@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps } from '../lib/thinkingRoutineUtils';
-import { parseMarkdownToStructuredAI } from '../lib/aiAnalysisUtils';
+import { parseMarkdownToStructuredAI, saveStructuredAIAnalysis } from '../lib/aiAnalysisUtils';
 import AIAnalysisSection from './AIAnalysisSection';
 import TeacherFeedbackSection from './TeacherFeedbackSection';
 

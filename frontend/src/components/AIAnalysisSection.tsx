@@ -244,7 +244,15 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
             </h3>
             
             <div className="space-y-4">
-              {parsedAnalysis?.comprehensive ? (
+              {(() => {
+                console.log('🎯 AIAnalysisSection 종합분석 확인:', {
+                  parsedAnalysis,
+                  comprehensive: parsedAnalysis?.comprehensive,
+                  hasComprehensive: !!parsedAnalysis?.comprehensive,
+                  comprehensiveLength: parsedAnalysis?.comprehensive?.length || 0
+                });
+                return parsedAnalysis?.comprehensive;
+              })() ? (
                 <div className="space-y-4">
                   {/* 종합 분석을 마크다운으로 파싱해서 4가지 항목으로 분리 표시 */}
                   {(() => {
