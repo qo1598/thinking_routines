@@ -18,7 +18,7 @@ interface AIAnalysisSectionProps {
   onShowTeacherFeedback: () => void;
 }
 
-// 사고루틴 유형별 단계 정보 매핑
+// 사고루틴 유형별 단계 정보 매핑 (실제 데이터 키와 일치)
 const stepInfoMaps: {[routineType: string]: {[stepKey: string]: {title: string, subtitle: string, color: string}}} = {
   'see-think-wonder': {
     'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
@@ -26,36 +26,64 @@ const stepInfoMaps: {[routineType: string]: {[stepKey: string]: {title: string, 
     'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' }
   },
   '4c': {
-    'see': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-    'think': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
-    'wonder': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
-    'fourth_step': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' }
+    'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
+    'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
+    'concepts': { title: 'Concepts', subtitle: '개념', color: 'bg-green-500' },
+    'changes': { title: 'Changes', subtitle: '변화', color: 'bg-purple-500' }
   },
   'frayer-model': {
-    'see': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
-    'think': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
-    'wonder': { title: 'Examples & Non-Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
+    'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
+    'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
+    'examples': { title: 'Examples', subtitle: '예시', color: 'bg-yellow-500' },
+    'non_examples': { title: 'Non-Examples', subtitle: '반례', color: 'bg-red-500' }
   },
   'circle-of-viewpoints': {
-    'see': { title: 'Viewpoints', subtitle: '관점 탐색', color: 'bg-blue-500' },
-    'think': { title: 'Perspective', subtitle: '관점 선택', color: 'bg-green-500' },
-    'wonder': { title: 'Questions', subtitle: '관점별 질문', color: 'bg-purple-500' }
+    'viewpoint_select': { title: 'Viewpoint Select', subtitle: '관점 정하기', color: 'bg-blue-500' },
+    'viewpoint_thinking': { title: 'Viewpoint Thinking', subtitle: '관점에 따라 생각 쓰기', color: 'bg-green-500' },
+    'viewpoint_concerns': { title: 'Viewpoint Concerns', subtitle: '관점에 대한 염려나 궁금한 점', color: 'bg-purple-500' }
   },
   'connect-extend-challenge': {
-    'see': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-    'think': { title: 'Extend', subtitle: '확장하기', color: 'bg-green-500' },
-    'wonder': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' }
+    'connect': { title: 'Connect', subtitle: '연결', color: 'bg-blue-500' },
+    'extend': { title: 'Extend', subtitle: '확장', color: 'bg-green-500' },
+    'challenge': { title: 'Challenge', subtitle: '도전', color: 'bg-red-500' }
   },
   'used-to-think-now-think': {
-    'see': { title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500' },
-    'think': { title: 'Now Think', subtitle: '현재 생각', color: 'bg-green-500' },
-    'wonder': { title: 'Why Changed', subtitle: '변화 이유', color: 'bg-purple-500' }
+    'used_to_think': { title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500' },
+    'now_think': { title: 'Now Think', subtitle: '현재 생각', color: 'bg-green-500' }
   },
   'think-puzzle-explore': {
-    'see': { title: 'Think', subtitle: '생각하기', color: 'bg-blue-500' },
-    'think': { title: 'Puzzle', subtitle: '퍼즐', color: 'bg-yellow-500' },
-    'wonder': { title: 'Explore', subtitle: '탐구하기', color: 'bg-green-500' }
+    'think': { title: 'Think', subtitle: '생각하기', color: 'bg-blue-500' },
+    'puzzle': { title: 'Puzzle', subtitle: '질문하기', color: 'bg-yellow-500' },
+    'explore': { title: 'Explore', subtitle: '탐구하기', color: 'bg-green-500' }
   }
+};
+
+// 사고루틴 유형별 표시명 매핑
+const getRoutineDisplayName = (routineType: string): string => {
+  const displayNames: {[key: string]: string} = {
+    'see-think-wonder': 'See-Think-Wonder',
+    '4c': '4C (Connect-Challenge-Concepts-Changes)',
+    'connect-extend-challenge': 'Connect-Extend-Challenge',
+    'circle-of-viewpoints': 'Circle of Viewpoints',
+    'frayer-model': 'Frayer Model',
+    'used-to-think-now-think': 'I Used to Think... Now I Think...',
+    'think-puzzle-explore': 'Think-Puzzle-Explore'
+  };
+  return displayNames[routineType] || 'See-Think-Wonder';
+};
+
+// 기본 분석 텍스트 생성
+const getDefaultAnalysisText = (routineType: string): string => {
+  const defaultTexts: {[key: string]: string} = {
+    'see-think-wonder': '각 단계가 논리적으로 연결되어 있으며, 관찰에서 사고, 그리고 의문으로 이어지는 자연스러운 학습 흘름을 보여줍니다.',
+    '4c': '각 단계가 체계적으로 연결되어 있으며, 연결-도전-개념-변화의 순차적 사고 과정을 잘 보여줍니다.',
+    'connect-extend-challenge': '연결-확장-도전의 3단계가 순차적으로 이어지며 사고의 깊이를 더해가는 과정을 보여줍니다.',
+    'circle-of-viewpoints': '다양한 관점에서 사고하는 능력과 각 관점의 타당성을 평가하는 비판적 사고 능력을 보여줍니다.',
+    'frayer-model': '개념의 정의, 특징, 예시, 반례를 중심으로 체계적이고 명확한 개념 이해를 보여줍니다.',
+    'used-to-think-now-think': '학습 전후의 인식 변화를 명확하게 비교하며 성찰적 사고 능력을 보여줍니다.',
+    'think-puzzle-explore': '기존 지식에서 의문으로, 그리고 탐구 계획으로 이어지는 자기주도적 학습 자세를 보여줍니다.'
+  };
+  return defaultTexts[routineType] || defaultTexts['see-think-wonder'];
 };
 
 const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
@@ -199,10 +227,10 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
               <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
-              사고루틴 단계별 학생 응답 분석
+              {getRoutineDisplayName(currentRoutineType)} 단계별 학생 응답 분석
             </h3>
             {Object.entries(stepInfoMap)
-              .filter(([stepKey]) => stepKey !== 'fourth_step')
+
               .map(([stepKey, stepInfo], index) => {
                 const studentResponse = response?.response_data?.[stepKey];
                 const aiAnalysis = parsedAnalysis?.individualSteps?.[stepKey];
@@ -258,47 +286,44 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
               <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
-              사고루틴 종합 분석
+              {getRoutineDisplayName(currentRoutineType)} 사고루틴 종합 분석
             </h3>
             
             <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h5 className="font-medium text-gray-800 mb-2">논리적 연결성</h5>
-                <p className="text-sm text-gray-700 text-left">
-                  각 단계는 훌륭하게 연결되어 있습니다. See 단계에서 관찰한 페트병과 옷 제작 사실이 
-                  Think 단계에서 원인에 대한 질문으로 이어지고, Wonder 단계에서 더 근본적인 문제로 확장되는 자연스러운 
-                  흐름을 보여줍니다.
-                </p>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h5 className="font-medium text-gray-800 mb-2">사고의 깊이</h5>
-                <p className="text-sm text-gray-700 text-left">
-                  아직은 얄은 수준이지만, 충분한 잠재력을 가지고 있습니다. Think 단계에서 '무슨 일이 있어서'
-                  라는 질문을 통해 문제의 원인을 찾으려는 시도는 긍정적입니다. Wonder 단계에서 '바다에서 많이 나오는 
-                  이유'에 대한 질문은 환경 문제에 대한 더 깊은 탐구 가능성을 보여줍니다.
-                </p>
-              </div>
-
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h5 className="font-medium text-gray-800 mb-2">개선점과 건설적 피드백</h5>
-                <p className="text-sm text-gray-700 text-left">
-                  Think 단계 강화: Think 단계에서 좀 더 구체적인 질문을 유도하면 사고의 깊이를 더할 수 있습니다. 
-                  예를 들어, "제주도에 페트병이 많은 이유가 관광객 때문일까, 아니면 다른 요인이 있을까?"와 같은 
-                  질문을 제안할 수 있습니다.<br/><br/>
-                  Wonder 단계 확장: Wonder 단계에서 질문의 범위를 넓혀 문제 해결 능력 및 비판적 사고를 향상
-                  시키도록 지도해주시면 더욱 효과적인 사고 활동이 될 것입니다.
-                </p>
-              </div>
-
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h5 className="font-medium text-gray-800 mb-2">추가 활동 제안</h5>
-                <p className="text-sm text-gray-700 text-left">
-                  See-Think-Wonder 활동 이후, 학생 스스로 정보를 찾아보거나 토론을 진행하는 활동을 추
-                  가하면 학습 효과를 높일 수 있습니다. 예를 들어, 페트병 관련 기사를 읽고 토론하거나, 페트병 재활용 방법에 
-                  대해 조사하는 활동을 제안할 수 있습니다.
-                </p>
-              </div>
+              {parsedAnalysis?.comprehensive ? (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h5 className="font-medium text-gray-800 mb-2">논리적 연결성과 사고의 깊이</h5>
+                  <div className="text-sm text-gray-700 text-left whitespace-pre-wrap">
+                    {parsedAnalysis.comprehensive}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h5 className="font-medium text-gray-800 mb-2">논리적 연결성과 사고의 깊이</h5>
+                  <p className="text-sm text-gray-700 text-left">
+                    {getDefaultAnalysisText(currentRoutineType)}
+                  </p>
+                </div>
+              )}
+              
+              {parsedAnalysis?.educational && (
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h5 className="font-medium text-gray-800 mb-2">개선점과 건설적 피드백</h5>
+                  <div className="text-sm text-gray-700 text-left whitespace-pre-wrap">
+                    {parsedAnalysis.educational}
+                  </div>
+                </div>
+              )}
+              
+              {/* stepByStep이 있는 경우 단계별 요약도 표시 */}
+              {parsedAnalysis?.stepByStep && (
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <h5 className="font-medium text-gray-800 mb-2">단계별 응답 품질 평가</h5>
+                  <div className="text-sm text-gray-700 text-left whitespace-pre-wrap">
+                    {parsedAnalysis.stepByStep}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -308,11 +333,11 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
               <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
-              사고루틴 단계별 학생 응답 피드백 및 평가
+              {getRoutineDisplayName(currentRoutineType)} 단계별 학생 응답 피드백 및 평가
             </h3>
             
             {Object.entries(stepInfoMap)
-              .filter(([stepKey]) => stepKey !== 'fourth_step')
+
               .map(([stepKey, stepInfo], index) => {
                 const studentResponse = response?.response_data?.[stepKey];
                 const aiAnalysis = parsedAnalysis?.individualSteps?.[stepKey];
