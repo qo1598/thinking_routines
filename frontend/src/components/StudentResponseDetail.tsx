@@ -440,19 +440,7 @@ const StudentResponseDetail: React.FC = () => {
         </div>
 
         {/* AI 분석 또는 교사 피드백 섹션 */}
-        {!aiAnalysis ? (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">AI 분석</h2>
-            <p className="text-gray-600 mb-4">AI가 학생의 사고루틴 응답을 분석하여 피드백을 제공합니다.</p>
-            <button
-              onClick={handleAIAnalysis}
-              disabled={analyzingAI || !response?.response_data}
-              className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {analyzingAI ? '분석 중...' : 'AI 분석 시작'}
-            </button>
-          </div>
-        ) : showTeacherFeedback ? (
+        {showTeacherFeedback ? (
           <TeacherFeedbackSection
             responseId={responseId!}
             parsedAnalysis={parsedAnalysis}
@@ -461,16 +449,57 @@ const StudentResponseDetail: React.FC = () => {
             onBack={handleBackFromTeacherFeedback}
           />
         ) : (
-          <AIAnalysisSection
-            parsedAnalysis={parsedAnalysis}
-            template={template}
-            room={room}
-            response={response}
-            currentAnalysisStep={currentAnalysisStep}
-            onPrevStep={prevAnalysisStep}
-            onNextStep={nextAnalysisStep}
-            onShowTeacherFeedback={handleShowTeacherFeedback}
-          />
+          <div>
+            {/* AI 분석 시작/재시작 버튼 */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">AI 분석</h2>
+                  <p className="text-gray-600">
+                    {aiAnalysis ? 'AI 분석을 재실행하거나 기존 결과를 확인할 수 있습니다.' : 'AI가 학생의 사고루틴 응답을 분석하여 피드백을 제공합니다.'}
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleAIAnalysis}
+                    disabled={analyzingAI || !response?.response_data}
+                    className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {analyzingAI ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>분석 중...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        <span>{aiAnalysis ? 'AI 재분석' : 'AI 분석 시작'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* AI 분석 결과 표시 */}
+            {aiAnalysis && (
+              <AIAnalysisSection
+                parsedAnalysis={parsedAnalysis}
+                template={template}
+                room={room}
+                response={response}
+                currentAnalysisStep={currentAnalysisStep}
+                onPrevStep={prevAnalysisStep}
+                onNextStep={nextAnalysisStep}
+                onShowTeacherFeedback={handleShowTeacherFeedback}
+              />
+            )}
+          </div>
         )}
       </div>
     </div>
