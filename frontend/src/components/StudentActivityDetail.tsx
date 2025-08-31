@@ -846,8 +846,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
 
         {/* 온라인 활동: AI 분석 결과 표시 완전 제거됨 */}
 
-        {/* 오프라인 활동: 5단계 교사 피드백 및 평가 (제거됨) */}
-        {false && activity.activity_type === 'offline' && activity.ai_analysis && (
+        {/* AI 분석 결과 표시 */}
+        {activity.ai_analysis && aiAnalysis && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               {aiAnalysis ? (
