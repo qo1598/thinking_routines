@@ -97,25 +97,135 @@ export const parseMarkdownToStructuredAI = (
 const getStepPatterns = (stepKey: string, stepLabel: string, routineType: string): RegExp[] => {
   const patterns: RegExp[] = [];
   
-  // See-Think-Wonder 전용 실제 AI 텍스트 패턴 (콘솔에서 확인된 정확한 패턴)
+  // 사고루틴 유형별 전용 패턴 정의
   if (routineType === 'see-think-wonder') {
     if (stepKey === 'see') {
       patterns.push(
         // 실제 텍스트: *   **See (본 것):** "내용"
         /\*\s+\*\*See\s+\(본\s+것\)\*\*:\s*"([^"]+)"/s,
-        /\*\s*\*\*See\s*\(본\s*것\)\*\*:?\s*"([^"]+)"/s
+        /\*\s*\*\*See\s*\(본\s*것\)\*\*:?\s*"([^"]+)"/s,
+        /###\s*See\s*\(보기\)\s*\n([\s\S]*?)(?=###|##|$)/s
       );
     } else if (stepKey === 'think') {
       patterns.push(
         // 실제 텍스트: *   **Think (생각한 것):** "내용"
         /\*\s+\*\*Think\s+\(생각한\s+것\)\*\*:\s*"([^"]+)"/s,
-        /\*\s*\*\*Think\s*\(생각한\s*것\)\*\*:?\s*"([^"]+)"/s
+        /\*\s*\*\*Think\s*\(생각한\s*것\)\*\*:?\s*"([^"]+)"/s,
+        /###\s*Think\s*\(생각하기\)\s*\n([\s\S]*?)(?=###|##|$)/s
       );
     } else if (stepKey === 'wonder') {
       patterns.push(
         // 실제 텍스트: *   **Wonder (궁금한 점):** "내용"
         /\*\s+\*\*Wonder\s+\(궁금한\s+점\)\*\*:\s*"([^"]+)"/s,
-        /\*\s*\*\*Wonder\s*\(궁금한\s*점\)\*\*:?\s*"([^"]+)"/s
+        /\*\s*\*\*Wonder\s*\(궁금한\s*점\)\*\*:?\s*"([^"]+)"/s,
+        /###\s*Wonder\s*\(궁금하기\)\s*\n([\s\S]*?)(?=###|##|$)/s
+      );
+    }
+  } else if (routineType === '4c') {
+    if (stepKey === 'connect') {
+      patterns.push(
+        /###\s*Connect\s*\(연결하기\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Connect\s*\(연결하기\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    } else if (stepKey === 'challenge') {
+      patterns.push(
+        /###\s*Challenge\s*\(도전하기\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Challenge\s*\(도전하기\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    } else if (stepKey === 'concepts') {
+      patterns.push(
+        /###\s*Concepts\s*\(개념\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Concepts\s*\(개념\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    } else if (stepKey === 'changes') {
+      patterns.push(
+        /###\s*Changes\s*\(변화\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Changes\s*\(변화\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    }
+  } else if (routineType === 'connect-extend-challenge') {
+    if (stepKey === 'connect') {
+      patterns.push(
+        /###\s*Connect\s*\(연결하기\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Connect\s*\(연결하기\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    } else if (stepKey === 'extend') {
+      patterns.push(
+        /###\s*Extend\s*\(확장하기\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Extend\s*\(확장하기\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    } else if (stepKey === 'challenge') {
+      patterns.push(
+        /###\s*Challenge\s*\(도전하기\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Challenge\s*\(도전하기\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    }
+  } else if (routineType === 'circle-of-viewpoints') {
+    if (stepKey === 'viewpoint_select') {
+      patterns.push(
+        /###\s*관점\s*정하기\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*관점\s*정하기\*\*:?\s*([\s\S]*?)(?=\*\*[^*]*\*\*|$)/s
+      );
+    } else if (stepKey === 'viewpoint_thinking') {
+      patterns.push(
+        /###\s*관점에\s*따라\s*생각\s*쓰기\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*관점에\s*따라\s*생각\s*쓰기\*\*:?\s*([\s\S]*?)(?=\*\*[^*]*\*\*|$)/s
+      );
+    } else if (stepKey === 'viewpoint_concerns') {
+      patterns.push(
+        /###\s*관점에\s*대한\s*염려되거나\s*더\s*알고\s*싶은\s*것\s*쓰기\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*관점에\s*대한\s*염려되거나\s*더\s*알고\s*싶은\s*것\s*쓰기\*\*:?\s*([\s\S]*?)(?=\*\*[^*]*\*\*|$)/s
+      );
+    }
+  } else if (routineType === 'frayer-model') {
+    if (stepKey === 'definition') {
+      patterns.push(
+        /###\s*Definition\s*\(정의\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Definition\s*\(정의\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    } else if (stepKey === 'characteristics') {
+      patterns.push(
+        /###\s*Characteristics\s*\(특징\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Characteristics\s*\(특징\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    } else if (stepKey === 'examples') {
+      patterns.push(
+        /###\s*Examples\s*\(예시\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Examples\s*\(예시\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    } else if (stepKey === 'non_examples') {
+      patterns.push(
+        /###\s*Non-Examples\s*\(반례\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Non-Examples\s*\(반례\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    }
+  } else if (routineType === 'used-to-think-now-think') {
+    if (stepKey === 'used_to_think') {
+      patterns.push(
+        /###\s*Used\s*to\s*Think\s*\(이전\s*생각\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Used\s*to\s*Think\s*\(이전\s*생각\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    } else if (stepKey === 'now_think') {
+      patterns.push(
+        /###\s*Now\s*Think\s*\(현재\s*생각\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Now\s*Think\s*\(현재\s*생각\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    }
+  } else if (routineType === 'think-puzzle-explore') {
+    if (stepKey === 'think') {
+      patterns.push(
+        /###\s*Think\s*\(생각하기\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Think\s*\(생각하기\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    } else if (stepKey === 'puzzle') {
+      patterns.push(
+        /###\s*Puzzle\s*\(퍼즐\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Puzzle\s*\(퍼즐\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+      );
+    } else if (stepKey === 'explore') {
+      patterns.push(
+        /###\s*Explore\s*\(탐구하기\)\s*\n([\s\S]*?)(?=###|##|$)/s,
+        /\*\*Explore\s*\(탐구하기\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
       );
     }
   }
