@@ -158,23 +158,42 @@ const getStepPatterns = (stepKey: string, stepLabel: string, routineType: string
   } else if (routineType === '4c') {
     if (stepKey === 'connect') {
       patterns.push(
+        // 기본 패턴들
         /###\s*Connect\s*\(연결하기\)\s*\n([\s\S]*?)(?=###|##|$)/s,
-        /\*\*Connect\s*\(연결하기\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+        /\*\*Connect\s*\(연결하기\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s,
+        // 실제 응답에서 나타나는 패턴들
+        /\*\s*\*\*Connect\s*\([^)]*\)\*\*:?\s*"([^"]+)"/si,
+        /Connect\s*\([^)]*\):?\s*([^\n]*)/si,
+        /연결하기[:\s]*([^\n]*)/si,
+        // 더 유연한 패턴
+        /Connect[^:]*:?\s*(.{20,}?)(?=Challenge|Concept|Change|##|###|$)/si
       );
     } else if (stepKey === 'challenge') {
       patterns.push(
         /###\s*Challenge\s*\(도전하기\)\s*\n([\s\S]*?)(?=###|##|$)/s,
-        /\*\*Challenge\s*\(도전하기\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+        /\*\*Challenge\s*\(도전하기\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s,
+        /\*\s*\*\*Challenge\s*\([^)]*\)\*\*:?\s*"([^"]+)"/si,
+        /Challenge\s*\([^)]*\):?\s*([^\n]*)/si,
+        /도전하기[:\s]*([^\n]*)/si,
+        /Challenge[^:]*:?\s*(.{20,}?)(?=Concept|Change|##|###|$)/si
       );
     } else if (stepKey === 'concepts') {
       patterns.push(
         /###\s*Concepts\s*\(개념\)\s*\n([\s\S]*?)(?=###|##|$)/s,
-        /\*\*Concepts\s*\(개념\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+        /\*\*Concepts\s*\(개념\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s,
+        /\*\s*\*\*Concepts\s*\([^)]*\)\*\*:?\s*"([^"]+)"/si,
+        /Concepts\s*\([^)]*\):?\s*([^\n]*)/si,
+        /개념[:\s]*([^\n]*)/si,
+        /Concept[^:]*:?\s*(.{20,}?)(?=Change|##|###|$)/si
       );
     } else if (stepKey === 'changes') {
       patterns.push(
         /###\s*Changes\s*\(변화\)\s*\n([\s\S]*?)(?=###|##|$)/s,
-        /\*\*Changes\s*\(변화\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s
+        /\*\*Changes\s*\(변화\)\*\*:?\s*([\s\S]*?)(?=\*\*[A-Z]|$)/s,
+        /\*\s*\*\*Changes\s*\([^)]*\)\*\*:?\s*"([^"]+)"/si,
+        /Changes\s*\([^)]*\):?\s*([^\n]*)/si,
+        /변화[:\s]*([^\n]*)/si,
+        /Change[^:]*:?\s*(.{20,}?)(?=##|###|종합|$)/si
       );
     }
   } else if (routineType === 'connect-extend-challenge') {

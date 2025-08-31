@@ -244,10 +244,21 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
       } else {
         // 마크다운 텍스트 형태
         console.log('📝 마크다운 텍스트 형태 AI 분석, 파싱 시도...');
-        console.log('📝 텍스트 미리보기:', aiAnalysis.substring(0, 500) + '...');
+        console.log('📝 전체 AI 응답 텍스트:', aiAnalysis);
+        console.log('📝 텍스트 길이:', aiAnalysis.length);
         
         const routineType = activityData?.routine_type || 'see-think-wonder';
         console.log('🎯 사고루틴 유형:', routineType);
+        
+        // 실제 AI 응답에서 특정 키워드들이 있는지 확인
+        const keywords = ['Connect', 'Challenge', 'Concepts', 'Changes', '연결하기', '도전하기', '개념', '변화'];
+        keywords.forEach(keyword => {
+          const found = aiAnalysis.includes(keyword);
+          if (found) {
+            const lines = aiAnalysis.split('\n').filter(line => line.includes(keyword));
+            console.log(`🔍 키워드 "${keyword}" 발견된 줄들:`, lines);
+          }
+        });
         
         // aiAnalysisUtils의 parseMarkdownToStructuredAI 사용
         const structuredData = parseMarkdownToStructuredAI(aiAnalysis, routineType);
