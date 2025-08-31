@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { generateStepInfoMap } from '../lib/thinkingRoutineUtils';
 
 interface AnalysisResult {
   extractedText: string;
@@ -1470,16 +1471,8 @@ const ThinkingRoutineAnalysis: React.FC = () => {
                 </div>
 
                 {Object.entries(parsedAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
-                  // 단계별 정보 매핑
-                  const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
-                    'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
-                    'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
-                    'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
-                    'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-                    'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
-                    'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
-                    'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' }
-                  };
+                  // 표준 단계별 정보 매핑 사용
+                  const stepInfoMap = generateStepInfoMap(selectedRoutine || 'see-think-wonder');
 
                   const stepInfo = stepInfoMap[stepKey];
                   if (!stepInfo) return null;

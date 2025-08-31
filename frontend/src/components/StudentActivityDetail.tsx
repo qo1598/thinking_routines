@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps } from '../lib/thinkingRoutineUtils';
+import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps, generateStepInfoMap } from '../lib/thinkingRoutineUtils';
 import TeacherFeedbackReadOnly from './TeacherFeedbackReadOnly';
 import TeacherMaterialsSection from './TeacherMaterialsSection';
 
@@ -538,18 +538,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                       <div className="space-y-4">
                         {Object.entries(aiAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
                           // 단계별 정보 매핑
-                          const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
-                            'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
-                            'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
-                            'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
-                            'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-                            'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
-                            'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
-                            'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' },
-                            'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
-                            'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
-                            'examples': { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
-                          };
+                          const stepInfoMap = generateStepInfoMap(activityData?.routine_type || 'see-think-wonder');
 
                           const stepInfo = stepInfoMap[stepKey];
                           if (!stepInfo || !stepContent) return null;
@@ -661,19 +650,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
               {aiAnalysis && aiAnalysis.individualSteps && Object.keys(aiAnalysis.individualSteps).length > 0 ? (
                 <div className="space-y-6">
                   {Object.entries(aiAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
-                    // 단계별 정보 매핑
-                    const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
-                      'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
-                      'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
-                      'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
-                      'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-                      'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
-                      'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
-                      'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' },
-                      'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
-                      'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
-                      'examples': { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
-                    };
+                    // 표준 단계별 정보 매핑 사용
+                    const stepInfoMap = generateStepInfoMap(activityData?.routine_type || 'see-think-wonder');
 
                     const stepInfo = stepInfoMap[stepKey];
                     if (!stepInfo) return null;
@@ -779,18 +757,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                       <div className="space-y-4">
                         {Object.entries(aiAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
                           // 단계별 정보 매핑
-                          const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
-                            'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
-                            'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
-                            'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
-                            'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-                            'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
-                            'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
-                            'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' },
-                            'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
-                            'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
-                            'examples': { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
-                          };
+                          const stepInfoMap = generateStepInfoMap(activityData?.routine_type || 'see-think-wonder');
 
                           const stepInfo = stepInfoMap[stepKey];
                           if (!stepInfo || !stepContent) return null;
@@ -914,18 +881,8 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                 <div className="space-y-4 mb-6">
                   <h4 className="text-base font-semibold text-gray-800">단계별 교사 피드백</h4>
                   {Object.entries(aiAnalysis.teacherFeedback).map(([stepKey, feedback], index) => {
-                    const stepInfoMap: {[key: string]: {title: string, subtitle: string, color: string}} = {
-                      'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
-                      'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
-                      'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' },
-                      'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-                      'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
-                      'concepts': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
-                      'changes': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' },
-                      'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
-                      'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
-                      'examples': { title: 'Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
-                    };
+                    // 표준 단계별 정보 매핑 사용
+                    const stepInfoMap = generateStepInfoMap(activityData?.routine_type || 'see-think-wonder');
 
                     const stepInfo = stepInfoMap[stepKey];
                     if (!stepInfo || !feedback) return null;

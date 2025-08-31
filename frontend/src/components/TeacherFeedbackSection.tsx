@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { generateStepInfoMap } from '../lib/thinkingRoutineUtils';
 
 interface ParsedAnalysis {
   individualSteps?: {[key: string]: string | string[]};
@@ -15,45 +16,7 @@ interface TeacherFeedbackSectionProps {
   onBack: () => void;
 }
 
-// 사고루틴 유형별 단계 정보 매핑
-const stepInfoMaps: {[routineType: string]: {[stepKey: string]: {title: string, subtitle: string, color: string}}} = {
-  'see-think-wonder': {
-    'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
-    'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
-    'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' }
-  },
-  '4c': {
-    'see': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-    'think': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
-    'wonder': { title: 'Concepts', subtitle: '개념 파악', color: 'bg-green-500' },
-    'fourth_step': { title: 'Changes', subtitle: '변화 제안', color: 'bg-purple-500' }
-  },
-  'frayer-model': {
-    'see': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
-    'think': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
-    'wonder': { title: 'Examples & Non-Examples', subtitle: '예시와 반례', color: 'bg-purple-500' }
-  },
-  'circle-of-viewpoints': {
-    'see': { title: 'Viewpoints', subtitle: '관점 탐색', color: 'bg-blue-500' },
-    'think': { title: 'Perspective', subtitle: '관점 선택', color: 'bg-green-500' },
-    'wonder': { title: 'Questions', subtitle: '관점별 질문', color: 'bg-purple-500' }
-  },
-  'connect-extend-challenge': {
-    'see': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-    'think': { title: 'Extend', subtitle: '확장하기', color: 'bg-green-500' },
-    'wonder': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' }
-  },
-  'used-to-think-now-think': {
-    'see': { title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500' },
-    'think': { title: 'Now Think', subtitle: '현재 생각', color: 'bg-green-500' },
-    'wonder': { title: 'Why Changed', subtitle: '변화 이유', color: 'bg-purple-500' }
-  },
-  'think-puzzle-explore': {
-    'see': { title: 'Think', subtitle: '생각하기', color: 'bg-blue-500' },
-    'think': { title: 'Puzzle', subtitle: '퍼즐', color: 'bg-yellow-500' },
-    'wonder': { title: 'Explore', subtitle: '탐구하기', color: 'bg-green-500' }
-  }
-};
+
 
 const TeacherFeedbackSection: React.FC<TeacherFeedbackSectionProps> = ({
   responseId,
@@ -99,7 +62,7 @@ const TeacherFeedbackSection: React.FC<TeacherFeedbackSectionProps> = ({
   };
 
   const currentRoutineType = template?.routine_type || room?.thinking_routine_type || 'see-think-wonder';
-  const stepInfoMap = stepInfoMaps[currentRoutineType] || stepInfoMaps['see-think-wonder'];
+  const stepInfoMap = generateStepInfoMap(currentRoutineType);
 
   const gradientColors: {[key: string]: string} = {
     'bg-blue-500': 'from-blue-50 to-blue-100 border-blue-200',
