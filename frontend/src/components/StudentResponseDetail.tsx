@@ -100,6 +100,7 @@ const StudentResponseDetail: React.FC = () => {
         if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
           console.log('✅ StudentResponseDetail 구조화된 데이터 발견');
           setParsedAnalysis({
+            comprehensive: parsed.aiAnalysis.comprehensive || aiAnalysis,
             summary: parsed.aiAnalysis.comprehensive || aiAnalysis,
             suggestions: parsed.aiAnalysis.educational || aiAnalysis,
             individualSteps: parsed.aiAnalysis.individualSteps
@@ -115,7 +116,14 @@ const StudentResponseDetail: React.FC = () => {
       const structuredData = parseMarkdownToStructuredAI(aiAnalysis, routineType);
       console.log('🔄 StudentResponseDetail 구조화된 데이터:', structuredData);
       
+      console.log('🎯 StudentResponseDetail 구조화된 데이터 매핑:', {
+        structuredDataComprehensive: structuredData.comprehensive,
+        structuredDataEducational: structuredData.educational,
+        structuredDataIndividualSteps: structuredData.individualSteps
+      });
+      
       setParsedAnalysis({
+        comprehensive: structuredData.comprehensive || aiAnalysis,
         summary: structuredData.comprehensive || aiAnalysis,
         suggestions: structuredData.educational || aiAnalysis,
         individualSteps: structuredData.individualSteps || {}
@@ -132,6 +140,7 @@ const StudentResponseDetail: React.FC = () => {
       });
 
       setParsedAnalysis({
+        comprehensive: aiAnalysis,
         summary: aiAnalysis,
         suggestions: aiAnalysis,
         individualSteps: individualSteps
