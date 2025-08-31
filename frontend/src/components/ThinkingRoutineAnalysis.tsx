@@ -876,12 +876,15 @@ const ThinkingRoutineAnalysis: React.FC = () => {
         ai_analysis: JSON.stringify(structuredAnalysis), // JSON 형식으로 저장
         teacher_feedback: '', // 레거시 필드는 빈 값으로 유지
         confidence_score: analysisResult.confidence,
-        response_data: { // 기본 response_data 구조 (JSONB 필수)
+        response_data: { // 추출된 학생 응답 데이터 포함
           type: 'offline_analysis',
           analysisDate: new Date().toISOString(),
           originalFileName: uploadedImage.name,
           routineType: selectedRoutine,
-          analysisComplete: true
+          analysisComplete: true,
+          extractedText: analysisResult.extractedText,
+          // 파싱된 학생 응답도 저장
+          ...parsedAnalysis.individualSteps
         },
         is_draft: false,
         submitted_at: new Date().toISOString(),

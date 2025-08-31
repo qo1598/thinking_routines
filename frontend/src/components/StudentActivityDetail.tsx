@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps, generateStepInfoMap } from '../lib/thinkingRoutineUtils';
+import { parseMarkdownToStructuredAI } from '../lib/aiAnalysisUtils';
 import TeacherFeedbackReadOnly from './TeacherFeedbackReadOnly';
 import TeacherMaterialsSection from './TeacherMaterialsSection';
 
@@ -207,32 +208,55 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
 
   // AI 분석 결과 파싱
   const parseAIAnalysis = (aiAnalysis: string) => {
+    console.log('🔍 원본 AI 분석 데이터 (타입:', typeof aiAnalysis, '):', aiAnalysis);
+    
+    if (!aiAnalysis) {
+      console.log('❌ AI 분석 데이터가 없습니다');
+      return null;
+    }
+    
     try {
-      const parsed = JSON.parse(aiAnalysis);
-      console.log('🔍 AI 분석 원본 데이터:', parsed);
-      
-      // ThinkingRoutineAnalysis에서 저장한 구조화된 형태 처리
-      if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
-        console.log('✅ 구조화된 AI 분석 데이터 발견');
-        return {
-          individualSteps: parsed.aiAnalysis.individualSteps,
-          comprehensive: parsed.aiAnalysis.comprehensive,
-          educational: parsed.aiAnalysis.educational,
-          stepByStep: parsed.aiAnalysis.stepByStep,
-          teacherFeedback: parsed.teacherFeedback?.individualSteps || {}
-        };
-      }
-      
-      // 기존 형태 처리 (직접 individualSteps가 있는 경우)
-      if (parsed.individualSteps) {
-        console.log('✅ 기존 형태 AI 분석 데이터 발견');
+      // JSON 형태인지 확인
+      if (aiAnalysis.startsWith('{') || aiAnalysis.startsWith('[')) {
+        const parsed = JSON.parse(aiAnalysis);
+        console.log('🔍 JSON 파싱된 AI 분석 데이터:', parsed);
+        
+        // ThinkingRoutineAnalysis에서 저장한 구조화된 형태 처리
+        if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
+          console.log('✅ 구조화된 AI 분석 데이터 발견');
+          return {
+            individualSteps: parsed.aiAnalysis.individualSteps,
+            comprehensive: parsed.aiAnalysis.comprehensive,
+            educational: parsed.aiAnalysis.educational,
+            stepByStep: parsed.aiAnalysis.stepByStep,
+            teacherFeedback: parsed.teacherFeedback?.individualSteps || {}
+          };
+        }
+        
+        // 기존 형태 처리 (직접 individualSteps가 있는 경우)
+        if (parsed.individualSteps) {
+          console.log('✅ 기존 형태 AI 분석 데이터 발견');
+          return parsed;
+        }
+        
+        console.log('⚠️ 알 수 없는 JSON AI 분석 데이터 구조:', parsed);
         return parsed;
+      } else {
+        // 마크다운 텍스트 형태
+        console.log('📝 마크다운 텍스트 형태 AI 분석, 파싱 시도...');
+        console.log('📝 텍스트 미리보기:', aiAnalysis.substring(0, 500) + '...');
+        
+        const routineType = activityData?.routine_type || 'see-think-wonder';
+        console.log('🎯 사고루틴 유형:', routineType);
+        
+        // aiAnalysisUtils의 parseMarkdownToStructuredAI 사용
+        const structuredData = parseMarkdownToStructuredAI(aiAnalysis, routineType);
+        console.log('🔄 파싱된 구조화 데이터:', structuredData);
+        return structuredData;
       }
-      
-      console.log('⚠️ 알 수 없는 AI 분석 데이터 구조:', parsed);
-      return parsed;
     } catch (error) {
       console.error('❌ AI 분석 데이터 파싱 오류:', error);
+      console.log('❌ 오류 발생한 원본 데이터:', aiAnalysis);
       return null;
     }
   };
@@ -688,8 +712,41 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                         
                         {/* 학생 응답 */}
                         {(() => {
+                          console.log('🎯 학생 응답 데이터 확인:', {
+                            stepKey,
+                            responseData: activityData?.response_data,
+                            routineType: activityData?.routine_type
+                          });
+                          
                           const mappedResponses = mapResponseToRoutineSteps(activityData?.response_data, activityData?.routine_type || 'see-think-wonder');
-                          const studentResponse = mappedResponses[stepKey];
+                          console.log('🔄 매핑된 응답:', mappedResponses);
+                          
+                          let studentResponse = mappedResponses[stepKey];
+                          
+                          // response_data에 응답이 없는 경우, AI 분석에서 학생 응답 추출 시도
+                          if (!studentResponse && aiAnalysis?.stepByStep) {
+                            console.log('🔄 AI 분석에서 학생 응답 추출 시도');
+                            
+                            // AI 분석 텍스트에서 해당 단계의 학생 응답 추출
+                            const stepLabel = stepInfo.title;
+                            const patterns = [
+                              new RegExp(`\\*\\s*\\*\\*${stepLabel}.*?\\*\\*:?\\s*"([^"]+)"`, 'si'),
+                              new RegExp(`###\\s*${stepLabel}.*?\\n.*?학생.*?응답.*?[:：]\\s*([^\\n]+)`, 'si'),
+                              new RegExp(`${stepLabel}.*?[:：]\\s*"([^"]+)"`, 'si'),
+                              new RegExp(`\\*\\s*\\*\\*${stepLabel}\\s*\\([^)]*\\)\\*\\*:?\\s*"([^"]+)"`, 'si')
+                            ];
+                            
+                            for (const pattern of patterns) {
+                              const match = aiAnalysis.stepByStep.match(pattern);
+                              if (match && match[1]) {
+                                studentResponse = match[1].trim();
+                                console.log(`✅ AI 분석에서 ${stepKey} 학생 응답 추출:`, studentResponse);
+                                break;
+                              }
+                            }
+                          }
+                          
+                          console.log(`🎓 최종 ${stepKey} 단계 학생 응답:`, studentResponse);
                           
                           return studentResponse ? (
                             <div className="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-200">
