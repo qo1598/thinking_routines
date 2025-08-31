@@ -457,7 +457,13 @@ const StudentResponseDetail: React.FC = () => {
               };
               
               return Object.entries(mappedResponses)
-                .filter(([key, value]) => value && value.trim().length > 0)
+                .filter(([key, value]) => {
+                  // Think-Puzzle-Explore의 경우 빈 값도 표시 (단계가 누락되지 않도록)
+                  if (routineType === 'think-puzzle-explore') {
+                    return true; // 모든 단계 표시
+                  }
+                  return value && value.trim().length > 0;
+                })
                 .map(([key, value]) => {
                   const stepLabel = stepLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
                   
@@ -505,7 +511,11 @@ const StudentResponseDetail: React.FC = () => {
                         <h3 className="font-medium text-white">{stepLabel}</h3>
                       </div>
                       <div className="p-4 bg-white">
-                        <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{value as string}</p>
+                        {value && (value as string).trim().length > 0 ? (
+                          <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{value as string}</p>
+                        ) : (
+                          <p className="text-gray-400 italic">아직 작성되지 않았습니다.</p>
+                        )}
                       </div>
                     </div>
                   );

@@ -244,17 +244,29 @@ export const mapResponseToRoutineSteps = (responseData: any, routineType: string
       'think': 'now_think'
     },
     'think-puzzle-explore': {
+      // 올바른 키 매핑 
       'think': 'think',
-      'puzzle': 'puzzle',
+      'puzzle': 'puzzle', 
       'explore': 'explore',
-      // 이전 키들도 지원
-      'see': 'think',
-      'wonder': 'explore',
-      'fourth_step': 'puzzle'  // fourth_step을 puzzle로 매핑
+      // 기존 데이터 호환성: 잘못 저장된 키들을 올바른 키로 변환
+      'see': 'think',        // see("1") → Think 단계
+      // 'think'는 이미 위에서 정의되어 충돌, 아래에서 특별 처리 필요
+      'wonder': 'explore'    // wonder("3") → Explore 단계
     }
   };
 
   const keyMappings = routineKeyMappings[routineType] || {};
+
+  // Think-Puzzle-Explore 특별 처리: 기존 잘못된 키 구조 수정
+  if (routineType === 'think-puzzle-explore') {
+    // 기존 데이터: {see: "1", think: "2", wonder: "3"} → {think: "1", puzzle: "2", explore: "3"}
+    if (responseData.see && responseData.think && responseData.wonder) {
+      mappedResponse.think = responseData.see as string;     // see("1") → think
+      mappedResponse.puzzle = responseData.think as string;  // think("2") → puzzle  
+      mappedResponse.explore = responseData.wonder as string; // wonder("3") → explore
+      return mappedResponse;
+    }
+  }
 
   // 응답 데이터의 각 키를 사고루틴 단계에 매핑
   Object.entries(responseData).forEach(([key, value]) => {

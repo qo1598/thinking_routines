@@ -130,16 +130,16 @@ const ROUTINE_CONFIGS = {
   },
   'think-puzzle-explore': {
     name: 'Think-Puzzle-Explore',
-    steps: ['see', 'think', 'wonder'],
+    steps: ['think', 'puzzle', 'explore'],
     stepLabels: {
-      see: { title: 'Think', subtitle: '생각하기' },
-      think: { title: 'Puzzle', subtitle: '퍼즐' },
-      wonder: { title: 'Explore', subtitle: '탐구하기' }
+      think: { title: 'Think', subtitle: '생각하기' },
+      puzzle: { title: 'Puzzle', subtitle: '퍼즐' },
+      explore: { title: 'Explore', subtitle: '탐구하기' }
     },
     defaultQuestions: {
-      see: '이 주제에 대해 무엇을 알고 있다고 생각하나요?',
-      think: '무엇이 퍼즐이나 의문점인가요?',
-      wonder: '이 퍼즐을 어떻게 탐구해보고 싶나요?'
+      think: '이 주제에 대해 무엇을 알고 있다고 생각하나요?',
+      puzzle: '무엇이 퍼즐이나 의문점인가요?',
+      explore: '이 퍼즐을 어떻게 탐구해보고 싶나요?'
     }
   }
 };
