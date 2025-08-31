@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { routineStepLabels, routineTypeLabels, generateStepInfoMap } from '../lib/thinkingRoutineUtils';
 
 interface ParsedAnalysis {
   individualSteps?: {[key: string]: string | string[]};
@@ -18,58 +19,11 @@ interface AIAnalysisSectionProps {
   onShowTeacherFeedback: () => void;
 }
 
-// 사고루틴 유형별 단계 정보 매핑 (실제 데이터 키와 일치)
-const stepInfoMaps: {[routineType: string]: {[stepKey: string]: {title: string, subtitle: string, color: string}}} = {
-  'see-think-wonder': {
-    'see': { title: 'See', subtitle: '보기', color: 'bg-blue-500' },
-    'think': { title: 'Think', subtitle: '생각하기', color: 'bg-green-500' },
-    'wonder': { title: 'Wonder', subtitle: '궁금하기', color: 'bg-purple-500' }
-  },
-  '4c': {
-    'connect': { title: 'Connect', subtitle: '연결하기', color: 'bg-blue-500' },
-    'challenge': { title: 'Challenge', subtitle: '도전하기', color: 'bg-red-500' },
-    'concepts': { title: 'Concepts', subtitle: '개념', color: 'bg-green-500' },
-    'changes': { title: 'Changes', subtitle: '변화', color: 'bg-purple-500' }
-  },
-  'frayer-model': {
-    'definition': { title: 'Definition', subtitle: '정의', color: 'bg-blue-500' },
-    'characteristics': { title: 'Characteristics', subtitle: '특징', color: 'bg-green-500' },
-    'examples': { title: 'Examples', subtitle: '예시', color: 'bg-yellow-500' },
-    'non_examples': { title: 'Non-Examples', subtitle: '반례', color: 'bg-red-500' }
-  },
-  'circle-of-viewpoints': {
-    'viewpoint_select': { title: 'Viewpoint Select', subtitle: '관점 정하기', color: 'bg-blue-500' },
-    'viewpoint_thinking': { title: 'Viewpoint Thinking', subtitle: '관점에 따라 생각 쓰기', color: 'bg-green-500' },
-    'viewpoint_concerns': { title: 'Viewpoint Concerns', subtitle: '관점에 대한 염려나 궁금한 점', color: 'bg-purple-500' }
-  },
-  'connect-extend-challenge': {
-    'connect': { title: 'Connect', subtitle: '연결', color: 'bg-blue-500' },
-    'extend': { title: 'Extend', subtitle: '확장', color: 'bg-green-500' },
-    'challenge': { title: 'Challenge', subtitle: '도전', color: 'bg-red-500' }
-  },
-  'used-to-think-now-think': {
-    'used_to_think': { title: 'Used to Think', subtitle: '이전 생각', color: 'bg-blue-500' },
-    'now_think': { title: 'Now Think', subtitle: '현재 생각', color: 'bg-green-500' }
-  },
-  'think-puzzle-explore': {
-    'think': { title: 'Think', subtitle: '생각하기', color: 'bg-blue-500' },
-    'puzzle': { title: 'Puzzle', subtitle: '질문하기', color: 'bg-yellow-500' },
-    'explore': { title: 'Explore', subtitle: '탐구하기', color: 'bg-green-500' }
-  }
-};
 
-// 사고루틴 유형별 표시명 매핑
+
+// 사고루틴 유형별 표시명 매핑 (표준 routineTypeLabels 사용)
 const getRoutineDisplayName = (routineType: string): string => {
-  const displayNames: {[key: string]: string} = {
-    'see-think-wonder': 'See-Think-Wonder',
-    '4c': '4C (Connect-Challenge-Concepts-Changes)',
-    'connect-extend-challenge': 'Connect-Extend-Challenge',
-    'circle-of-viewpoints': 'Circle of Viewpoints',
-    'frayer-model': 'Frayer Model',
-    'used-to-think-now-think': 'I Used to Think... Now I Think...',
-    'think-puzzle-explore': 'Think-Puzzle-Explore'
-  };
-  return displayNames[routineType] || 'See-Think-Wonder';
+  return routineTypeLabels[routineType] || routineTypeLabels['see-think-wonder'];
 };
 
 // 기본 분석 텍스트 생성
@@ -97,7 +51,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
   onShowTeacherFeedback
 }) => {
   const currentRoutineType = template?.routine_type || room?.thinking_routine_type || 'see-think-wonder';
-  const stepInfoMap = stepInfoMaps[currentRoutineType] || stepInfoMaps['see-think-wonder'];
+  const stepInfoMap = generateStepInfoMap(currentRoutineType);
 
   // 교사 피드백 및 점수 상태 관리
   const [teacherFeedbacks, setTeacherFeedbacks] = useState<{[stepKey: string]: string}>({});

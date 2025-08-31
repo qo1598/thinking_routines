@@ -280,6 +280,48 @@ export const mapResponseToRoutineSteps = (responseData: any, routineType: string
   return mappedResponse;
 };
 
+// 단계별 색상 매핑
+const stepColors: { [stepIndex: number]: string } = {
+  0: 'bg-blue-500',
+  1: 'bg-green-500', 
+  2: 'bg-purple-500',
+  3: 'bg-red-500',
+  4: 'bg-yellow-500',
+  5: 'bg-indigo-500'
+};
+
+// routineStepLabels를 기반으로 stepInfoMap 생성하는 함수
+export const generateStepInfoMap = (routineType: string): {[stepKey: string]: {title: string, subtitle: string, color: string}} => {
+  const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
+  const stepInfoMap: {[stepKey: string]: {title: string, subtitle: string, color: string}} = {};
+  
+  Object.entries(stepLabels).forEach(([stepKey, label], index) => {
+    // 라벨에서 제목과 부제목 분리 (예: "Connect (연결하기)" -> title: "Connect", subtitle: "연결하기")
+    const match = label.match(/^(.+?)\s*\((.+?)\)$/) || label.match(/^(.+)$/);
+    let title = '';
+    let subtitle = '';
+    
+    if (match) {
+      if (match[2]) {
+        title = match[1].trim();
+        subtitle = match[2].trim();
+      } else {
+        // 괄호가 없는 경우 (circle-of-viewpoints 등)
+        title = match[1].trim();
+        subtitle = match[1].trim();
+      }
+    }
+    
+    stepInfoMap[stepKey] = {
+      title,
+      subtitle,
+      color: stepColors[index] || 'bg-gray-500'
+    };
+  });
+  
+  return stepInfoMap;
+};
+
 // AI 분석 결과를 파싱하는 함수
 export const parseAIAnalysis = (aiAnalysis: string, routineType: string) => {
   if (!aiAnalysis || !routineType) return null;
