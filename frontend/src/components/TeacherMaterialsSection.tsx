@@ -124,11 +124,13 @@ const TeacherMaterialsSection: React.FC<TeacherMaterialsSectionProps> = ({
                 <span className="text-green-600 font-medium">이미지 자료</span>
               </div>
               <div className="bg-white p-3 rounded border border-green-200">
-                <img 
-                  src={templateContent.image_url} 
-                  alt="교사 제공 이미지"
-                  className="max-w-full h-auto rounded-lg"
-                />
+                <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 비율로 영상과 동일하게 */ }}>
+                  <img 
+                    src={templateContent.image_url} 
+                    alt="교사 제공 이미지"
+                    className="absolute top-0 left-0 w-full h-full object-contain rounded"
+                  />
+                </div>
               </div>
             </div>
           )}

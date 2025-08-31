@@ -452,19 +452,27 @@ const TeacherRoomDetail: React.FC = () => {
 
           {template && !showTemplateForm && (
             <div className="space-y-4">
-              {template.content.image_url && (
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">이미지</p>
-                  <div className="flex justify-center">
-                    <img src={template.content.image_url} alt="활동 이미지" className="max-w-md max-h-64 rounded-lg shadow-sm" />
-                  </div>
-                </div>
-              )}
               {template.content.text_content && (
                 <div>
                   <p className="text-sm text-gray-600 mb-2">텍스트 내용</p>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <p className="text-gray-900 whitespace-pre-wrap">{template.content.text_content}</p>
+                  </div>
+                </div>
+              )}
+              {template.content.image_url && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">이미지</p>
+                  <div className="flex justify-center">
+                    <div className="w-full max-w-2xl">
+                      <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                        <img 
+                          src={template.content.image_url} 
+                          alt="활동 이미지" 
+                          className="absolute inset-0 w-full h-full object-contain rounded-lg" 
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
