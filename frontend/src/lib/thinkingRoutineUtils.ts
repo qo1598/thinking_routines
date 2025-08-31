@@ -249,7 +249,8 @@ export const mapResponseToRoutineSteps = (responseData: any, routineType: string
       'explore': 'explore',
       // 이전 키들도 지원
       'see': 'think',
-      'wonder': 'explore'
+      'wonder': 'explore',
+      'fourth_step': 'puzzle'  // fourth_step을 puzzle로 매핑
     }
   };
 
