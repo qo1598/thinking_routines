@@ -45,7 +45,7 @@ const TeacherDashboard: React.FC = () => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         navigate('/teacher');
         return;
@@ -61,7 +61,7 @@ const TeacherDashboard: React.FC = () => {
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
             created_at: new Date().toISOString()
           }
-        ], { 
+        ], {
           onConflict: 'id'
         })
         .select()
@@ -244,4 +244,4 @@ const TeacherDashboard: React.FC = () => {
   }
 };
 
-export default TeacherDashboard; 
+export default TeacherDashboard;

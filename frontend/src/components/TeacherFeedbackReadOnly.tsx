@@ -15,7 +15,7 @@ interface TeacherEvaluation {
   teacher_id: string;
   teacher_feedback: string;
   score: number;
-  evaluation_data: any;
+  evaluation_data: Record<string, unknown> | null;
   step_feedbacks: Record<string, string>;
   step_scores: Record<string, number>;
   overall_feedback: string;
@@ -27,7 +27,7 @@ interface TeacherEvaluation {
 
 const stepColors: Record<string, string> = {
   see: 'bg-blue-500',
-  think: 'bg-green-500', 
+  think: 'bg-green-500',
   wonder: 'bg-purple-500',
   connect: 'bg-blue-500',
   challenge: 'bg-orange-500',
@@ -49,7 +49,7 @@ const stepColors: Record<string, string> = {
 
 const stepIcons: Record<string, string> = {
   see: '👁️',
-  think: '💭', 
+  think: '💭',
   wonder: '❓',
   connect: '🔗',
   challenge: '⚡',
@@ -71,7 +71,7 @@ const stepIcons: Record<string, string> = {
 
 const formatMarkdownText = (text: string): string => {
   if (!text) return '';
-  
+
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -94,7 +94,7 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
 
   // AI 분석 파싱
   const parsedAI: AIAnalysisData | null = aiAnalysis ? parseStoredAIAnalysis(aiAnalysis, routineType) : null;
-  
+
   console.log('🔍 TeacherFeedbackReadOnly - Raw AI Analysis:', aiAnalysis);
   console.log('🔍 TeacherFeedbackReadOnly - Parsed AI (NEW SYSTEM):', parsedAI);
   console.log('🔍 TeacherFeedbackReadOnly - stepByStep Content:', parsedAI?.stepByStep);
@@ -172,7 +172,7 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
               </svg>
               <span className="font-semibold text-purple-700">각 단계별 응답의 품질과 적절성 평가</span>
             </div>
-            <div 
+            <div
               className="text-sm text-gray-800 leading-relaxed text-left"
               dangerouslySetInnerHTML={{ __html: formatMarkdownText(parsedAI.stepByStep) }}
             />
@@ -183,16 +183,16 @@ const TeacherFeedbackReadOnly: React.FC<TeacherFeedbackReadOnlyProps> = ({
       {/* 단계별 교사 피드백 */}
       <div className="space-y-4 mb-8">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">단계별 교사 평가</h3>
-        
+
         {Object.entries(stepLabels).map(([stepKey, stepLabel]) => {
           const feedback = evaluation?.step_feedbacks?.[stepKey];
           const score = evaluation?.step_scores?.[stepKey];
-          
+
           // 교사 피드백이나 점수가 있는 경우만 표시
           if (!feedback && !score) {
             return null;
           }
-          
+
           return (
             <div key={stepKey} className="border border-gray-200 rounded-lg overflow-hidden">
               <div className={`${stepColors[stepKey] || 'bg-gray-500'} px-4 py-2 flex items-center justify-between`}>

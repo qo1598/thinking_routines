@@ -1,18 +1,13 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { generateStepInfoMap } from '../lib/thinkingRoutineUtils';
-
-interface ParsedAnalysis {
-  individualSteps?: {[key: string]: string | string[]};
-  summary?: string;
-  suggestions?: string;
-}
+import { ParsedAnalysis, RoutineTemplate, ActivityRoom } from '../types';
 
 interface TeacherFeedbackSectionProps {
   responseId: string;
   parsedAnalysis: ParsedAnalysis | null;
-  template: any;
-  room: any;
+  template: RoutineTemplate | null;
+  room: ActivityRoom | null;
   onBack: () => void;
 }
 
@@ -25,8 +20,8 @@ const TeacherFeedbackSection: React.FC<TeacherFeedbackSectionProps> = ({
   room,
   onBack
 }) => {
-  const [stepFeedbacks, setStepFeedbacks] = useState<{[key: string]: string}>({});
-  const [stepScores, setStepScores] = useState<{[key: string]: number}>({});
+  const [stepFeedbacks, setStepFeedbacks] = useState<{ [key: string]: string }>({});
+  const [stepScores, setStepScores] = useState<{ [key: string]: number }>({});
   const [savingFeedback, setSavingFeedback] = useState(false);
 
   const handleSaveTeacherFeedback = async () => {
@@ -43,7 +38,7 @@ const TeacherFeedbackSection: React.FC<TeacherFeedbackSectionProps> = ({
         .from('student_responses')
         .update({
           teacher_feedback: JSON.stringify(feedbackData),
-          teacher_score: Object.values(stepScores).length > 0 
+          teacher_score: Object.values(stepScores).length > 0
             ? Math.round(Object.values(stepScores).reduce((a, b) => a + b, 0) / Object.values(stepScores).length)
             : null
         })
@@ -64,7 +59,7 @@ const TeacherFeedbackSection: React.FC<TeacherFeedbackSectionProps> = ({
   const currentRoutineType = template?.routine_type || room?.thinking_routine_type || 'see-think-wonder';
   const stepInfoMap = generateStepInfoMap(currentRoutineType);
 
-  const gradientColors: {[key: string]: string} = {
+  const gradientColors: { [key: string]: string } = {
     'bg-blue-500': 'from-blue-50 to-blue-100 border-blue-200',
     'bg-green-500': 'from-green-50 to-green-100 border-green-200',
     'bg-purple-500': 'from-purple-50 to-purple-100 border-purple-200',
@@ -100,22 +95,21 @@ const TeacherFeedbackSection: React.FC<TeacherFeedbackSectionProps> = ({
             if (!stepInfo) return null;
 
             return (
-              <div 
+              <div
                 key={stepKey}
                 className={`bg-gradient-to-br ${gradientColors[stepInfo.color] || 'from-gray-50 to-white border-gray-200'} border rounded-xl p-6`}
               >
-                <h3 className={`text-lg font-bold mb-4 flex items-center ${
-                  stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
-                  stepInfo.color === 'bg-green-500' ? 'text-green-800' :
-                  stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
-                  stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
-                }`}>
+                <h3 className={`text-lg font-bold mb-4 flex items-center ${stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
+                    stepInfo.color === 'bg-green-500' ? 'text-green-800' :
+                      stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
+                        stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
+                  }`}>
                   <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
                     {index + 1}
                   </span>
                   {stepInfo.title} ({stepInfo.subtitle})
                 </h3>
-                
+
                 {/* AI 분석 결과 (4단계와 동일) */}
                 <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
@@ -145,14 +139,13 @@ const TeacherFeedbackSection: React.FC<TeacherFeedbackSectionProps> = ({
                   </h4>
                   <textarea
                     value={stepFeedbacks[stepKey] || ''}
-                    onChange={(e) => setStepFeedbacks({...stepFeedbacks, [stepKey]: e.target.value})}
+                    onChange={(e) => setStepFeedbacks({ ...stepFeedbacks, [stepKey]: e.target.value })}
                     rows={3}
-                    className={`w-full px-3 py-2 border border-yellow-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent resize-none ${
-                      stepInfo.color === 'bg-blue-500' ? 'focus:ring-blue-500' :
-                      stepInfo.color === 'bg-green-500' ? 'focus:ring-green-500' :
-                      stepInfo.color === 'bg-purple-500' ? 'focus:ring-purple-500' :
-                      stepInfo.color === 'bg-red-500' ? 'focus:ring-red-500' : 'focus:ring-gray-500'
-                    }`}
+                    className={`w-full px-3 py-2 border border-yellow-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent resize-none ${stepInfo.color === 'bg-blue-500' ? 'focus:ring-blue-500' :
+                        stepInfo.color === 'bg-green-500' ? 'focus:ring-green-500' :
+                          stepInfo.color === 'bg-purple-500' ? 'focus:ring-purple-500' :
+                            stepInfo.color === 'bg-red-500' ? 'focus:ring-red-500' : 'focus:ring-gray-500'
+                      }`}
                     placeholder={`${stepInfo.title} (${stepInfo.subtitle}) 단계에 대한 피드백을 입력하세요...`}
                   />
                 </div>
@@ -171,18 +164,17 @@ const TeacherFeedbackSection: React.FC<TeacherFeedbackSectionProps> = ({
                       min="1"
                       max="100"
                       value={stepScores[stepKey] || ''}
-                      onChange={(e) => setStepScores({...stepScores, [stepKey]: parseInt(e.target.value) || 0})}
+                      onChange={(e) => setStepScores({ ...stepScores, [stepKey]: parseInt(e.target.value) || 0 })}
                       className="w-20 px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-center"
                       placeholder="점수"
                     />
                     <span className="text-sm text-gray-600">/ 100점</span>
                     <div className="ml-auto">
                       {stepScores[stepKey] && (
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          stepScores[stepKey] >= 80 ? 'bg-green-100 text-green-800' :
-                          stepScores[stepKey] >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${stepScores[stepKey] >= 80 ? 'bg-green-100 text-green-800' :
+                            stepScores[stepKey] >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                          }`}>
                           {stepScores[stepKey] >= 80 ? '우수' : stepScores[stepKey] >= 60 ? '보통' : '개선필요'}
                         </span>
                       )}

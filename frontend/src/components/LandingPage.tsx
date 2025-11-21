@@ -23,7 +23,7 @@ const LandingPage: React.FC = () => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
-    
+
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
@@ -87,9 +87,9 @@ const LandingPage: React.FC = () => {
       });
 
       // 가이드 섹션 - 웨이브 애니메이션
-      gsap.fromTo(guideRef.current, 
-        { 
-          opacity: 0, 
+      gsap.fromTo(guideRef.current,
+        {
+          opacity: 0,
           y: 100,
           rotationX: 15,
           transformOrigin: "center bottom"
@@ -113,8 +113,8 @@ const LandingPage: React.FC = () => {
       cardsRef.current.forEach((card, index) => {
         // 카드 입장 애니메이션
         gsap.fromTo(card,
-          { 
-            opacity: 0, 
+          {
+            opacity: 0,
             y: 80,
             rotationY: 45,
             transformOrigin: "center center",
@@ -149,7 +149,7 @@ const LandingPage: React.FC = () => {
 
         // 마그네틱 호버 효과 (Apple 스타일)
         let magneticTimeline: gsap.core.Timeline;
-        
+
         card.addEventListener('mouseenter', () => {
           magneticTimeline = gsap.timeline();
           magneticTimeline
@@ -193,7 +193,7 @@ const LandingPage: React.FC = () => {
           const rect = card.getBoundingClientRect();
           const x = e.clientX - rect.left - rect.width / 2;
           const y = e.clientY - rect.top - rect.height / 2;
-          
+
           gsap.to(card, {
             rotationY: x / 10,
             rotationX: -y / 10,
@@ -206,8 +206,8 @@ const LandingPage: React.FC = () => {
       // 기능 섹션들 - 스테거 애니메이션
       featuresRef.current.forEach((feature, index) => {
         gsap.fromTo(feature,
-          { 
-            opacity: 0, 
+          {
+            opacity: 0,
             y: 60,
             scale: 0.8
           },
@@ -229,8 +229,8 @@ const LandingPage: React.FC = () => {
 
       // CTA 섹션 - 극적인 등장
       gsap.fromTo(ctaRef.current,
-        { 
-          opacity: 0, 
+        {
+          opacity: 0,
           scale: 0.5,
           rotationY: 180
         },
@@ -252,8 +252,8 @@ const LandingPage: React.FC = () => {
       const animatedTexts = document.querySelectorAll('.animate-text');
       animatedTexts.forEach((text, index) => {
         gsap.fromTo(text,
-          { 
-            opacity: 0, 
+          {
+            opacity: 0,
             y: 30,
             clipPath: "inset(0 100% 0 0)"
           },
@@ -275,7 +275,7 @@ const LandingPage: React.FC = () => {
 
       // 부드러운 스크롤 효과 (Smooth Scrolling)
       // 스크롤 정규화는 기본 브라우저 동작 사용
-      
+
     }, heroRef);
 
     return () => ctx.revert();
@@ -445,9 +445,9 @@ const LandingPage: React.FC = () => {
       {/* Apple 스타일 배경 그라데이션 */}
       <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-800"></div>
       <div className="fixed inset-0 bg-gradient-to-t from-transparent via-black/20 to-transparent"></div>
-      
+
       {/* 마우스 따라다니는 광원 효과 */}
-      <div 
+      <div
         className="fixed w-96 h-96 bg-gradient-radial from-blue-500/20 via-purple-500/10 to-transparent rounded-full blur-3xl pointer-events-none transition-all duration-300"
         style={{
           left: mousePosition.x - 192,
@@ -459,7 +459,7 @@ const LandingPage: React.FC = () => {
       <section ref={heroRef} className="relative min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-6xl mx-auto">
           {/* 메인 타이틀 */}
-          <h1 
+          <h1
             ref={titleRef}
             className="text-6xl md:text-8xl lg:text-9xl font-thin mb-8 leading-none"
             style={{ fontFamily: 'SF Pro Display, -apple-system, sans-serif' }}
@@ -474,12 +474,12 @@ const LandingPage: React.FC = () => {
           </h1>
 
           {/* 서브타이틀 */}
-          <p 
+          <p
             ref={subtitleRef}
             className="text-xl md:text-2xl text-gray-300 mb-16 max-w-3xl mx-auto leading-relaxed"
           >
             사고루틴은 다양한 교육 상황에서<br />
-            학생들의 <span className="text-blue-400">깊이 있는 사고</span>와 
+            학생들의 <span className="text-blue-400">깊이 있는 사고</span>와
             <span className="text-purple-400"> 창의적 표현</span>을 이끌어냅니다.
           </p>
 
@@ -494,7 +494,7 @@ const LandingPage: React.FC = () => {
                 교사로 시작하기
               </div>
             </button>
-            
+
             <button
               onClick={() => navigate('/student')}
               className="group relative px-12 py-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full text-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-2xl"
@@ -524,8 +524,8 @@ const LandingPage: React.FC = () => {
             </h2>
             <p className="animate-text text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
               하버드 대학교 Project Zero에서 개발한 사고루틴으로<br />
-              <span className="text-blue-400 font-medium">비판적 사고력</span>, 
-              <span className="text-purple-400 font-medium"> 창의적 문제해결능력</span>, 
+              <span className="text-blue-400 font-medium">비판적 사고력</span>,
+              <span className="text-purple-400 font-medium"> 창의적 문제해결능력</span>,
               <span className="text-pink-400 font-medium"> 메타인지 능력</span>을<br />
               체계적으로 기를 수 있습니다.
             </p>
@@ -545,10 +545,10 @@ const LandingPage: React.FC = () => {
               >
                 {/* 카드 그라데이션 배경 */}
                 <div className={`card-gradient absolute inset-0 bg-gradient-to-br ${routine.color} opacity-0 transition-all duration-500`}></div>
-                
+
                 {/* 글래스모피즘 오버레이 */}
                 <div className="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
-                
+
                 {/* 카드 내용 */}
                 <div className="relative p-8 h-full flex flex-col">
                   {/* 헤더 */}
@@ -664,7 +664,7 @@ const LandingPage: React.FC = () => {
                 </div>
                 <h3 className="text-2xl font-semibold text-white mb-2">교사는 이렇게!</h3>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">1</div>
@@ -673,7 +673,7 @@ const LandingPage: React.FC = () => {
                     <p className="text-gray-400 text-sm text-left">thinking-routines.vercel.app → 교사용 클릭</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">2</div>
                   <div className="flex-1">
@@ -681,7 +681,7 @@ const LandingPage: React.FC = () => {
                     <p className="text-gray-400 text-sm text-left">이메일과 비밀번호로 간편 가입</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">3</div>
                   <div className="flex-1">
@@ -689,7 +689,7 @@ const LandingPage: React.FC = () => {
                     <p className="text-gray-400 text-sm text-left">"새 활동방 만들기" → 사고루틴 선택 → 6자리 코드 생성</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">4</div>
                   <div className="flex-1">
@@ -697,7 +697,7 @@ const LandingPage: React.FC = () => {
                     <p className="text-gray-400 text-sm text-left">생성된 코드를 학생들에게 공유</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">5</div>
                   <div className="flex-1">
@@ -716,7 +716,7 @@ const LandingPage: React.FC = () => {
                 </div>
                 <h3 className="text-2xl font-semibold text-white mb-2">학생은 이렇게!</h3>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">1</div>
@@ -725,7 +725,7 @@ const LandingPage: React.FC = () => {
                     <p className="text-gray-400 text-sm text-left">thinking-routines.vercel.app → 학생용 클릭</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">2</div>
                   <div className="flex-1">
@@ -733,7 +733,7 @@ const LandingPage: React.FC = () => {
                     <p className="text-gray-400 text-sm text-left">교사가 제공한 6자리 코드 입력</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">3</div>
                   <div className="flex-1">
@@ -741,7 +741,7 @@ const LandingPage: React.FC = () => {
                     <p className="text-gray-400 text-sm text-left">본인 이름 입력 후 활동 시작</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">4</div>
                   <div className="flex-1">
@@ -749,7 +749,7 @@ const LandingPage: React.FC = () => {
                     <p className="text-gray-400 text-sm text-left">3단계를 순서대로 진행 (🎤 음성 입력 지원!)</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 mt-1">5</div>
                   <div className="flex-1">
@@ -773,7 +773,7 @@ const LandingPage: React.FC = () => {
                   교사로 시작하기
                 </div>
               </button>
-              
+
               <button
                 onClick={() => navigate('/student')}
                 className="group relative px-12 py-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full text-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-2xl"
@@ -806,18 +806,18 @@ const LandingPage: React.FC = () => {
 
             {/* 단계별 상세 설명 */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {selectedRoutine.steps.map((step: any, index: number) => (
+              {selectedRoutine.steps.map((step: { name: string; description: string; color: string }, index: number) => (
                 <div key={index} className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
                   <div className="text-center mb-4">
                     <h3 className="text-xl font-semibold text-white mb-2">{step.name}</h3>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <h4 className="text-blue-400 font-medium mb-2">💡 목표</h4>
                       <p className="text-gray-300 text-sm">{step.description}</p>
                     </div>
-                    
+
                     <div>
                       <h4 className="text-purple-400 font-medium mb-2">❓ 질문 예시</h4>
                       <p className="text-gray-300 text-sm">
@@ -842,7 +842,7 @@ const LandingPage: React.FC = () => {
                         {step.name === 'EXPLORE' && '"이 퍼즐을 어떻게 탐구해보고 싶나요?"'}
                       </p>
                     </div>
-                    
+
                     <div>
                       <h4 className="text-pink-400 font-medium mb-2">✍️ 작성 팁</h4>
                       <p className="text-gray-300 text-sm">
@@ -896,7 +896,7 @@ const LandingPage: React.FC = () => {
                     </div>
                   </>
                 )}
-                
+
                 {selectedRoutine.title === '4C' && (
                   <>
                     <div>
@@ -919,7 +919,7 @@ const LandingPage: React.FC = () => {
                     </div>
                   </>
                 )}
-                
+
                 {(selectedRoutine.title === 'Circle of Viewpoints') && (
                   <>
                     <div>
@@ -940,7 +940,7 @@ const LandingPage: React.FC = () => {
                     </div>
                   </>
                 )}
-                
+
                 {/* 다른 사고루틴들도 비슷하게 추가 */}
                 {!['See-Think-Wonder', '4C', 'Circle of Viewpoints'].includes(selectedRoutine.title) && (
                   <div className="col-span-full text-center">
@@ -961,7 +961,7 @@ const LandingPage: React.FC = () => {
             <h4 className="text-2xl font-thin text-white mb-2">사고루틴<br />학습 플랫폼</h4>
             <p className="text-gray-400">하버드 Project Zero 기반 사고루틴 학습 플랫폼</p>
           </div>
-          
+
           <div className="flex flex-col md:flex-row justify-center items-center gap-8 mb-8">
             <a href="mailto:qo1598@dge.go.kr" className="text-gray-400 hover:text-white transition-colors duration-300">
               📧 qo1598@dge.go.kr

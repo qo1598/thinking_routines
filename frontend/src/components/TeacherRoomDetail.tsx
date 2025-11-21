@@ -1,148 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-
-interface ActivityRoom {
-  id: string;
-  title: string;
-  description: string;
-  room_code: string;
-  thinking_routine_type: string;
-  status: string;
-  created_at: string;
-  teacher_id: string;
-}
-
-interface RoutineTemplate {
-  id: string;
-  room_id: string;
-  routine_type: string;
-  content: {
-    image_url?: string;
-    text_content?: string;
-    youtube_url?: string;
-    see_question?: string;
-    think_question?: string;
-    wonder_question?: string;
-    fourth_question?: string;
-  };
-}
-
-interface StudentResponse {
-  id: string;
-  student_grade?: string;
-  student_name: string;
-  student_class?: string;
-  student_number?: number;
-  team_name?: string;
-  student_id: string;
-  response_data: any;
-  submitted_at: string;
-}
-
-// 사고루틴별 설정 정보 추가
-const ROUTINE_CONFIGS = {
-  'see-think-wonder': {
-    name: 'See-Think-Wonder',
-    steps: ['see', 'think', 'wonder'],
-    stepLabels: {
-      see: { title: 'See', subtitle: '보기' },
-      think: { title: 'Think', subtitle: '생각하기' },
-      wonder: { title: 'Wonder', subtitle: '궁금하기' }
-    },
-    defaultQuestions: {
-      see: '이 자료에서 무엇을 보았나요?',
-      think: '이것에 대해 어떻게 생각하나요?',
-      wonder: '이것에 대해 무엇이 궁금한가요?'
-    }
-  },
-  '4c': {
-    name: '4C',
-    steps: ['see', 'think', 'wonder', 'fourth_step'],
-    stepLabels: {
-      see: { title: 'Connect', subtitle: '연결하기' },
-      think: { title: 'Challenge', subtitle: '도전하기' },
-      wonder: { title: 'Concepts', subtitle: '개념 파악' },
-      fourth_step: { title: 'Changes', subtitle: '변화 제안' }
-    },
-    defaultQuestions: {
-      see: '이 내용이 이미 알고 있는 것과 어떻게 연결되나요?',
-      think: '이 내용에서 어떤 아이디어나 가정에 도전하고 싶나요?',
-      wonder: '이 내용에서 중요하다고 생각하는 핵심 개념은 무엇인가요?',
-      fourth_step: '이 내용이 당신이나 다른 사람들에게 어떤 변화를 제안하나요?'
-    }
-  },
-  'circle-of-viewpoints': {
-    name: 'Circle of Viewpoints',
-    steps: ['see', 'think', 'wonder'],
-    stepLabels: {
-      see: { title: 'Viewpoints', subtitle: '관점 탐색' },
-      think: { title: 'Perspective', subtitle: '관점 선택' },
-      wonder: { title: 'Questions', subtitle: '관점별 질문' }
-    },
-    defaultQuestions: {
-      see: '이 주제에 대해 다양한 관점을 가질 수 있는 사람들은 누구인가요?',
-      think: '선택한 관점에서 이 주제를 어떻게 바라볼까요?',
-      wonder: '이 관점에서 가질 수 있는 질문은 무엇인가요?'
-    }
-  },
-  'connect-extend-challenge': {
-    name: 'Connect-Extend-Challenge',
-    steps: ['see', 'think', 'wonder'],
-    stepLabels: {
-      see: { title: 'Connect', subtitle: '연결하기' },
-      think: { title: 'Extend', subtitle: '확장하기' },
-      wonder: { title: 'Challenge', subtitle: '도전하기' }
-    },
-    defaultQuestions: {
-      see: '이 내용이 이미 알고 있는 것과 어떻게 연결되나요?',
-      think: '이 내용이 당신의 생각을 어떻게 확장시켰나요?',
-      wonder: '이 내용에서 어떤 것이 당신에게 도전이 되나요?'
-    }
-  },
-  'frayer-model': {
-    name: 'Frayer Model',
-    steps: ['see', 'think', 'wonder'],
-    stepLabels: {
-      see: { title: 'Definition', subtitle: '정의' },
-      think: { title: 'Characteristics', subtitle: '특징' },
-      wonder: { title: 'Examples', subtitle: '예시와 반례' }
-    },
-    defaultQuestions: {
-      see: '이 개념을 어떻게 정의하겠나요?',
-      think: '이 개념의 주요 특징은 무엇인가요?',
-      wonder: '이 개념의 예시와 반례는 무엇인가요?'
-    }
-  },
-  'used-to-think-now-think': {
-    name: 'I Used to Think... Now I Think...',
-    steps: ['see', 'think', 'wonder'],
-    stepLabels: {
-      see: { title: 'Used to Think', subtitle: '이전 생각' },
-      think: { title: 'Now Think', subtitle: '현재 생각' },
-      wonder: { title: 'Why Changed', subtitle: '변화 이유' }
-    },
-    defaultQuestions: {
-      see: '이 주제에 대해 이전에 어떻게 생각했나요?',
-      think: '지금은 어떻게 생각하나요?',
-      wonder: '생각이 바뀐 이유는 무엇인가요?'
-    }
-  },
-  'think-puzzle-explore': {
-    name: 'Think-Puzzle-Explore',
-    steps: ['think', 'puzzle', 'explore'],
-    stepLabels: {
-      think: { title: 'Think', subtitle: '생각하기' },
-      puzzle: { title: 'Puzzle', subtitle: '퍼즐' },
-      explore: { title: 'Explore', subtitle: '탐구하기' }
-    },
-    defaultQuestions: {
-      think: '이 주제에 대해 무엇을 알고 있다고 생각하나요?',
-      puzzle: '무엇이 퍼즐이나 의문점인가요?',
-      explore: '이 퍼즐을 어떻게 탐구해보고 싶나요?'
-    }
-  }
-};
+import { ActivityRoom, RoutineTemplate, StudentResponse } from '../types';
+import { ROUTINE_CONFIGS } from '../constants/routineConfigs';
 
 const TeacherRoomDetail: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -173,7 +33,7 @@ const TeacherRoomDetail: React.FC = () => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         navigate('/teacher');
         return;
@@ -195,7 +55,7 @@ const TeacherRoomDetail: React.FC = () => {
       }
 
       setRoom(roomData);
-      
+
       // 학생 응답 조회
       const { data: responsesData, error: responsesError } = await supabase
         .from('student_responses')
@@ -229,9 +89,9 @@ const TeacherRoomDetail: React.FC = () => {
         if (routineConfig) {
           setTemplateForm(prev => ({
             ...prev,
-            see_question: routineConfig.defaultQuestions.see,
-            think_question: routineConfig.defaultQuestions.think,
-            wonder_question: routineConfig.defaultQuestions.wonder,
+            see_question: (routineConfig.defaultQuestions as any).see || '',
+            think_question: (routineConfig.defaultQuestions as any).think || '',
+            wonder_question: (routineConfig.defaultQuestions as any).wonder || '',
             fourth_question: (routineConfig.defaultQuestions as any).fourth_step || ''
           }));
         }
@@ -354,8 +214,6 @@ const TeacherRoomDetail: React.FC = () => {
     }
   };
 
-
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -466,10 +324,10 @@ const TeacherRoomDetail: React.FC = () => {
                   <div className="flex justify-center">
                     <div className="w-full max-w-2xl">
                       <div className="relative" style={{ paddingBottom: '56.25%' }}>
-                        <img 
-                          src={template.content.image_url} 
-                          alt="활동 이미지" 
-                          className="absolute inset-0 w-full h-full object-contain rounded-lg" 
+                        <img
+                          src={template.content.image_url}
+                          alt="활동 이미지"
+                          className="absolute inset-0 w-full h-full object-contain rounded-lg"
                         />
                       </div>
                     </div>
@@ -483,7 +341,7 @@ const TeacherRoomDetail: React.FC = () => {
                     <div className="w-full max-w-2xl">
                       <div className="relative" style={{ paddingBottom: '56.25%' }}>
                         {(() => {
-                          const embedUrl = getYouTubeEmbedUrl(template.content.youtube_url);
+                          const embedUrl = getYouTubeEmbedUrl(template.content.youtube_url!);
                           return embedUrl ? (
                             <iframe
                               src={embedUrl}
@@ -493,17 +351,7 @@ const TeacherRoomDetail: React.FC = () => {
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                              <div className="text-center">
-                                <p className="text-gray-600 mb-2">유튜브 영상을 불러올 수 없습니다.</p>
-                                <a 
-                                  href={template.content.youtube_url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:text-blue-800 underline text-sm"
-                                >
-                                  새 탭에서 보기
-                                </a>
-                              </div>
+                              <p className="text-gray-500">영상을 불러올 수 없습니다.</p>
                             </div>
                           );
                         })()}
@@ -512,14 +360,15 @@ const TeacherRoomDetail: React.FC = () => {
                   </div>
                 </div>
               )}
+
               {(() => {
                 const questionLabels = getQuestionLabels(room.thinking_routine_type);
                 const hasFourth = room.thinking_routine_type === '4c';
-                
+
                 return (
-                  <div className={`grid grid-cols-1 gap-4 ${hasFourth ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
+                  <div className={`grid grid-cols-1 gap-4 ${hasFourth ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'} mt-6`}>
                     <div>
-                      <p className="text-sm text-gray-600 mb-2">{questionLabels.see.title} 질문</p>
+                      <p className="text-sm text-gray-600 mb-2">{(questionLabels as any).see?.title} 질문</p>
                       <div className="bg-gray-50 p-3 rounded-lg">
                         <p className="text-gray-900">{template.content.see_question}</p>
                       </div>
@@ -531,7 +380,7 @@ const TeacherRoomDetail: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600 mb-2">{questionLabels.wonder.title} 질문</p>
+                      <p className="text-sm text-gray-600 mb-2">{(questionLabels as any).wonder?.title} 질문</p>
                       <div className="bg-gray-50 p-3 rounded-lg">
                         <p className="text-gray-900">{template.content.wonder_question}</p>
                       </div>
@@ -559,15 +408,15 @@ const TeacherRoomDetail: React.FC = () => {
                 <input
                   type="url"
                   value={templateForm.image_url}
-                  onChange={(e) => setTemplateForm({...templateForm, image_url: e.target.value})}
+                  onChange={(e) => setTemplateForm({ ...templateForm, image_url: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="https://example.com/image.jpg"
                 />
                 {templateForm.image_url && (
                   <div className="mt-2 flex justify-center">
-                    <img 
-                      src={templateForm.image_url} 
-                      alt="이미지 미리보기" 
+                    <img
+                      src={templateForm.image_url}
+                      alt="이미지 미리보기"
                       className="max-w-full max-h-64 rounded-lg shadow-sm"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
@@ -584,7 +433,7 @@ const TeacherRoomDetail: React.FC = () => {
                 <textarea
                   rows={4}
                   value={templateForm.text_content}
-                  onChange={(e) => setTemplateForm({...templateForm, text_content: e.target.value})}
+                  onChange={(e) => setTemplateForm({ ...templateForm, text_content: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="학생들에게 보여줄 텍스트를 입력하세요..."
                 />
@@ -595,7 +444,7 @@ const TeacherRoomDetail: React.FC = () => {
                   </div>
                 )}
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   유튜브 URL (선택사항)
@@ -603,7 +452,7 @@ const TeacherRoomDetail: React.FC = () => {
                 <input
                   type="url"
                   value={templateForm.youtube_url}
-                  onChange={(e) => setTemplateForm({...templateForm, youtube_url: e.target.value})}
+                  onChange={(e) => setTemplateForm({ ...templateForm, youtube_url: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="https://www.youtube.com/watch?v=..."
                 />
@@ -625,9 +474,9 @@ const TeacherRoomDetail: React.FC = () => {
                               <div className="text-center">
                                 <p className="text-gray-600 mb-2">유튜브 영상을 불러올 수 없습니다.</p>
                                 <p className="text-sm text-gray-500">원본 링크: {templateForm.youtube_url}</p>
-                                <a 
-                                  href={templateForm.youtube_url} 
-                                  target="_blank" 
+                                <a
+                                  href={templateForm.youtube_url}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-blue-600 hover:text-blue-800 underline text-sm"
                                 >
@@ -646,17 +495,17 @@ const TeacherRoomDetail: React.FC = () => {
               {(() => {
                 const questionLabels = getQuestionLabels(room.thinking_routine_type);
                 const hasFourth = room.thinking_routine_type === '4c';
-                
+
                 return (
                   <div className={`grid grid-cols-1 gap-4 ${hasFourth ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {questionLabels.see.title} 질문
+                        {(questionLabels as any).see?.title} 질문
                       </label>
                       <input
                         type="text"
                         value={templateForm.see_question}
-                        onChange={(e) => setTemplateForm({...templateForm, see_question: e.target.value})}
+                        onChange={(e) => setTemplateForm({ ...templateForm, see_question: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -667,18 +516,18 @@ const TeacherRoomDetail: React.FC = () => {
                       <input
                         type="text"
                         value={templateForm.think_question}
-                        onChange={(e) => setTemplateForm({...templateForm, think_question: e.target.value})}
+                        onChange={(e) => setTemplateForm({ ...templateForm, think_question: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {questionLabels.wonder.title} 질문
+                        {(questionLabels as any).wonder?.title} 질문
                       </label>
                       <input
                         type="text"
                         value={templateForm.wonder_question}
-                        onChange={(e) => setTemplateForm({...templateForm, wonder_question: e.target.value})}
+                        onChange={(e) => setTemplateForm({ ...templateForm, wonder_question: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -690,7 +539,7 @@ const TeacherRoomDetail: React.FC = () => {
                         <input
                           type="text"
                           value={templateForm.fourth_question}
-                          onChange={(e) => setTemplateForm({...templateForm, fourth_question: e.target.value})}
+                          onChange={(e) => setTemplateForm({ ...templateForm, fourth_question: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
@@ -777,10 +626,8 @@ const TeacherRoomDetail: React.FC = () => {
           )}
         </div>
       </main>
-
-
     </div>
   );
 };
 
-export default TeacherRoomDetail; 
+export default TeacherRoomDetail;

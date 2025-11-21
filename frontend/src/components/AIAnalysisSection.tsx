@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { routineStepLabels, routineTypeLabels, generateStepInfoMap, mapResponseToRoutineSteps } from '../lib/thinkingRoutineUtils';
-
-interface ParsedAnalysis {
-  individualSteps?: {[key: string]: string | string[]};
-  summary?: string;
-  suggestions?: string;
-}
+import { ParsedAnalysis } from '../types';
 
 interface AIAnalysisSectionProps {
   parsedAnalysis: ParsedAnalysis | null;
@@ -28,7 +23,7 @@ const getRoutineDisplayName = (routineType: string): string => {
 
 // 기본 분석 텍스트 생성
 const getDefaultAnalysisText = (routineType: string): string => {
-  const defaultTexts: {[key: string]: string} = {
+  const defaultTexts: { [key: string]: string } = {
     'see-think-wonder': '각 단계가 논리적으로 연결되어 있으며, 관찰에서 사고, 그리고 의문으로 이어지는 자연스러운 학습 흘름을 보여줍니다.',
     '4c': '각 단계가 체계적으로 연결되어 있으며, 연결-도전-개념-변화의 순차적 사고 과정을 잘 보여줍니다.',
     'connect-extend-challenge': '연결-확장-도전의 3단계가 순차적으로 이어지며 사고의 깊이를 더해가는 과정을 보여줍니다.',
@@ -54,12 +49,12 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
   const stepInfoMap = generateStepInfoMap(currentRoutineType);
 
   // 교사 피드백 및 점수 상태 관리
-  const [teacherFeedbacks, setTeacherFeedbacks] = useState<{[stepKey: string]: string}>({});
-  const [teacherScores, setTeacherScores] = useState<{[stepKey: string]: number}>({});
+  const [teacherFeedbacks, setTeacherFeedbacks] = useState<{ [stepKey: string]: string }>({});
+  const [teacherScores, setTeacherScores] = useState<{ [stepKey: string]: number }>({});
   const [saving, setSaving] = useState(false);
   const [existingEvaluation, setExistingEvaluation] = useState<any>(null);
 
-  const gradientColors: {[key: string]: string} = {
+  const gradientColors: { [key: string]: string } = {
     'bg-blue-500': 'from-blue-50 to-blue-100 border-blue-200',
     'bg-green-500': 'from-green-50 to-green-100 border-green-200',
     'bg-purple-500': 'from-purple-50 to-purple-100 border-purple-200',
@@ -86,7 +81,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
 
         if (data) {
           setExistingEvaluation(data);
-          
+
           // 기존 피드백과 점수 로드
           if (data.step_feedbacks) {
             setTeacherFeedbacks(data.step_feedbacks);
@@ -152,7 +147,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
       }
 
       alert('교사 평가가 성공적으로 저장되었습니다!');
-      
+
       // 저장 후 데이터 다시 로드
       if (!existingEvaluation) {
         const { data: newData } = await supabase
@@ -160,7 +155,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
           .select('*')
           .eq('response_id', response.id)
           .maybeSingle();
-        
+
         if (newData) {
           setExistingEvaluation(newData);
         }
@@ -188,7 +183,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
               .map(([stepKey, stepInfo], index) => {
                 const studentResponse = response?.response_data?.[stepKey];
                 const aiAnalysis = parsedAnalysis?.individualSteps?.[stepKey];
-                
+
                 if (!studentResponse && !aiAnalysis) return null;
 
                 return (
@@ -204,7 +199,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                         </h4>
                       </div>
                     </div>
-                    
+
                     <div className="p-4 space-y-3">
                       {/* 학생 응답 */}
                       {studentResponse && (
@@ -212,7 +207,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                           <p className="text-sm text-gray-700">{studentResponse}</p>
                         </div>
                       )}
-                      
+
                       {/* AI 분석 */}
                       {aiAnalysis && (
                         <div className="p-3 bg-blue-50 rounded">
@@ -242,98 +237,82 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
               <span className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
               {getRoutineDisplayName(currentRoutineType)} 사고루틴 종합 분석
             </h3>
-            
+
             <div className="space-y-4">
               {(() => {
-                console.log('🎯 AIAnalysisSection 종합분석 확인:', {
-                  parsedAnalysis,
-                  comprehensive: parsedAnalysis?.comprehensive,
-                  hasComprehensive: !!parsedAnalysis?.comprehensive,
-                  comprehensiveLength: parsedAnalysis?.comprehensive?.length || 0
-                });
-                return parsedAnalysis?.comprehensive;
-              })() ? (
-                <div className="space-y-4">
-                  {/* 종합 분석을 마크다운으로 파싱해서 4가지 항목으로 분리 표시 */}
-                  {(() => {
-                    const comprehensive = parsedAnalysis.comprehensive;
-                    
-                    // 논리적 연결성 추출
-                    const logicalMatch = comprehensive.match(/\*\*논리적\s*연결성\*\*\s*\n([\s\S]*?)(?=\*\*사고의\s*깊이|\*\*개선점|$)/);
-                    const logical = logicalMatch ? logicalMatch[1].trim() : '';
-                    
-                    // 사고의 깊이 추출
-                    const depthMatch = comprehensive.match(/\*\*사고의\s*깊이\*\*\s*\n([\s\S]*?)(?=\*\*개선점|\*\*추가\s*활동|$)/);
-                    const depth = depthMatch ? depthMatch[1].trim() : '';
-                    
-                    // 개선점과 건설적 피드백 추출
-                    const improvementMatch = comprehensive.match(/\*\*개선점과?\s*(?:건설적\s*)?피드백\*\*\s*\n([\s\S]*?)(?=\*\*추가\s*활동|$)/);
-                    const improvement = improvementMatch ? improvementMatch[1].trim() : '';
-                    
-                    // 추가 활동 제안 추출
-                    const suggestionMatch = comprehensive.match(/\*\*추가\s*활동\s*제안\*\*\s*\n([\s\S]*?)$/);
-                    const suggestion = suggestionMatch ? suggestionMatch[1].trim() : '';
-                    
-                    return (
-                      <>
-                        {logical && (
-                          <div className="p-4 bg-gray-50 rounded-lg">
-                            <h5 className="font-medium text-gray-800 mb-2">논리적 연결성</h5>
-                            <p className="text-sm text-gray-700 text-left">
-                              {logical}
-                            </p>
-                          </div>
-                        )}
-                        
-                        {depth && (
-                          <div className="p-4 bg-gray-50 rounded-lg">
-                            <h5 className="font-medium text-gray-800 mb-2">사고의 깊이</h5>
-                            <p className="text-sm text-gray-700 text-left">
-                              {depth}
-                            </p>
-                          </div>
-                        )}
-                        
-                        {improvement && (
-                          <div className="p-4 bg-gray-50 rounded-lg">
-                            <h5 className="font-medium text-gray-800 mb-2">개선점과 건설적 피드백</h5>
-                            <p className="text-sm text-gray-700 text-left">
-                              {improvement}
-                            </p>
-                          </div>
-                        )}
-                        
-                        {suggestion && (
-                          <div className="p-4 bg-blue-50 rounded-lg">
-                            <h5 className="font-medium text-gray-800 mb-2">추가 활동 제안</h5>
-                            <p className="text-sm text-gray-700 text-left">
-                              {suggestion}
-                            </p>
-                          </div>
-                        )}
-                        
-                        {/* 개별 항목이 없는 경우 전체 텍스트 표시 */}
-                        {!logical && !depth && !improvement && !suggestion && (
-                          <div className="p-4 bg-gray-50 rounded-lg">
-                            <h5 className="font-medium text-gray-800 mb-2">종합 분석</h5>
-                            <div className="text-sm text-gray-700 text-left whitespace-pre-wrap">
-                              {comprehensive}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              ) : (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h5 className="font-medium text-gray-800 mb-2">분석 결과가 없습니다</h5>
-                  <p className="text-sm text-gray-700 text-left">
-                    AI 분석 결과를 불러오는 중입니다...
-                  </p>
-                </div>
-              )}
+                const comprehensive = parsedAnalysis?.comprehensive;
+
+                if (!comprehensive) {
+                  return (
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h5 className="font-medium text-gray-800 mb-2">분석 결과가 없습니다</h5>
+                      <p className="text-sm text-gray-700 text-left">
+                        AI 분석 결과를 불러오는 중입니다...
+                      </p>
+                    </div>
+                  );
+                }
+
+                // 논리적 연결성 추출
+                const logicalMatch = comprehensive.match(/\*\*논리적\s*연결성\*\*\s*\n([\s\S]*?)(?=\*\*사고의\s*깊이|\*\*개선점|$)/);
+                const logical = logicalMatch ? logicalMatch[1].trim() : '';
+
+                // 사고의 깊이 추출
+                const depthMatch = comprehensive.match(/\*\*사고의\s*깊이\*\*\s*\n([\s\S]*?)(?=\*\*개선점|\*\*추가\s*활동|$)/);
+                const depth = depthMatch ? depthMatch[1].trim() : '';
+
+                // 개선점과 건설적 피드백 추출
+                const improvementMatch = comprehensive.match(/\*\*개선점과?\s*(?:건설적\s*)?피드백\*\*\s*\n([\s\S]*?)(?=\*\*추가\s*활동|$)/);
+                const improvement = improvementMatch ? improvementMatch[1].trim() : '';
+
+                // 추가 활동 제안 추출
+                const suggestionMatch = comprehensive.match(/\*\*추가\s*활동\s*제안\*\*\s*\n([\s\S]*?)$/);
+                const suggestion = suggestionMatch ? suggestionMatch[1].trim() : '';
+
+                return (
+                  <div className="space-y-4">
+                    {logical && (
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <h5 className="font-medium text-gray-800 mb-2">논리적 연결성</h5>
+                        <p className="text-sm text-gray-700 text-left">{logical}</p>
+                      </div>
+                    )}
+
+                    {depth && (
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <h5 className="font-medium text-gray-800 mb-2">사고의 깊이</h5>
+                        <p className="text-sm text-gray-700 text-left">{depth}</p>
+                      </div>
+                    )}
+
+                    {improvement && (
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <h5 className="font-medium text-gray-800 mb-2">개선점과 건설적 피드백</h5>
+                        <p className="text-sm text-gray-700 text-left">{improvement}</p>
+                      </div>
+                    )}
+
+                    {suggestion && (
+                      <div className="p-4 bg-blue-50 rounded-lg">
+                        <h5 className="font-medium text-gray-800 mb-2">추가 활동 제안</h5>
+                        <p className="text-sm text-gray-700 text-left">{suggestion}</p>
+                      </div>
+                    )}
+
+                    {!logical && !depth && !improvement && !suggestion && (
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <h5 className="font-medium text-gray-800 mb-2">종합 분석</h5>
+                        <div className="text-sm text-gray-700 text-left whitespace-pre-wrap">
+                          {comprehensive}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
+
+
           </div>
         );
 
@@ -344,7 +323,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
               <span className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
               {getRoutineDisplayName(currentRoutineType)} 단계별 학생 응답 피드백 및 평가
             </h3>
-            
+
             {Object.entries(stepInfoMap)
 
               .map(([stepKey, stepInfo], index) => {
@@ -352,7 +331,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                 const mappedResponseData = mapResponseToRoutineSteps(response?.response_data, currentRoutineType);
                 const studentResponse = mappedResponseData[stepKey];
                 const aiAnalysis = parsedAnalysis?.individualSteps?.[stepKey];
-                
+
                 if (!studentResponse && !aiAnalysis) return null;
 
                 return (
@@ -368,7 +347,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                         </h4>
                       </div>
                     </div>
-                    
+
                     <div className="p-4 space-y-3">
                       {/* 학생 응답 */}
                       {studentResponse && (
@@ -376,7 +355,7 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
                           <p className="text-sm text-gray-700">{studentResponse}</p>
                         </div>
                       )}
-                      
+
                       {/* AI 분석 */}
                       {aiAnalysis && (
                         <div className="p-3 bg-blue-50 rounded">
@@ -470,9 +449,8 @@ const AIAnalysisSection: React.FC<AIAnalysisSectionProps> = ({
           {[0, 1, 2].map((step) => (
             <div
               key={step}
-              className={`w-3 h-3 rounded-full ${
-                currentAnalysisStep >= step ? 'bg-blue-500' : 'bg-gray-300'
-              }`}
+              className={`w-3 h-3 rounded-full ${currentAnalysisStep >= step ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
             />
           ))}
         </div>

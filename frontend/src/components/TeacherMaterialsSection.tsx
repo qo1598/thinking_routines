@@ -15,13 +15,30 @@ interface TemplateContent {
   think_question?: string;
   wonder_question?: string;
   fourth_question?: string;
-  [key: string]: any;
+  // 추가 사고루틴 질문 필드들
+  connect_question?: string;
+  extend_question?: string;
+  challenge_question?: string;
+  concepts_question?: string;
+  changes_question?: string;
+  definition_question?: string;
+  characteristics_question?: string;
+  examples_question?: string;
+  non_examples_question?: string;
+  used_to_think_question?: string;
+  now_think_question?: string;
+  puzzle_question?: string;
+  explore_question?: string;
+  viewpoint_select_question?: string;
+  viewpoint_thinking_question?: string;
+  viewpoint_concerns_question?: string;
 }
 
-const TeacherMaterialsSection: React.FC<TeacherMaterialsSectionProps> = ({ 
-  roomId, 
-  roomTitle, 
-  roomDescription 
+
+const TeacherMaterialsSection: React.FC<TeacherMaterialsSectionProps> = ({
+  roomId,
+  roomTitle,
+  roomDescription
 }) => {
   const [templateContent, setTemplateContent] = useState<TemplateContent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,7 +114,7 @@ const TeacherMaterialsSection: React.FC<TeacherMaterialsSectionProps> = ({
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
       <div className="p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">교사 제공 자료</h3>
-        
+
         <div className="space-y-6">
           {/* 텍스트 내용 */}
           {templateContent.text_content && (
@@ -125,8 +142,8 @@ const TeacherMaterialsSection: React.FC<TeacherMaterialsSectionProps> = ({
               </div>
               <div className="bg-white p-3 rounded border border-green-200">
                 <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 비율로 영상과 동일하게 */ }}>
-                  <img 
-                    src={templateContent.image_url} 
+                  <img
+                    src={templateContent.image_url}
                     alt="교사 제공 이미지"
                     className="absolute top-0 left-0 w-full h-full object-contain rounded"
                   />
@@ -164,9 +181,9 @@ const TeacherMaterialsSection: React.FC<TeacherMaterialsSectionProps> = ({
                     return (
                       <div className="text-center py-4">
                         <p className="text-gray-600 mb-2">유튜브 영상을 불러올 수 없습니다</p>
-                        <a 
-                          href={templateContent.youtube_url} 
-                          target="_blank" 
+                        <a
+                          href={templateContent.youtube_url}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800 underline"
                         >

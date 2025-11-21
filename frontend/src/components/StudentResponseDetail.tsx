@@ -5,18 +5,19 @@ import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps } from 
 import { parseMarkdownToStructuredAI, saveStructuredAIAnalysis } from '../lib/aiAnalysisUtils';
 import AIAnalysisSection from './AIAnalysisSection';
 import TeacherFeedbackSection from './TeacherFeedbackSection';
+import { ParsedAnalysis } from '../types';
 
 const StudentResponseDetail: React.FC = () => {
   const { responseId } = useParams<{ responseId: string }>();
   const navigate = useNavigate();
-  
+
   const [response, setResponse] = useState<any>(null);
   const [room, setRoom] = useState<any>(null);
   const [template, setTemplate] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
-  const [parsedAnalysis, setParsedAnalysis] = useState<{individualSteps?: {[key: string]: string | string[]}, summary?: string, suggestions?: string} | null>(null);
+  const [parsedAnalysis, setParsedAnalysis] = useState<ParsedAnalysis | null>(null);
   const [currentAnalysisStep, setCurrentAnalysisStep] = useState(0);
   const [showTeacherFeedback, setShowTeacherFeedback] = useState(false);
   const [analyzingAI, setAnalyzingAI] = useState(false);
@@ -38,7 +39,7 @@ const StudentResponseDetail: React.FC = () => {
   const fetchResponseData = async () => {
     try {
       setLoading(true);
-      
+
       const { data: responseData, error: responseError } = await supabase
         .from('student_responses')
         .select('*')
@@ -85,64 +86,58 @@ const StudentResponseDetail: React.FC = () => {
 
   const parseAnalysis = () => {
     if (!aiAnalysis) return;
-    
+
     console.log('🚨 StudentResponseDetail AI 분석 파싱 시작:', aiAnalysis);
-    
+
     const routineType = room?.thinking_routine_type || 'see-think-wonder';
     console.log('🎯 StudentResponseDetail 사고루틴 유형:', routineType);
-    
+
     try {
       // JSON 형태인지 확인
       if (aiAnalysis.startsWith('{') || aiAnalysis.startsWith('[')) {
         const parsed = JSON.parse(aiAnalysis);
         console.log('📋 StudentResponseDetail JSON 파싱:', parsed);
-        
+
         if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
           console.log('✅ StudentResponseDetail 구조화된 데이터 발견');
           setParsedAnalysis({
+            stepByStep: parsed.aiAnalysis.stepByStep || '',
             comprehensive: parsed.aiAnalysis.comprehensive || aiAnalysis,
-            summary: parsed.aiAnalysis.comprehensive || aiAnalysis,
-            suggestions: parsed.aiAnalysis.educational || aiAnalysis,
+            educational: parsed.aiAnalysis.educational || aiAnalysis,
             individualSteps: parsed.aiAnalysis.individualSteps
           });
           return;
         }
       }
-      
+
       // 마크다운 텍스트 형태 - aiAnalysisUtils 사용
       console.log('📝 StudentResponseDetail 마크다운 파싱 시도');
-      
+
       // parseMarkdownToStructuredAI 직접 호출
       const structuredData = parseMarkdownToStructuredAI(aiAnalysis, routineType);
       console.log('🔄 StudentResponseDetail 구조화된 데이터:', structuredData);
-      
-      console.log('🎯 StudentResponseDetail 구조화된 데이터 매핑:', {
-        structuredDataComprehensive: structuredData.comprehensive,
-        structuredDataEducational: structuredData.educational,
-        structuredDataIndividualSteps: structuredData.individualSteps
-      });
-      
+
       setParsedAnalysis({
+        stepByStep: structuredData.stepByStep || '',
         comprehensive: structuredData.comprehensive || aiAnalysis,
-        summary: structuredData.comprehensive || aiAnalysis,
-        suggestions: structuredData.educational || aiAnalysis,
+        educational: structuredData.educational || aiAnalysis,
         individualSteps: structuredData.individualSteps || {}
       });
-      
+
     } catch (error) {
       console.error('❌ StudentResponseDetail 파싱 오류:', error);
-      
+
       // 오류 시 기본 처리 (하드코딩된 메시지 제거)
       const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
-      const individualSteps: {[key: string]: string} = {};
+      const individualSteps: { [key: string]: string } = {};
       Object.keys(stepLabels).forEach(stepKey => {
         individualSteps[stepKey] = '분석 중 오류가 발생했습니다. 다시 시도해주세요.';
       });
 
       setParsedAnalysis({
+        stepByStep: '',
         comprehensive: aiAnalysis,
-        summary: aiAnalysis,
-        suggestions: aiAnalysis,
+        educational: aiAnalysis,
         individualSteps: individualSteps
       });
     }
@@ -155,7 +150,7 @@ const StudentResponseDetail: React.FC = () => {
     }
 
     setAnalyzingAI(true);
-    
+
     try {
       console.log('🤖 AI 분석 시작...');
       console.log('📝 분석할 데이터:', response.response_data);
@@ -165,14 +160,14 @@ const StudentResponseDetail: React.FC = () => {
       const routineType = room.thinking_routine_type || 'see-think-wonder';
       const rawResponseData = response.response_data;
       console.log('🔍 원본 응답 데이터:', rawResponseData);
-      
+
       // mapResponseToRoutineSteps를 사용하여 올바른 키로 변환
       const studentResponses = mapResponseToRoutineSteps(rawResponseData, routineType);
       console.log('🔄 변환된 응답 데이터:', studentResponses);
       console.log('🎯 대상 사고루틴 유형:', routineType);
 
       // API 엔드포인트 확인 - Vercel 배포 환경에 맞게 수정
-      const apiUrl = process.env.NODE_ENV === 'production' 
+      const apiUrl = process.env.NODE_ENV === 'production'
         ? '/api/analyze-routine-text'  // Vercel 배포환경
         : `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/analyze-routine-image/text`; // 로컬 개발환경
       console.log('🌐 API URL:', apiUrl);
@@ -180,7 +175,7 @@ const StudentResponseDetail: React.FC = () => {
       // Gemini API에 요청
       const analysisResponse = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -208,15 +203,15 @@ const StudentResponseDetail: React.FC = () => {
       }
 
       console.log('✅ 분석 결과:', result);
-      
+
       // 🔧 NEW: 마크다운 AI 분석을 구조화된 형태로 변환 후 저장
       console.log('🔄 Converting markdown AI analysis to structured format...');
       const structuredAI = parseMarkdownToStructuredAI(result.analysis, routineType);
       console.log('📊 Structured AI data:', structuredAI);
-      
+
       // 구조화된 AI 분석 데이터 저장
       const saveSuccess = await saveStructuredAIAnalysis(responseId!, structuredAI, supabase);
-      
+
       if (!saveSuccess) {
         // Fallback: 원본 마크다운 텍스트라도 저장
         console.log('⚠️ Fallback to original markdown storage');
@@ -224,7 +219,7 @@ const StudentResponseDetail: React.FC = () => {
           .from('student_responses')
           .update({ ai_analysis: result.analysis })
           .eq('id', responseId);
-          
+
         if (fallbackError) {
           console.error('DB 저장 오류 (Fallback):', fallbackError);
           throw new Error('분석 결과 저장에 실패했습니다: ' + fallbackError.message);
@@ -233,7 +228,7 @@ const StudentResponseDetail: React.FC = () => {
 
       setAiAnalysis(result.analysis);
       alert('AI 분석이 완료되었습니다.');
-      
+
     } catch (error: any) {
       console.error('❌ AI 분석 중 오류:', error);
       alert('AI 분석 중 오류가 발생했습니다:\n' + error.message);
@@ -269,9 +264,9 @@ const StudentResponseDetail: React.FC = () => {
     const grade = response.student_grade || '';
     const studentClass = response.student_class || '';
     const number = response.student_number || '';
-    
+
     const parts = [];
-    
+
     // 학년 처리 (이미 "학년"이 포함되어 있는지 확인)
     if (grade) {
       if (grade.includes('학년')) {
@@ -280,7 +275,7 @@ const StudentResponseDetail: React.FC = () => {
         parts.push(`${grade}학년`);
       }
     }
-    
+
     // 반 처리
     if (studentClass) {
       if (studentClass.includes('반')) {
@@ -289,7 +284,7 @@ const StudentResponseDetail: React.FC = () => {
         parts.push(`${studentClass}반`);
       }
     }
-    
+
     // 번호 처리
     if (number) {
       if (number.toString().includes('번')) {
@@ -298,11 +293,11 @@ const StudentResponseDetail: React.FC = () => {
         parts.push(`${number}번`);
       }
     }
-    
+
     if (parts.length > 0) {
       return `${name}(${parts.join(' ')})`;
     }
-    
+
     return name;
   };
 
@@ -363,7 +358,7 @@ const StudentResponseDetail: React.FC = () => {
         {/* 학생 응답 섹션 */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">학생 응답</h2>
-          
+
           {/* 학생 정보 - 수정된 레이아웃 */}
           <div className="mb-6 p-4 bg-gray-50 rounded-lg flex justify-between items-start">
             <div>
@@ -378,7 +373,7 @@ const StudentResponseDetail: React.FC = () => {
                 <span className="ml-2 text-gray-900">
                   {new Date(response.created_at).toLocaleDateString('ko-KR', {
                     year: 'numeric',
-                    month: 'long', 
+                    month: 'long',
                     day: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'
@@ -400,7 +395,7 @@ const StudentResponseDetail: React.FC = () => {
               const routineType = room?.thinking_routine_type || 'see-think-wonder';
               const mappedResponses = mapResponseToRoutineSteps(response.response_data, routineType);
               const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
-              
+
               // Think-Puzzle-Explore 디버깅
               if (routineType === 'think-puzzle-explore') {
                 console.log('🎯 Think-Puzzle-Explore 학생 응답 디버깅:', {
@@ -410,11 +405,11 @@ const StudentResponseDetail: React.FC = () => {
                   stepLabels
                 });
               }
-              
+
               // 단계별 색상과 아이콘 정의 (더 많은 단계 지원)
               const stepColors = {
                 'see': 'bg-blue-500',
-                'think': 'bg-green-500', 
+                'think': 'bg-green-500',
                 'wonder': 'bg-purple-500',
                 'connect': 'bg-indigo-500',
                 'challenge': 'bg-red-500',
@@ -433,10 +428,10 @@ const StudentResponseDetail: React.FC = () => {
                 'viewpoint_thinking': 'bg-slate-500',
                 'viewpoint_concerns': 'bg-neutral-500'
               };
-              
+
               const stepIcons = {
                 'see': 'S',
-                'think': 'T', 
+                'think': 'T',
                 'wonder': 'W',
                 'connect': 'C',
                 'challenge': 'Ch',
@@ -455,7 +450,7 @@ const StudentResponseDetail: React.FC = () => {
                 'viewpoint_thinking': 'V2',
                 'viewpoint_concerns': 'V3'
               };
-              
+
               return Object.entries(mappedResponses)
                 .filter(([key, value]) => {
                   // Think-Puzzle-Explore의 경우 빈 값도 표시 (단계가 누락되지 않도록)
@@ -465,12 +460,12 @@ const StudentResponseDetail: React.FC = () => {
                   return value && value.trim().length > 0;
                 })
                 .map(([key, value]) => {
-                  const stepLabel = stepLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
-                  
+                  const stepLabel = (stepLabels as any)[key] || key.charAt(0).toUpperCase() + key.slice(1);
+
                   // Frayer Model에서 examples||non_examples 형태 처리
                   if (routineType === 'frayer-model' && typeof value === 'string' && value.includes('||')) {
                     const [examples, nonExamples] = value.split('||');
-                    
+
                     return (
                       <div key={key} className="space-y-3">
                         {/* 예시 */}
@@ -485,7 +480,7 @@ const StudentResponseDetail: React.FC = () => {
                             <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{examples.trim()}</p>
                           </div>
                         </div>
-                        
+
                         {/* 반례 */}
                         <div className="border border-gray-200 rounded-lg overflow-hidden">
                           <div className="bg-rose-500 px-4 py-2 flex items-center">
@@ -501,12 +496,12 @@ const StudentResponseDetail: React.FC = () => {
                       </div>
                     );
                   }
-                  
+
                   return (
                     <div key={key} className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className={`${stepColors[key] || 'bg-gray-500'} px-4 py-2 flex items-center`}>
+                      <div className={`${(stepColors as any)[key] || 'bg-gray-500'} px-4 py-2 flex items-center`}>
                         <div className="w-8 h-6 bg-white bg-opacity-20 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
-                          {stepIcons[key] || key.charAt(0).toUpperCase()}
+                          {(stepIcons as any)[key] || key.charAt(0).toUpperCase()}
                         </div>
                         <h3 className="font-medium text-white">{stepLabel}</h3>
                       </div>
@@ -572,7 +567,7 @@ const StudentResponseDetail: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* AI 분석 결과 표시 */}
             {aiAnalysis && (
               <AIAnalysisSection

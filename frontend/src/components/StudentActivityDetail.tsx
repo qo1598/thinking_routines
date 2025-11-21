@@ -1,313 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { routineTypeLabels, routineStepLabels, mapResponseToRoutineSteps, generateStepInfoMap } from '../lib/thinkingRoutineUtils';
-import { parseMarkdownToStructuredAI } from '../lib/aiAnalysisUtils';
+import { formatMarkdownText } from '../lib/analysisParser';
+import { formatDate, getBackToPortfolioUrl } from '../lib/activityDetailUtils';
+import { useActivityDetail } from '../hooks/useActivityDetail';
+import { useAIAnalysisParsing } from '../hooks/useAIAnalysisParsing';
 import TeacherFeedbackReadOnly from './TeacherFeedbackReadOnly';
 import TeacherMaterialsSection from './TeacherMaterialsSection';
 
-interface ActivityDetailProps {}
-
-interface ActivityData {
-  id: string;
-  room_id: string | null;
-  room_title: string;
-  routine_type: string;
-  submitted_at: string;
-  student_name: string;
-  student_grade?: string;
-  student_class?: string;
-  student_number?: number;
-  team_name?: string;
-  response_data?: any;
-  ai_analysis?: string;
-  teacher_feedback?: string;
-  teacher_score?: number;
-  activity_type: 'online' | 'offline';
-  image_url?: string;
-  image_data?: string;
-  confidence_score?: number;
-  // 온라인 활동용 추가 데이터
-  room_description?: string;
-  room_thinking_routine_type?: string;
-  template_content?: any;
-}
+interface ActivityDetailProps { }
 
 const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
   const { activityId } = useParams<{ activityId: string }>();
   const navigate = useNavigate();
-  const [activity, setActivity] = useState<ActivityData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [parsedAiAnalysis, setParsedAiAnalysis] = useState<any>(null);
 
-  // 사고루틴 타입 라벨 함수
-  const getRoutineTypeLabel = (routineType: string): string => {
-    const labels: { [key: string]: string } = {
-      'see-think-wonder': 'See-Think-Wonder',
-      '4c': '4C',
-      'circle-of-viewpoints': '관점의 원',
-      'connect-extend-challenge': 'Connect-Extend-Challenge',
-      'frayer-model': '프레이어 모델',
-      'used-to-think-now-think': '이전-현재 생각',
-      'think-puzzle-explore': 'Think-Puzzle-Explore'
-    };
-    return labels[routineType] || routineType;
-  };
+  // 커스텀 훅 사용
+  const { activity, loading, error } = useActivityDetail(activityId);
+  const parsedAiAnalysis = useAIAnalysisParsing(activity?.ai_analysis, activity?.routine_type || 'see-think-wonder');
 
-  // 활동 데이터 로드
-  useEffect(() => {
-    if (activityId) {
-      loadActivityDetail();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityId]);
 
-  // AI 분석 데이터 파싱
-  useEffect(() => {
-    if (activity?.ai_analysis) {
-      console.log('🎯 AI 분석 데이터 파싱 시작:', activity.ai_analysis);
-      const parsed = parseAIAnalysis(activity.ai_analysis);
-      console.log('✅ 파싱 완료, state 업데이트:', parsed);
-      setParsedAiAnalysis(parsed);
-    }
-  }, [activity?.ai_analysis]);
-
-  const loadActivityDetail = async () => {
-    if (!isSupabaseConfigured() || !supabase) {
-      setError('시스템 설정이 완료되지 않았습니다.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError('');
-
-      // 먼저 기본 학생 응답 데이터 가져오기
-      const { data: basicData, error: basicError } = await supabase
-        .from('student_responses')
-        .select(`
-          id,
-          room_id,
-          student_name,
-          student_grade,
-          student_class,
-          student_number,
-          team_name,
-          routine_type,
-          image_url,
-          image_data,
-          response_data,
-          ai_analysis,
-          teacher_feedback,
-          teacher_score,
-          confidence_score,
-          submitted_at
-        `)
-        .eq('id', activityId)
-        .single();
-
-      if (basicError) {
-        throw new Error(`활동 데이터를 불러올 수 없습니다: ${basicError.message}`);
-      }
-
-      if (!basicData) {
-        throw new Error('해당 활동을 찾을 수 없습니다.');
-      }
-
-      // 온라인 활동인 경우에만 활동방과 템플릿 정보 추가로 가져오기
-      let roomData = null;
-      let templateData = null;
-
-      if (basicData.room_id) {
-        // 활동방 정보 가져오기
-        const { data: roomInfo, error: roomError } = await supabase
-          .from('activity_rooms')
-          .select('title, description, thinking_routine_type')
-          .eq('id', basicData.room_id)
-          .single();
-
-        if (!roomError && roomInfo) {
-          roomData = roomInfo;
-
-          // 템플릿 정보 가져오기
-          const { data: templateInfo, error: templateError } = await supabase
-            .from('routine_templates')
-            .select('content')
-            .eq('room_id', basicData.room_id)
-            .single();
-
-          if (!templateError && templateInfo) {
-            templateData = templateInfo;
-          }
-        }
-      }
-
-      const data = {
-        ...basicData,
-        activity_rooms: roomData,
-        routine_templates: templateData
-      };
-
-      // 활동 타입 결정 (온라인/오프라인)
-      const activityType = data.room_id ? 'online' : 'offline';
-      
-      const activityData: ActivityData = {
-        id: data.id,
-        room_id: data.room_id,
-        room_title: activityType === 'online' 
-          ? (data.activity_rooms as any)?.title || '활동방'
-          : `${getRoutineTypeLabel(data.routine_type || 'see-think-wonder')} 분석`,
-        routine_type: data.routine_type || (data.activity_rooms as any)?.thinking_routine_type || 'see-think-wonder',
-        submitted_at: data.submitted_at,
-        student_name: data.student_name,
-        student_grade: data.student_grade,
-        student_class: data.student_class,
-        student_number: data.student_number,
-        team_name: data.team_name,
-        response_data: data.response_data,
-        ai_analysis: data.ai_analysis,
-        teacher_feedback: data.teacher_feedback,
-        teacher_score: data.teacher_score,
-        activity_type: activityType,
-        image_url: data.image_url,
-        image_data: data.image_data,
-        confidence_score: data.confidence_score,
-        // 온라인 활동용 추가 데이터
-        room_description: (data.activity_rooms as any)?.description,
-        room_thinking_routine_type: (data.activity_rooms as any)?.thinking_routine_type,
-        template_content: (data.routine_templates as any)?.content
-      };
-
-      setActivity(activityData);
-
-    } catch (err: any) {
-      console.error('Activity detail loading error:', err);
-      setError(err.message || '활동 상세 정보를 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // 뒤로 가기
   const handleBack = () => {
-    // URL에서 검색 파라미터가 있는지 확인하고, 있으면 그 상태로 돌아가기
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasSearchParams = urlParams.toString();
-    
-    if (hasSearchParams) {
-      // 검색 파라미터가 있으면 그대로 유지하여 검색 결과 상태로 돌아가기
-      navigate(`/teacher/portfolio?${hasSearchParams}`);
-    } else {
-      // 검색 파라미터가 없으면 포트폴리오 첫 페이지로
-      navigate('/teacher/portfolio');
-    }
+    navigate(getBackToPortfolioUrl());
   };
 
-  // 날짜 포맷팅
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
-  // AI 분석 결과 파싱
-  const parseAIAnalysis = (aiAnalysis: string) => {
-    console.log('🔍 원본 AI 분석 데이터 (타입:', typeof aiAnalysis, '):', aiAnalysis);
-    
-    if (!aiAnalysis) {
-      console.log('❌ AI 분석 데이터가 없습니다');
-      return null;
-    }
-    
-    try {
-      // JSON 형태인지 확인
-      if (aiAnalysis.startsWith('{') || aiAnalysis.startsWith('[')) {
-        const parsed = JSON.parse(aiAnalysis);
-        console.log('🔍 JSON 파싱된 AI 분석 데이터:', parsed);
-        
-        // ThinkingRoutineAnalysis에서 저장한 구조화된 형태 처리
-        if (parsed.aiAnalysis && parsed.aiAnalysis.individualSteps) {
-          console.log('✅ 구조화된 AI 분석 데이터 발견');
-          return {
-            individualSteps: parsed.aiAnalysis.individualSteps,
-            comprehensive: parsed.aiAnalysis.comprehensive,
-            educational: parsed.aiAnalysis.educational,
-            stepByStep: parsed.aiAnalysis.stepByStep,
-            teacherFeedback: parsed.teacherFeedback?.individualSteps || {}
-          };
-        }
-        
-        // 기존 형태 처리 (직접 individualSteps가 있는 경우)
-        if (parsed.individualSteps) {
-          console.log('✅ 기존 형태 AI 분석 데이터 발견');
-          return parsed;
-        }
-        
-        console.log('⚠️ 알 수 없는 JSON AI 분석 데이터 구조:', parsed);
-        return parsed;
-      } else {
-        // 마크다운 텍스트 형태
-        console.log('📝 마크다운 텍스트 형태 AI 분석, 파싱 시도...');
-        console.log('📝 전체 AI 응답 텍스트:', aiAnalysis);
-        console.log('📝 텍스트 길이:', aiAnalysis.length);
-        
-        const routineType = activityData?.routine_type || 'see-think-wonder';
-        console.log('🎯 사고루틴 유형:', routineType);
-        
-        // 실제 AI 응답에서 특정 키워드들이 있는지 확인
-        const keywords = ['Connect', 'Challenge', 'Concepts', 'Changes', '연결하기', '도전하기', '개념', '변화'];
-        keywords.forEach(keyword => {
-          const found = aiAnalysis.includes(keyword);
-          if (found) {
-            const lines = aiAnalysis.split('\n').filter(line => line.includes(keyword));
-            console.log(`🔍 키워드 "${keyword}" 발견된 줄들:`, lines);
-          }
-        });
-        
-        // aiAnalysisUtils의 parseMarkdownToStructuredAI 사용
-        const structuredData = parseMarkdownToStructuredAI(aiAnalysis, routineType);
-        console.log('🔄 파싱된 구조화 데이터:', structuredData);
-        console.log('🔄 individualSteps:', structuredData?.individualSteps);
-        console.log('🔄 comprehensive:', structuredData?.comprehensive);
-        return structuredData;
-      }
-    } catch (error) {
-      console.error('❌ AI 분석 데이터 파싱 오류:', error);
-      console.log('❌ 오류 발생한 원본 데이터:', aiAnalysis);
-      return null;
-    }
-  };
-
-  // 마크다운 텍스트 포맷팅 (ThinkingRoutineAnalysis와 동일)
-  const formatMarkdownText = (text: string) => {
-    const formatSection = (section: string) => {
-      return section
-        // 불필요한 기호들 제거
-        .replace(/^\*\s*/gm, '') // 줄 시작의 * 제거
-        .replace(/^---\s*/gm, '') // --- 제거
-        .replace(/^\s*\*\s*$/gm, '') // * 만 있는 줄 제거
-        // 제목 포맷팅
-        .replace(/## (\d+)\. (.*?)(?=\n|$)/g, '<h3 class="text-xl font-bold text-purple-800 mb-4 pb-2 border-b-2 border-purple-200">$1. $2</h3>')
-        .replace(/### (.*?)(?=\n|$)/g, '<h4 class="text-lg font-semibold text-gray-900 mt-6 mb-3 text-purple-700">$1</h4>')
-        // 연보라색 태그에서 콜론 제거
-        .replace(/\*\*(.*?):\*\*/g, '<div class="mt-4 mb-2"><span class="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">$1</span></div>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
-        .replace(/^- (.*?)$/gm, '<div class="flex items-start mb-2"><span class="text-purple-500 mr-2 mt-1">•</span><span class="text-gray-700">$1</span></div>')
-        // 빈 줄 정리
-        .replace(/\n\s*\n\s*\n/g, '\n\n') // 3개 이상의 연속 줄바꿈을 2개로
-        .replace(/\n\n/g, '<br><br>') // 줄바꿈을 HTML로
-        .replace(/\n/g, '<br>'); // 단일 줄바꿈도 처리
-    };
-
-    return formatSection(text);
-  };
 
   // 로딩 상태
   if (loading) {
@@ -375,27 +94,26 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-gray-900">{activity.room_title}</h2>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                activity.activity_type === 'online' 
-                  ? 'bg-blue-100 text-blue-800' 
-                  : 'bg-purple-100 text-purple-800'
-              }`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${activity.activity_type === 'online'
+                ? 'bg-blue-100 text-blue-800'
+                : 'bg-purple-100 text-purple-800'
+                }`}>
                 {activity.activity_type === 'online' ? '온라인 활동' : '오프라인 활동'}
               </span>
             </div>
-            
+
             {/* 학생 정보 - 수정된 레이아웃 */}
             <div className="p-4 bg-gray-50 rounded-lg flex justify-between items-start">
               <div>
                 <div className="mb-2">
                   <span className="text-sm font-medium text-gray-700">학생명:</span>
                   <span className="ml-2 text-gray-900 font-semibold">
-                  {(() => {
+                    {(() => {
                       const name = activity.student_name || '학생';
                       const grade = activity.student_grade || '';
                       const studentClass = activity.student_class || '';
                       const number = activity.student_number || '';
-                      
+
                       const parts = [];
                       if (grade) {
                         if (grade.includes('학년')) {
@@ -418,46 +136,46 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                           parts.push(`${number}번`);
                         }
                       }
-                      
+
                       if (parts.length > 0) {
                         return `${name}(${parts.join(' ')})`;
                       }
                       return name;
                     })()}
                   </span>
-                          </div>
+                </div>
                 <div>
                   <span className="text-sm font-medium text-gray-700">제출일:</span>
                   <span className="ml-2 text-gray-900">
                     {new Date(activity.submitted_at).toLocaleDateString('ko-KR', {
                       year: 'numeric',
-                      month: 'long', 
+                      month: 'long',
                       day: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit'
                     })}
                   </span>
-                          </div>
+                </div>
                 {activity.team_name && (
                   <div className="mt-1">
                     <span className="text-sm font-medium text-gray-700">모둠:</span>
                     <span className="ml-2 text-gray-900">{activity.team_name}</span>
-                          </div>
+                  </div>
                 )}
-                          </div>
+              </div>
               <div className="text-right">
                 <span className="text-sm font-medium text-gray-700">사고루틴:</span>
                 <div className="text-blue-600 font-medium">
                   {routineTypeLabels[activity.routine_type] || activity.routine_type || 'See-Think-Wonder'}
-                      </div>
                 </div>
               </div>
-                  </div>
-                </div>
+            </div>
+          </div>
+        </div>
 
         {/* 온라인 활동 - 교사 제공 자료 */}
         {activity.activity_type === 'online' && activity.room_id && (
-          <TeacherMaterialsSection 
+          <TeacherMaterialsSection
             roomId={activity.room_id}
             roomTitle={activity.room_title}
             roomDescription={activity.room_description}
@@ -489,18 +207,18 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">학생 응답</h2>
-              
+
               {/* 학생 응답 - 카드형 레이아웃 */}
               <div className="space-y-3">
                 {(() => {
                   const routineType = activity.routine_type || 'see-think-wonder';
                   const mappedResponses = mapResponseToRoutineSteps(activity.response_data, routineType);
                   const stepLabels = routineStepLabels[routineType] || routineStepLabels['see-think-wonder'];
-                  
+
                   // 단계별 색상과 아이콘 정의 (더 많은 단계 지원)
                   const stepColors = {
                     'see': 'bg-blue-500',
-                    'think': 'bg-green-500', 
+                    'think': 'bg-green-500',
                     'wonder': 'bg-purple-500',
                     'connect': 'bg-indigo-500',
                     'challenge': 'bg-red-500',
@@ -519,10 +237,10 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                     'viewpoint_thinking': 'bg-slate-500',
                     'viewpoint_concerns': 'bg-neutral-500'
                   };
-                  
+
                   const stepIcons = {
                     'see': 'S',
-                    'think': 'T', 
+                    'think': 'T',
                     'wonder': 'W',
                     'connect': 'C',
                     'challenge': 'Ch',
@@ -541,25 +259,25 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                     'viewpoint_thinking': 'V2',
                     'viewpoint_concerns': 'V3'
                   };
-                  
+
                   return Object.entries(mappedResponses)
                     .filter(([key, value]) => value && value.trim().length > 0)
                     .map(([key, value]) => {
-                      const stepLabel = stepLabels[key] || key.charAt(0).toUpperCase() + key.slice(1);
-                    
-                    return (
+                      const stepLabel = (stepLabels as any)[key] || key.charAt(0).toUpperCase() + key.slice(1);
+
+                      return (
                         <div key={key} className="border border-gray-200 rounded-lg overflow-hidden">
-                          <div className={`${stepColors[key] || 'bg-gray-500'} px-4 py-2 flex items-center`}>
+                          <div className={`${(stepColors as any)[key] || 'bg-gray-500'} px-4 py-2 flex items-center`}>
                             <div className="w-8 h-6 bg-white bg-opacity-20 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
-                              {stepIcons[key] || key.charAt(0).toUpperCase()}
-                          </div>
+                              {(stepIcons as any)[key] || key.charAt(0).toUpperCase()}
+                            </div>
                             <h3 className="font-medium text-white">{stepLabel}</h3>
                           </div>
                           <div className="p-4 bg-white">
                             <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{value as string}</p>
+                          </div>
                         </div>
-                      </div>
-                    );
+                      );
                     });
                 })()}
               </div>
@@ -568,14 +286,14 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
         )}
 
         {/* 교사 피드백 및 평가 (조회 전용) */}
-        <TeacherFeedbackReadOnly 
+        <TeacherFeedbackReadOnly
           responseId={activity.id}
           routineType={activity.routine_type || 'see-think-wonder'}
           aiAnalysis={activity.ai_analysis}
         />
 
         {/* 온라인 활동: AI 분석 결과 표시 (제거됨) */}
-        {false && activity.activity_type === 'online' && activity.ai_analysis && (
+        {false && activity?.activity_type === 'online' && activity?.ai_analysis && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               {aiAnalysis ? (
@@ -587,25 +305,25 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                       <div className="space-y-4">
                         {Object.entries(aiAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
                           // 단계별 정보 매핑
-                          const stepInfoMap = generateStepInfoMap(activityData?.routine_type || 'see-think-wonder');
+                          const stepInfoMap = generateStepInfoMap(activity?.routine_type || 'see-think-wonder');
 
                           const stepInfo = stepInfoMap[stepKey];
-                          
+
                           // 중요: stepContent 내용 디버깅
                           console.log(`🎯 화면 표시 중 - ${stepKey} 단계:`, {
                             stepInfo,
                             stepContent,
                             stepContentType: typeof stepContent,
-                            stepContentLength: stepContent ? stepContent.length : 0,
-                            firstChars: stepContent ? stepContent.substring(0, 100) : 'NULL'
+                            stepContentLength: stepContent ? (stepContent as string).length : 0,
+                            firstChars: stepContent ? (stepContent as string).substring(0, 100) : 'NULL'
                           });
-                          
+
                           if (!stepInfo || !stepContent) {
                             console.log(`❌ ${stepKey} 단계 표시 실패:`, { stepInfo: !!stepInfo, stepContent: !!stepContent });
                             return null;
                           }
 
-                          const gradientColors: {[key: string]: string} = {
+                          const gradientColors: { [key: string]: string } = {
                             'bg-blue-500': 'from-blue-50 to-white border-blue-200',
                             'bg-green-500': 'from-green-50 to-white border-green-200',
                             'bg-purple-500': 'from-purple-50 to-white border-purple-200',
@@ -613,22 +331,21 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                           };
 
                           return (
-                            <div 
+                            <div
                               key={stepKey}
                               className={`bg-gradient-to-br ${gradientColors[stepInfo.color] || 'from-gray-50 to-white border-gray-200'} border rounded-xl p-6`}
                             >
-                              <h5 className={`text-lg font-bold mb-4 flex items-center ${
-                                stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
+                              <h5 className={`text-lg font-bold mb-4 flex items-center ${stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
                                 stepInfo.color === 'bg-green-500' ? 'text-green-800' :
-                                stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
-                                stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
-                              }`}>
+                                  stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
+                                    stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
+                                }`}>
                                 <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
                                   {index + 1}
                                 </span>
                                 {stepInfo.title} ({stepInfo.subtitle})
                               </h5>
-                              
+
                               {/* AI 분석 결과 */}
                               <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
                                 <h6 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
@@ -637,15 +354,15 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                                   </svg>
                                   AI 분석 결과
                                 </h6>
-                                <div 
+                                <div
                                   className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-left"
-                                  dangerouslySetInnerHTML={{ 
+                                  dangerouslySetInnerHTML={{
                                     __html: (() => {
                                       const formattedText = formatMarkdownText(stepContent as string);
                                       console.log(`🎨 ${stepKey} 포맷팅 결과:`, {
                                         originalText: stepContent,
                                         formattedText,
-                                        originalLength: stepContent ? stepContent.length : 0,
+                                        originalLength: stepContent ? (stepContent as string).length : 0,
                                         formattedLength: formattedText ? formattedText.length : 0
                                       });
                                       return formattedText;
@@ -657,17 +374,17 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                               {/* 교사 피드백 및 점수 */}
                               {(() => {
                                 // 전체 분석 데이터에서 teacherFeedback 찾기
-                                const fullAnalysis = typeof activity.ai_analysis === 'string' ? 
-                                  JSON.parse(activity.ai_analysis) : activity.ai_analysis;
+                                const fullAnalysis = typeof activity?.ai_analysis === 'string' ?
+                                  JSON.parse(activity.ai_analysis) : activity?.ai_analysis;
                                 const teacherFeedbackSteps = fullAnalysis?.teacherFeedback?.individualSteps;
                                 const stepFeedback = teacherFeedbackSteps?.[stepKey];
-                                
+
                                 // 디버깅용 로그
                                 console.log('🔍 Online Step:', stepKey);
                                 console.log('📊 Online Full Analysis:', fullAnalysis);
                                 console.log('👨‍🏫 Online Teacher Feedback Steps:', teacherFeedbackSteps);
                                 console.log('📝 Online Step Feedback:', stepFeedback);
-                                
+
                                 if (stepFeedback) {
                                   return (
                                     <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
@@ -705,9 +422,9 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div 
+                  <div
                     className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-left"
-                    dangerouslySetInnerHTML={{ __html: formatMarkdownText(activity.ai_analysis) }}
+                    dangerouslySetInnerHTML={{ __html: formatMarkdownText(activity?.ai_analysis || '') }}
                   />
                 </div>
               )}
@@ -719,17 +436,17 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
         {false && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
-              
+
               {aiAnalysis && aiAnalysis.individualSteps && Object.keys(aiAnalysis.individualSteps).length > 0 ? (
                 <div className="space-y-6">
                   {Object.entries(aiAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
                     // 표준 단계별 정보 매핑 사용
-                    const stepInfoMap = generateStepInfoMap(activityData?.routine_type || 'see-think-wonder');
+                    const stepInfoMap = generateStepInfoMap(activity?.routine_type || 'see-think-wonder');
 
                     const stepInfo = stepInfoMap[stepKey];
                     if (!stepInfo) return null;
 
-                    const gradientColors: {[key: string]: string} = {
+                    const gradientColors: { [key: string]: string } = {
                       'bg-blue-500': 'from-blue-50 to-white border-blue-200',
                       'bg-green-500': 'from-green-50 to-white border-green-200',
                       'bg-purple-500': 'from-purple-50 to-white border-purple-200',
@@ -739,43 +456,42 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                     // 저장된 교사 피드백 찾기
                     const savedFeedback = aiAnalysis.teacherFeedback && aiAnalysis.teacherFeedback[stepKey];
                     const feedbackData = typeof savedFeedback === 'object' ? savedFeedback as any : { feedback: savedFeedback || '', score: null };
-                    
+
                     console.log(`🔍 ${stepKey} 단계 피드백:`, savedFeedback);
 
                     return (
-                      <div 
+                      <div
                         key={stepKey}
                         className={`bg-gradient-to-br ${gradientColors[stepInfo.color] || 'from-gray-50 to-white border-gray-200'} border rounded-xl p-6`}
                       >
-                        <h3 className={`text-lg font-bold mb-4 flex items-center ${
-                          stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
+                        <h3 className={`text-lg font-bold mb-4 flex items-center ${stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
                           stepInfo.color === 'bg-green-500' ? 'text-green-800' :
-                          stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
-                          stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
-                        }`}>
+                            stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
+                              stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
+                          }`}>
                           <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
                             {index + 1}
                           </span>
                           {stepInfo.title} ({stepInfo.subtitle})
                         </h3>
-                        
+
                         {/* 학생 응답 */}
                         {(() => {
                           console.log('🎯 학생 응답 데이터 확인:', {
                             stepKey,
-                            responseData: activityData?.response_data,
-                            routineType: activityData?.routine_type
+                            responseData: activity?.response_data,
+                            routineType: activity?.routine_type
                           });
-                          
-                          const mappedResponses = mapResponseToRoutineSteps(activityData?.response_data, activityData?.routine_type || 'see-think-wonder');
+
+                          const mappedResponses = mapResponseToRoutineSteps(activity?.response_data, activity?.routine_type || 'see-think-wonder');
                           console.log('🔄 매핑된 응답:', mappedResponses);
-                          
+
                           let studentResponse = mappedResponses[stepKey];
-                          
+
                           // response_data에 응답이 없는 경우, AI 분석에서 학생 응답 추출 시도
                           if (!studentResponse && aiAnalysis?.stepByStep) {
                             console.log('🔄 AI 분석에서 학생 응답 추출 시도');
-                            
+
                             // AI 분석 텍스트에서 해당 단계의 학생 응답 추출
                             const stepLabel = stepInfo.title;
                             const patterns = [
@@ -784,7 +500,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                               new RegExp(`${stepLabel}.*?[:：]\\s*"([^"]+)"`, 'si'),
                               new RegExp(`\\*\\s*\\*\\*${stepLabel}\\s*\\([^)]*\\)\\*\\*:?\\s*"([^"]+)"`, 'si')
                             ];
-                            
+
                             for (const pattern of patterns) {
                               const match = aiAnalysis.stepByStep.match(pattern);
                               if (match && match[1]) {
@@ -794,9 +510,9 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                               }
                             }
                           }
-                          
+
                           console.log(`🎓 최종 ${stepKey} 단계 학생 응답:`, studentResponse);
-                          
+
                           return studentResponse ? (
                             <div className="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-200">
                               <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
@@ -820,7 +536,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                             </svg>
                             AI 분석 결과
                           </h4>
-                          <div 
+                          <div
                             className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-left"
                             dangerouslySetInnerHTML={{ __html: formatMarkdownText(stepContent as string) }}
                           />
@@ -850,7 +566,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="font-medium text-gray-700 mb-2">AI 분석 데이터 확인</h4>
                   <p className="text-gray-600 mb-4">구조화된 AI 분석 결과를 찾을 수 없습니다.</p>
-                  
+
                   {/* 디버깅 정보 표시 */}
                   {aiAnalysis ? (
                     <div className="text-xs text-gray-500 bg-white p-3 rounded border">
@@ -883,25 +599,25 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                       <div className="space-y-4">
                         {Object.entries(aiAnalysis.individualSteps).map(([stepKey, stepContent], index) => {
                           // 단계별 정보 매핑
-                          const stepInfoMap = generateStepInfoMap(activityData?.routine_type || 'see-think-wonder');
+                          const stepInfoMap = generateStepInfoMap(activity?.routine_type || 'see-think-wonder');
 
                           const stepInfo = stepInfoMap[stepKey];
-                          
+
                           // 중요: stepContent 내용 디버깅
                           console.log(`🎯 화면 표시 중 - ${stepKey} 단계:`, {
                             stepInfo,
                             stepContent,
                             stepContentType: typeof stepContent,
-                            stepContentLength: stepContent ? stepContent.length : 0,
-                            firstChars: stepContent ? stepContent.substring(0, 100) : 'NULL'
+                            stepContentLength: stepContent ? (stepContent as string).length : 0,
+                            firstChars: stepContent ? (stepContent as string).substring(0, 100) : 'NULL'
                           });
-                          
+
                           if (!stepInfo || !stepContent) {
                             console.log(`❌ ${stepKey} 단계 표시 실패:`, { stepInfo: !!stepInfo, stepContent: !!stepContent });
                             return null;
                           }
 
-                          const gradientColors: {[key: string]: string} = {
+                          const gradientColors: { [key: string]: string } = {
                             'bg-blue-500': 'from-blue-50 to-white border-blue-200',
                             'bg-green-500': 'from-green-50 to-white border-green-200',
                             'bg-purple-500': 'from-purple-50 to-white border-purple-200',
@@ -909,22 +625,21 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                           };
 
                           return (
-                            <div 
+                            <div
                               key={stepKey}
                               className={`bg-gradient-to-br ${gradientColors[stepInfo.color] || 'from-gray-50 to-white border-gray-200'} border rounded-xl p-6`}
                             >
-                              <h5 className={`text-lg font-bold mb-4 flex items-center ${
-                                stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
+                              <h5 className={`text-lg font-bold mb-4 flex items-center ${stepInfo.color === 'bg-blue-500' ? 'text-blue-800' :
                                 stepInfo.color === 'bg-green-500' ? 'text-green-800' :
-                                stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
-                                stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
-                              }`}>
+                                  stepInfo.color === 'bg-purple-500' ? 'text-purple-800' :
+                                    stepInfo.color === 'bg-red-500' ? 'text-red-800' : 'text-gray-800'
+                                }`}>
                                 <span className={`w-8 h-8 ${stepInfo.color} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3`}>
                                   {index + 1}
                                 </span>
                                 {stepInfo.title} ({stepInfo.subtitle})
                               </h5>
-                              
+
                               {/* AI 분석 결과 */}
                               <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
                                 <h6 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
@@ -933,15 +648,15 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                                   </svg>
                                   AI 분석 결과
                                 </h6>
-                                <div 
+                                <div
                                   className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-left"
-                                  dangerouslySetInnerHTML={{ 
+                                  dangerouslySetInnerHTML={{
                                     __html: (() => {
                                       const formattedText = formatMarkdownText(stepContent as string);
                                       console.log(`🎨 ${stepKey} 포맷팅 결과:`, {
                                         originalText: stepContent,
                                         formattedText,
-                                        originalLength: stepContent ? stepContent.length : 0,
+                                        originalLength: stepContent ? (stepContent as string).length : 0,
                                         formattedLength: formattedText ? formattedText.length : 0
                                       });
                                       return formattedText;
@@ -953,17 +668,17 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                               {/* 교사 피드백 및 점수 */}
                               {(() => {
                                 // 전체 분석 데이터에서 teacherFeedback 찾기
-                                const fullAnalysis = typeof activity.ai_analysis === 'string' ? 
+                                const fullAnalysis = typeof activity.ai_analysis === 'string' ?
                                   JSON.parse(activity.ai_analysis) : activity.ai_analysis;
                                 const teacherFeedbackSteps = fullAnalysis?.teacherFeedback?.individualSteps;
                                 const stepFeedback = teacherFeedbackSteps?.[stepKey];
-                                
+
                                 // 디버깅용 로그
                                 console.log('🔍 Step:', stepKey);
                                 console.log('📊 Full Analysis:', fullAnalysis);
                                 console.log('👨‍🏫 Teacher Feedback Steps:', teacherFeedbackSteps);
                                 console.log('📝 Step Feedback:', stepFeedback);
-                                
+
                                 if (stepFeedback) {
                                   return (
                                     <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
@@ -1001,9 +716,9 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div 
+                  <div
                     className="prose prose-sm max-w-none text-gray-700 leading-relaxed text-left"
-                    dangerouslySetInnerHTML={{ __html: formatMarkdownText(activity.ai_analysis) }}
+                    dangerouslySetInnerHTML={{ __html: formatMarkdownText(activity?.ai_analysis || '') }}
                   />
                 </div>
               )}
@@ -1016,7 +731,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">👩‍🏫 교사 피드백 및 평가</h3>
-              
+
               {/* 전체 점수 표시 */}
               {activity?.teacher_score && (
                 <div className="mb-6">
@@ -1025,14 +740,14 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                   <span className="text-sm text-gray-500"> / 100점</span>
                 </div>
               )}
-              
+
               {/* 구조화된 교사 피드백 표시 (AI 분석과 함께 저장된 경우) */}
               {aiAnalysis && aiAnalysis.teacherFeedback && (
                 <div className="space-y-4 mb-6">
                   <h4 className="text-base font-semibold text-gray-800">단계별 교사 피드백</h4>
                   {Object.entries(aiAnalysis.teacherFeedback).map(([stepKey, feedback], index) => {
                     // 표준 단계별 정보 매핑 사용
-                    const stepInfoMap = generateStepInfoMap(activityData?.routine_type || 'see-think-wonder');
+                    const stepInfoMap = generateStepInfoMap(activity?.routine_type || 'see-think-wonder');
 
                     const stepInfo = stepInfoMap[stepKey];
                     if (!stepInfo || !feedback) return null;
@@ -1060,7 +775,7 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
                   })}
                 </div>
               )}
-              
+
               {/* 일반 교사 피드백 (기존 방식) */}
               {activity?.teacher_feedback && !(aiAnalysis && aiAnalysis.teacherFeedback) && (
                 <div className="bg-yellow-50 rounded-lg p-4">
@@ -1074,27 +789,29 @@ const StudentActivityDetail: React.FC<ActivityDetailProps> = () => {
       </div>
 
       {/* 이미지 확대 모달 */}
-      {imageModalOpen && (activity.image_url || activity.image_data) && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-          onClick={() => setImageModalOpen(false)}
-        >
-          <div className="relative max-w-full max-h-full">
-            <button
-              onClick={() => setImageModalOpen(false)}
-              className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-75"
-            >
-              ✕
-            </button>
-            <img
-              src={activity.image_url || activity.image_data}
-              alt="학생 활동 이미지 (확대)"
-              className="max-w-full max-h-full object-contain"
-            />
+      {
+        imageModalOpen && (activity.image_url || activity.image_data) && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+            onClick={() => setImageModalOpen(false)}
+          >
+            <div className="relative max-w-full max-h-full">
+              <button
+                onClick={() => setImageModalOpen(false)}
+                className="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full w-8 h-8 flex items-center justify-center hover:bg-opacity-75"
+              >
+                ✕
+              </button>
+              <img
+                src={activity.image_url || activity.image_data}
+                alt="학생 활동 이미지 (확대)"
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 

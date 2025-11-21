@@ -1,0 +1,3 @@
+﻿src/components/StudentActivityDetail.tsx(658,61): error TS18047: 'activity' is possibly 'null'.
+src/components/StudentActivityDetail.tsx(659,46): error TS18047: 'activity' is possibly 'null'.
+src/components/StudentActivityDetail.tsx(659,70): error TS18047: 'activity' is possibly 'null'.
